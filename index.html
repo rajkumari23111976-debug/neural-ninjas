@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Neural Ninjas</title>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <section id="loginScreen" class="screen">
+
+    <div class="login-card">
+
+      <div class="logo">🥷</div>
+
+      <h1>NEURAL NINJAS</h1>
+
+      <p class="subtitle">
+        Private Team Communication
+      </p>
+
+      <input
+        id="usernameInput"
+        type="text"
+        maxlength="20"
+        placeholder="Enter your username"
+        autocomplete="off"
+      >
+
+      <button id="joinBtn">
+        JOIN TEAM
+      </button>
+
+      <p id="loginStatus"></p>
+
+    </div>
+
+  </section>
+
+
+  <!-- CHAT SCREEN -->
+  <section id="chatScreen" class="screen hidden">
+
+    <header class="chat-header">
+
+      <div>
+        <h2>🥷 Neural Ninjas</h2>
+        <span id="onlineStatus">
+          Connecting...
+        </span>
+      </div>
+
+      <button
+        id="logoutBtn"
+        class="icon-btn"
+      >
+        ⎋
+      </button>
+
+    </header>
+
+
+    <main id="messages"></main>
+
+
+    <footer class="composer">
+
+      <!-- MEDIA -->
+      <button
+        id="mediaBtn"
+        class="tool-btn"
+        title="Send image, video or audio"
+      >
+        ＋
+      </button>
+
+      <!-- TEXT -->
+      <input
+        id="messageInput"
+        type="text"
+        placeholder="Message Neural Ninjas..."
+        autocomplete="off"
+      >
+
+      <!-- SEND -->
+      <button
+        id="sendBtn"
+        class="send-btn"
+        title="Send message"
+      >
+        ➤
+      </button>
+
+    </footer>
+
+
+    <input
+      id="fileInput"
+      type="file"
+      accept="image/*,video/*,audio/*"
+      hidden
+    >
+
+  </section>
+
+
+  <!-- SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+  <!-- HIGHLIGHT.JS -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
+  ></script>
+
+
+  <!-- APP -->
+  <script src="app.js"></script>
+
+</body>
+
+</html>
