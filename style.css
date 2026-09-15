@@ -534,3 +534,16 @@ max-width: 88%;
 width: 285px;
 }
 }
+
+/* Message timestamp / timeline */
+.message-time,
+.timestamp,
+.message-meta,
+.msg-time {
+  font-size: 10px !important;
+  opacity: 0.55;
+  margin-top: 4px;
+  display: block;
+  line-height: 1;
+  font-weight: 400;
+}
