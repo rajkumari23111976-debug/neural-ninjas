@@ -2,29 +2,46 @@
    NEURAL NINJAS - APP.JS
    ========================================================= */
 
-/* =========================
-   SUPABASE
-   ========================= */
-
 const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
-/*
-  IMPORTANT:
-  Keep your existing Supabase publishable key here.
-  Do NOT use a service_role/secret key.
-*/
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
-
-const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
 
-/* =========================
-   GLOBAL STATE
-   ========================= */
+/* =========================================================
+   STARTUP CHECK
+   ========================================================= */
+
+let supabaseClient;
+
+try {
+  if (typeof supabase === "undefined") {
+    throw new Error("Supabase library did not load.");
+  }
+
+  supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+} catch (error) {
+  console.error("STARTUP ERROR:", error);
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const status = document.getElementById("loginStatus");
+
+    if (status) {
+      status.textContent =
+        "App error: " + error.message;
+    }
+  });
+}
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
 
 let currentUser = null;
 let currentProfile = null;
@@ -39,93 +56,149 @@ let sending = false;
 let uploading = false;
 
 
-/* =========================
-   DOM ELEMENTS
-   ========================= */
+/* =========================================================
+   DOM
+   ========================================================= */
 
-const loginScreen =
-  document.getElementById("loginScreen");
+let loginScreen;
+let chatScreen;
+let usernameInput;
+let joinBtn;
+let loginStatus;
 
-const chatScreen =
-  document.getElementById("chatScreen");
+let messages;
+let messageInput;
+let sendBtn;
 
-const usernameInput =
-  document.getElementById("usernameInput");
+let mediaBtn;
+let fileInput;
 
-const joinBtn =
-  document.getElementById("joinBtn");
+let logoutBtn;
+let menuBtn;
 
-const loginStatus =
-  document.getElementById("loginStatus");
+let membersSidebar;
+let closeSidebarBtn;
+let sidebarOverlay;
 
-const messages =
-  document.getElementById("messages");
-
-const messageInput =
-  document.getElementById("messageInput");
-
-const sendBtn =
-  document.getElementById("sendBtn");
-
-const mediaBtn =
-  document.getElementById("mediaBtn");
-
-const fileInput =
-  document.getElementById("fileInput");
-
-const logoutBtn =
-  document.getElementById("logoutBtn");
-
-const menuBtn =
-  document.getElementById("menuBtn");
-
-const membersSidebar =
-  document.getElementById("membersSidebar");
-
-const closeSidebarBtn =
-  document.getElementById("closeSidebarBtn");
-
-const sidebarOverlay =
-  document.getElementById("sidebarOverlay");
-
-const membersList =
-  document.getElementById("membersList");
-
-const memberCount =
-  document.getElementById("memberCount");
-
-const onlineStatus =
-  document.getElementById("onlineStatus");
+let membersList;
+let memberCount;
+let onlineStatus;
 
 
-/* =========================
-   START
-   ========================= */
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  if (joinBtn) {
-    joinBtn.addEventListener("click", joinTeam);
+  loginScreen =
+    document.getElementById("loginScreen");
+
+  chatScreen =
+    document.getElementById("chatScreen");
+
+  usernameInput =
+    document.getElementById("usernameInput");
+
+  joinBtn =
+    document.getElementById("joinBtn");
+
+  loginStatus =
+    document.getElementById("loginStatus");
+
+  messages =
+    document.getElementById("messages");
+
+  messageInput =
+    document.getElementById("messageInput");
+
+  sendBtn =
+    document.getElementById("sendBtn");
+
+  mediaBtn =
+    document.getElementById("mediaBtn");
+
+  fileInput =
+    document.getElementById("fileInput");
+
+  logoutBtn =
+    document.getElementById("logoutBtn");
+
+  menuBtn =
+    document.getElementById("menuBtn");
+
+  membersSidebar =
+    document.getElementById("membersSidebar");
+
+  closeSidebarBtn =
+    document.getElementById("closeSidebarBtn");
+
+  sidebarOverlay =
+    document.getElementById("sidebarOverlay");
+
+  membersList =
+    document.getElementById("membersList");
+
+  memberCount =
+    document.getElementById("memberCount");
+
+  onlineStatus =
+    document.getElementById("onlineStatus");
+
+
+  /* ---------------------------------
+     Check HTML
+     --------------------------------- */
+
+  if (!joinBtn) {
+    showFatalError("JOIN button not found.");
+    return;
   }
+
+  if (!usernameInput) {
+    showFatalError("Username input not found.");
+    return;
+  }
+
+  if (!supabaseClient) {
+    showFatalError("Supabase failed to initialize.");
+    return;
+  }
+
+
+  /* ---------------------------------
+     Events
+     --------------------------------- */
+
+  joinBtn.addEventListener(
+    "click",
+    joinTeam
+  );
+
+
+  usernameInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        joinTeam();
+      }
+
+    }
+  );
+
 
   if (sendBtn) {
-    sendBtn.addEventListener("click", sendMessage);
-  }
-
-  if (mediaBtn && fileInput) {
-    mediaBtn.addEventListener("click", () => {
-      fileInput.click();
-    });
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener(
-      "change",
-      handleFileUpload
+    sendBtn.addEventListener(
+      "click",
+      sendMessage
     );
   }
 
+
   if (messageInput) {
+
     messageInput.addEventListener(
       "keydown",
       event => {
@@ -139,56 +212,95 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  if (usernameInput) {
-    usernameInput.addEventListener(
-      "keydown",
-      event => {
 
-        if (event.key === "Enter") {
-          event.preventDefault();
-          joinTeam();
-        }
+  if (mediaBtn && fileInput) {
 
-      }
+    mediaBtn.addEventListener(
+      "click",
+      () => fileInput.click()
     );
+
   }
 
+
+  if (fileInput) {
+
+    fileInput.addEventListener(
+      "change",
+      handleFileUpload
+    );
+
+  }
+
+
   if (logoutBtn) {
+
     logoutBtn.addEventListener(
       "click",
       exitChat
     );
+
   }
 
+
   if (menuBtn) {
+
     menuBtn.addEventListener(
       "click",
       openSidebar
     );
+
   }
 
+
   if (closeSidebarBtn) {
+
     closeSidebarBtn.addEventListener(
       "click",
       closeSidebar
     );
+
   }
 
+
   if (sidebarOverlay) {
+
     sidebarOverlay.addEventListener(
       "click",
       closeSidebar
     );
+
   }
+
+
+  /* ---------------------------------
+     Start
+     --------------------------------- */
 
   checkSession();
 
 });
 
 
-/* =========================
-   SESSION CHECK
-   ========================= */
+/* =========================================================
+   FATAL ERROR
+   ========================================================= */
+
+function showFatalError(message) {
+
+  console.error(message);
+
+  if (loginStatus) {
+    loginStatus.textContent =
+      "⚠️ " + message;
+  }
+
+}
+
+
+/* =========================================================
+   SESSION
+   ========================================================= */
 
 async function checkSession() {
 
@@ -197,29 +309,34 @@ async function checkSession() {
     const {
       data,
       error
-    } = await supabaseClient.auth.getSession();
+    } =
+      await supabaseClient.auth.getSession();
+
 
     if (error) {
       throw error;
     }
 
-    const session = data.session;
+
+    const session =
+      data?.session;
+
 
     if (!session) {
       showLogin();
       return;
     }
 
-    currentUser = session.user;
+
+    currentUser =
+      session.user;
+
 
     const profile =
-      await getProfile(currentUser.id);
+      await getProfile(
+        currentUser.id
+      );
 
-    /*
-      If an old anonymous session exists
-      but its profile was deleted, remove
-      that broken session.
-    */
 
     if (!profile) {
 
@@ -233,11 +350,15 @@ async function checkSession() {
       return;
     }
 
-    currentProfile = profile;
+
+    currentProfile =
+      profile;
+
 
     showChat();
 
     await startChat();
+
 
   } catch (error) {
 
@@ -250,24 +371,31 @@ async function checkSession() {
     currentProfile = null;
 
     showLogin();
+
   }
+
 }
 
 
-/* =========================
-   JOIN TEAM
-   ========================= */
+/* =========================================================
+   JOIN
+   ========================================================= */
 
 async function joinTeam() {
+
+  console.log("JOIN TEAM CLICKED");
+
 
   if (sending || uploading) {
     return;
   }
 
+
   const username =
     usernameInput
       ? usernameInput.value.trim()
       : "";
+
 
   if (!username) {
 
@@ -277,6 +405,7 @@ async function joinTeam() {
     return;
   }
 
+
   if (username.length < 2) {
 
     loginStatus.textContent =
@@ -284,6 +413,7 @@ async function joinTeam() {
 
     return;
   }
+
 
   if (username.length > 30) {
 
@@ -293,74 +423,89 @@ async function joinTeam() {
     return;
   }
 
+
   joinBtn.disabled = true;
 
   loginStatus.textContent =
     "Connecting...";
 
+
   try {
 
-    /*
-      Get current session.
-    */
+    /* ---------------------------------
+       Get session
+       --------------------------------- */
 
     let {
       data,
       error
-    } = await supabaseClient.auth.getSession();
+    } =
+      await supabaseClient.auth.getSession();
+
 
     if (error) {
       throw error;
     }
 
-    let session = data.session;
+
+    let session =
+      data?.session;
 
 
-    /*
-      If there is no session,
-      create anonymous session.
-    */
+    /* ---------------------------------
+       Anonymous login
+       --------------------------------- */
 
     if (!session) {
 
+      loginStatus.textContent =
+        "Creating secure session...";
+
+
       const result =
-        await supabaseClient.auth.signInAnonymously();
+        await supabaseClient.auth
+          .signInAnonymously();
+
 
       if (result.error) {
         throw result.error;
       }
 
+
       session =
-        result.data.session;
+        result.data?.session;
+
     }
 
-    if (!session || !session.user) {
+
+    if (!session?.user) {
+
       throw new Error(
-        "Could not create a Neural Ninjas session."
+        "Could not create session."
       );
+
     }
+
 
     currentUser =
       session.user;
 
 
-    /*
-      Check whether this session already
-      has a profile.
-    */
+    /* ---------------------------------
+       Existing profile
+       --------------------------------- */
 
     const existingProfile =
-      await getProfile(currentUser.id);
+      await getProfile(
+        currentUser.id
+      );
 
 
     if (existingProfile) {
 
-      /*
-        Same device/session returning.
-      */
-
       if (
-        existingProfile.username.toLowerCase() !==
+        existingProfile.username
+          .toLowerCase() !==
         username.toLowerCase()
       ) {
 
@@ -372,27 +517,41 @@ async function joinTeam() {
         return;
       }
 
+
       currentProfile =
         existingProfile;
 
-    } else {
+    }
 
-      /*
-        Check username availability.
-      */
+
+    /* ---------------------------------
+       New profile
+       --------------------------------- */
+
+    else {
+
+      loginStatus.textContent =
+        "Creating your Neural Ninjas profile...";
+
 
       const {
         data: existingUsername,
         error: usernameError
-      } = await supabaseClient
-        .from("profiles")
-        .select("id, username")
-        .ilike("username", username)
-        .maybeSingle();
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select("id, username")
+          .ilike(
+            "username",
+            username
+          )
+          .maybeSingle();
+
 
       if (usernameError) {
         throw usernameError;
       }
+
 
       if (existingUsername) {
 
@@ -405,25 +564,26 @@ async function joinTeam() {
       }
 
 
-      /*
-        Create profile.
-      */
-
       const {
         data: newProfile,
         error: profileError
-      } = await supabaseClient
-        .from("profiles")
-        .insert({
-          id: currentUser.id,
-          username: username
-        })
-        .select()
-        .single();
+      } =
+        await supabaseClient
+          .from("profiles")
+          .insert({
+            id: currentUser.id,
+            username: username
+          })
+          .select()
+          .single();
+
 
       if (profileError) {
 
-        if (profileError.code === "23505") {
+        if (
+          profileError.code ===
+          "23505"
+        ) {
 
           loginStatus.textContent =
             "That username is already in use.";
@@ -433,56 +593,70 @@ async function joinTeam() {
           return;
         }
 
+
         throw profileError;
+
       }
+
 
       currentProfile =
         newProfile;
+
     }
 
 
-    /*
-      Open chat.
-    */
+    /* ---------------------------------
+       Open chat
+       --------------------------------- */
+
+    loginStatus.textContent =
+      "Opening Neural Ninjas...";
+
 
     showChat();
 
-    loginStatus.textContent = "";
-
     await startChat();
+
 
   } catch (error) {
 
     console.error(
-      "Join error:",
+      "JOIN ERROR:",
       error
     );
 
+
     loginStatus.textContent =
-      error.message ||
+      error?.message ||
       "Could not join Neural Ninjas.";
+
 
   } finally {
 
-    joinBtn.disabled = false;
+    joinBtn.disabled =
+      false;
+
   }
+
 }
 
 
-/* =========================
-   GET PROFILE
-   ========================= */
+/* =========================================================
+   PROFILE
+   ========================================================= */
 
 async function getProfile(userId) {
 
   const {
     data,
     error
-  } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+
 
   if (error) {
 
@@ -491,60 +665,59 @@ async function getProfile(userId) {
       error
     );
 
-    return null;
+    throw error;
+
   }
 
+
   return data;
+
 }
 
 
-/* =========================
-   SHOW LOGIN
-   ========================= */
+/* =========================================================
+   LOGIN / CHAT
+   ========================================================= */
 
 function showLogin() {
 
-  if (loginScreen) {
-    loginScreen.classList.remove("hidden");
-  }
+  loginScreen?.classList.remove(
+    "hidden"
+  );
 
-  if (chatScreen) {
-    chatScreen.classList.add("hidden");
-  }
+  chatScreen?.classList.add(
+    "hidden"
+  );
 
-  if (usernameInput) {
-    setTimeout(() => {
-      usernameInput.focus();
-    }, 100);
-  }
 }
 
-
-/* =========================
-   SHOW CHAT
-   ========================= */
 
 function showChat() {
 
-  if (loginScreen) {
-    loginScreen.classList.add("hidden");
-  }
+  loginScreen?.classList.add(
+    "hidden"
+  );
 
-  if (chatScreen) {
-    chatScreen.classList.remove("hidden");
-  }
+  chatScreen?.classList.remove(
+    "hidden"
+  );
+
 }
 
 
-/* =========================
-   START CHAT
-   ========================= */
+/* =========================================================
+   CHAT START
+   ========================================================= */
 
 async function startChat() {
 
-  if (!currentUser || !currentProfile) {
+  if (
+    !currentUser ||
+    !currentProfile
+  ) {
     return;
   }
+
 
   await loadMessages();
 
@@ -554,15 +727,15 @@ async function startChat() {
 
   await loadMembers();
 
-  if (messageInput) {
-    messageInput.focus();
-  }
+
+  messageInput?.focus();
+
 }
 
 
-/* =========================
-   LOAD MESSAGES
-   ========================= */
+/* =========================================================
+   MESSAGES
+   ========================================================= */
 
 async function loadMessages() {
 
@@ -570,17 +743,24 @@ async function loadMessages() {
     return;
   }
 
+
   messages.innerHTML = "";
+
 
   const {
     data,
     error
-  } = await supabaseClient
-    .from("messages")
-    .select("*")
-    .order("created_at", {
-      ascending: true
-    });
+  } =
+    await supabaseClient
+      .from("messages")
+      .select("*")
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
 
   if (error) {
 
@@ -592,21 +772,28 @@ async function loadMessages() {
     return;
   }
 
-  for (const message of data || []) {
 
-    await renderMessage(
+  for (
+    const message
+    of data || []
+  ) {
+
+    renderMessage(
       message,
       false
     );
+
   }
 
+
   scrollToBottom();
+
 }
 
 
-/* =========================
-   REALTIME MESSAGES
-   ========================= */
+/* =========================================================
+   REALTIME
+   ========================================================= */
 
 function setupRealtime() {
 
@@ -616,7 +803,6 @@ function setupRealtime() {
       realtimeChannel
     );
 
-    realtimeChannel = null;
   }
 
 
@@ -626,6 +812,7 @@ function setupRealtime() {
         "neural-ninjas-messages"
       )
 
+
       .on(
         "postgres_changes",
         {
@@ -633,12 +820,7 @@ function setupRealtime() {
           schema: "public",
           table: "messages"
         },
-        async payload => {
-
-          /*
-            Sender already renders their own
-            message immediately.
-          */
+        payload => {
 
           if (
             payload.new.sender_id ===
@@ -647,12 +829,15 @@ function setupRealtime() {
             return;
           }
 
-          await renderMessage(
+
+          renderMessage(
             payload.new,
             true
           );
+
         }
       )
+
 
       .on(
         "postgres_changes",
@@ -668,34 +853,41 @@ function setupRealtime() {
               `[data-message-id="${payload.old.id}"]`
             );
 
-          if (element) {
-            element.remove();
-          }
+
+          element?.remove();
+
         }
       )
 
+
       .subscribe();
+
 }
 
 
-/* =========================
+/* =========================================================
    PRESENCE
-   ========================= */
+   ========================================================= */
 
 async function setupPresence() {
 
-  if (!currentUser || !currentProfile) {
+  if (
+    !currentUser ||
+    !currentProfile
+  ) {
     return;
   }
 
+
   if (presenceChannel) {
 
-    await supabaseClient.removeChannel(
-      presenceChannel
-    );
+    await supabaseClient
+      .removeChannel(
+        presenceChannel
+      );
 
-    presenceChannel = null;
   }
+
 
   presenceUsers = {};
 
@@ -718,9 +910,7 @@ async function setupPresence() {
     {
       event: "sync"
     },
-    () => {
-      rebuildPresence();
-    }
+    rebuildPresence
   );
 
 
@@ -729,9 +919,7 @@ async function setupPresence() {
     {
       event: "join"
     },
-    () => {
-      rebuildPresence();
-    }
+    rebuildPresence
   );
 
 
@@ -740,32 +928,40 @@ async function setupPresence() {
     {
       event: "leave"
     },
-    () => {
-      rebuildPresence();
-    }
+    rebuildPresence
   );
 
 
   presenceChannel.subscribe(
     async status => {
 
-      if (status === "SUBSCRIBED") {
+      if (
+        status ===
+        "SUBSCRIBED"
+      ) {
 
         await presenceChannel.track({
-          user_id: currentUser.id,
-          username: currentProfile.username
+          user_id:
+            currentUser.id,
+
+          username:
+            currentProfile.username
         });
 
+
         rebuildPresence();
+
       }
+
     }
   );
+
 }
 
 
-/* =========================
-   REBUILD PRESENCE
-   ========================= */
+/* =========================================================
+   PRESENCE REBUILD
+   ========================================================= */
 
 function rebuildPresence() {
 
@@ -773,64 +969,79 @@ function rebuildPresence() {
     return;
   }
 
+
   const state =
     presenceChannel.presenceState();
+
 
   const online = {};
 
 
-  Object.keys(state).forEach(key => {
+  Object.keys(state)
+    .forEach(key => {
 
-    const entries =
-      state[key];
+      const entries =
+        state[key];
 
-    if (
-      !entries ||
-      entries.length === 0
-    ) {
-      return;
-    }
 
-    const user =
-      entries[0];
+      if (
+        !entries ||
+        entries.length === 0
+      ) {
+        return;
+      }
 
-    if (user.user_id) {
 
-      online[user.user_id] = {
-        username:
-          user.username ||
-          "Unknown"
-      };
-    }
-  });
+      const user =
+        entries[0];
+
+
+      if (user.user_id) {
+
+        online[user.user_id] = {
+          username:
+            user.username ||
+            "Unknown"
+        };
+
+      }
+
+    });
 
 
   presenceUsers =
     online;
 
+
   updateOnlineStatus();
 
   renderMembers();
+
 }
 
 
-/* =========================
-   LOAD MEMBERS
-   ========================= */
+/* =========================================================
+   MEMBERS
+   ========================================================= */
 
 async function loadMembers() {
 
   const {
     data,
     error
-  } = await supabaseClient
-    .from("profiles")
-    .select(
-      "id, username, created_at"
-    )
-    .order("created_at", {
-      ascending: true
-    });
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select(
+        "id, username, created_at"
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      );
+
 
   if (error) {
 
@@ -842,22 +1053,22 @@ async function loadMembers() {
     return;
   }
 
+
   allMembers =
     data || [];
 
+
   renderMembers();
+
 }
 
-
-/* =========================
-   RENDER MEMBERS
-   ========================= */
 
 function renderMembers() {
 
   if (!membersList) {
     return;
   }
+
 
   const count =
     allMembers.length;
@@ -871,32 +1082,43 @@ function renderMembers() {
           ? "member"
           : "members"
       }`;
+
   }
 
 
   membersList.innerHTML = "";
 
 
-  for (const member of allMembers) {
+  for (
+    const member
+    of allMembers
+  ) {
 
-    const isOnline =
+    const online =
       Boolean(
-        presenceUsers[member.id]
+        presenceUsers[
+          member.id
+        ]
       );
 
 
     const item =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     item.className =
       "member";
 
 
     const avatar =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     avatar.className =
       "member-avatar";
+
 
     avatar.textContent =
       member.username
@@ -905,42 +1127,58 @@ function renderMembers() {
 
 
     const info =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     info.className =
       "member-info";
 
 
     const name =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     name.className =
       "member-name";
+
 
     name.textContent =
       member.username;
 
 
     const status =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     status.className =
       "member-status";
 
 
     const dot =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
     dot.className =
       "status-dot" +
-      (isOnline ? " online" : "");
+      (
+        online
+          ? " online"
+          : ""
+      );
 
 
     const statusText =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     statusText.textContent =
-      isOnline
+      online
         ? "Online"
         : "Offline";
 
@@ -960,16 +1198,14 @@ function renderMembers() {
     item.appendChild(info);
 
     membersList.appendChild(item);
+
   }
 
 
   updateOnlineStatus();
+
 }
 
-
-/* =========================
-   ONLINE STATUS
-   ========================= */
 
 function updateOnlineStatus() {
 
@@ -987,62 +1223,67 @@ function updateOnlineStatus() {
           ? "member"
           : "members"
       } online`;
+
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    SIDEBAR
-   ========================= */
+   ========================================================= */
 
 function openSidebar() {
 
-  if (membersSidebar) {
-    membersSidebar.classList.add("open");
-  }
+  membersSidebar?.classList.add(
+    "open"
+  );
 
-  if (sidebarOverlay) {
-    sidebarOverlay.classList.add("show");
-  }
+  sidebarOverlay?.classList.add(
+    "show"
+  );
 
   renderMembers();
+
 }
 
 
 function closeSidebar() {
 
-  if (membersSidebar) {
-    membersSidebar.classList.remove("open");
-  }
+  membersSidebar?.classList.remove(
+    "open"
+  );
 
-  if (sidebarOverlay) {
-    sidebarOverlay.classList.remove("show");
-  }
+  sidebarOverlay?.classList.remove(
+    "show"
+  );
+
 }
 
 
-/* =========================
+/* =========================================================
    SEND MESSAGE
-   ========================= */
+   ========================================================= */
 
 async function sendMessage() {
 
-  if (sending) {
+  if (
+    sending ||
+    !currentUser ||
+    !currentProfile
+  ) {
     return;
   }
 
-  if (!currentUser || !currentProfile) {
-    return;
-  }
 
   const text =
-    messageInput
-      ? messageInput.value.trim()
-      : "";
+    messageInput?.value.trim();
+
 
   if (!text) {
     return;
   }
+
 
   sending = true;
 
@@ -1056,25 +1297,26 @@ async function sendMessage() {
     const {
       data,
       error
-    } = await supabaseClient
-      .from("messages")
-      .insert({
-        sender_id:
-          currentUser.id,
+    } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id:
+            currentUser.id,
 
-        sender_name:
-          currentProfile.username,
+          sender_name:
+            currentProfile.username,
 
-        message_type:
-          detectCode(text)
-            ? "code"
-            : "text",
+          message_type:
+            detectCode(text)
+              ? "code"
+              : "text",
 
-        message:
-          text
-      })
-      .select()
-      .single();
+          message:
+            text
+        })
+        .select()
+        .single();
 
 
     if (error) {
@@ -1082,11 +1324,7 @@ async function sendMessage() {
     }
 
 
-    /*
-      Render immediately.
-    */
-
-    await renderMessage(
+    renderMessage(
       data,
       true
     );
@@ -1096,19 +1334,20 @@ async function sendMessage() {
 
     playSendSound();
 
-    scrollToBottom();
 
   } catch (error) {
 
     console.error(
-      "Send message error:",
+      "Send error:",
       error
     );
 
+
     alert(
-      error.message ||
+      error?.message ||
       "Message could not be sent."
     );
+
 
   } finally {
 
@@ -1118,16 +1357,16 @@ async function sendMessage() {
       sendBtn.disabled = false;
     }
 
-    if (messageInput) {
-      messageInput.focus();
-    }
+    messageInput?.focus();
+
   }
+
 }
 
 
-/* =========================
-   SEND SOUND
-   ========================= */
+/* =========================================================
+   SOUND
+   ========================================================= */
 
 function playSendSound() {
 
@@ -1137,15 +1376,19 @@ function playSendSound() {
       window.AudioContext ||
       window.webkitAudioContext;
 
+
     if (!AudioContext) {
       return;
     }
 
+
     const ctx =
       new AudioContext();
 
+
     const oscillator =
       ctx.createOscillator();
+
 
     const gain =
       ctx.createGain();
@@ -1198,38 +1441,38 @@ function playSendSound() {
       ctx.currentTime + 0.1
     );
 
+
   } catch (error) {
 
     console.log(
-      "Sound unavailable."
+      "Sound unavailable"
     );
+
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    FILE UPLOAD
-   ========================= */
+   ========================================================= */
 
 async function handleFileUpload() {
 
   const file =
     fileInput?.files?.[0];
 
+
   if (!file) {
     return;
   }
 
-  if (uploading) {
-    return;
-  }
 
-  if (!currentUser || !currentProfile) {
-
-    alert(
-      "Please join Neural Ninjas first."
-    );
-
+  if (
+    uploading ||
+    !currentUser ||
+    !currentProfile
+  ) {
     return;
   }
 
@@ -1249,17 +1492,13 @@ async function handleFileUpload() {
   }
 
 
-  /*
-    Only image, video and audio.
-  */
-
-  const isAllowed =
+  const allowed =
     file.type.startsWith("image/") ||
     file.type.startsWith("video/") ||
     file.type.startsWith("audio/");
 
 
-  if (!isAllowed) {
+  if (!allowed) {
 
     alert(
       "Only images, videos and audio files are allowed."
@@ -1273,9 +1512,8 @@ async function handleFileUpload() {
 
   uploading = true;
 
-  if (mediaBtn) {
-    mediaBtn.disabled = true;
-  }
+  mediaBtn &&
+    (mediaBtn.disabled = true);
 
 
   try {
@@ -1286,51 +1524,41 @@ async function handleFileUpload() {
           file.name
             .split(".")
             .pop()
-            .replace(/[^a-zA-Z0-9]/g, "")
+            .replace(
+              /[^a-zA-Z0-9]/g,
+              ""
+            )
         : "";
 
 
-    /*
-      crypto.randomUUID may not exist
-      on some older browsers.
-    */
-
-    const randomPart =
-      typeof crypto !== "undefined" &&
-      typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : Math.random()
-            .toString(36)
-            .substring(2);
-
-
-    const safeName =
-      `${Date.now()}-${randomPart}${extension}`;
+    const random =
+      Math.random()
+        .toString(36)
+        .substring(2);
 
 
     const path =
-      `${currentUser.id}/${safeName}`;
+      `${currentUser.id}/${Date.now()}-${random}${extension}`;
 
-
-    /*
-      Upload file.
-    */
 
     const {
-      error: uploadError
-    } = await supabaseClient.storage
-      .from("neural-ninjas-media")
-      .upload(
-        path,
-        file,
-        {
-          contentType:
-            file.type,
-
-          upsert:
-            false
-        }
-      );
+      error:
+        uploadError
+    } =
+      await supabaseClient.storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .upload(
+          path,
+          file,
+          {
+            contentType:
+              file.type,
+            upsert:
+              false
+          }
+        );
 
 
     if (uploadError) {
@@ -1338,19 +1566,20 @@ async function handleFileUpload() {
     }
 
 
-    /*
-      Create signed URL.
-    */
-
     const {
-      data: signedData,
-      error: signedError
-    } = await supabaseClient.storage
-      .from("neural-ninjas-media")
-      .createSignedUrl(
-        path,
-        60 * 60 * 24 * 30
-      );
+      data:
+        signedData,
+      error:
+        signedError
+    } =
+      await supabaseClient.storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .createSignedUrl(
+          path,
+          60 * 60 * 24 * 30
+        );
 
 
     if (signedError) {
@@ -1358,33 +1587,34 @@ async function handleFileUpload() {
     }
 
 
-    /*
-      Insert message.
-    */
-
     const {
-      data: message,
-      error: messageError
-    } = await supabaseClient
-      .from("messages")
-      .insert({
-        sender_id:
-          currentUser.id,
+      data:
+        message,
+      error:
+        messageError
+    } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id:
+            currentUser.id,
 
-        sender_name:
-          currentProfile.username,
+          sender_name:
+            currentProfile.username,
 
-        message_type:
-          getMediaType(file.type),
+          message_type:
+            getMediaType(
+              file.type
+            ),
 
-        message:
-          file.name,
+          message:
+            file.name,
 
-        file_url:
-          signedData.signedUrl
-      })
-      .select()
-      .single();
+          file_url:
+            signedData.signedUrl
+        })
+        .select()
+        .single();
 
 
     if (messageError) {
@@ -1392,7 +1622,7 @@ async function handleFileUpload() {
     }
 
 
-    await renderMessage(
+    renderMessage(
       message,
       true
     );
@@ -1400,7 +1630,6 @@ async function handleFileUpload() {
 
     playSendSound();
 
-    scrollToBottom();
 
   } catch (error) {
 
@@ -1409,29 +1638,26 @@ async function handleFileUpload() {
       error
     );
 
+
     alert(
-      error.message ||
+      error?.message ||
       "File upload failed."
     );
+
 
   } finally {
 
     uploading = false;
 
-    if (mediaBtn) {
-      mediaBtn.disabled = false;
-    }
+    mediaBtn &&
+      (mediaBtn.disabled = false);
 
-    if (fileInput) {
-      fileInput.value = "";
-    }
+    fileInput.value = "";
+
   }
+
 }
 
-
-/* =========================
-   MEDIA TYPE
-   ========================= */
 
 function getMediaType(type) {
 
@@ -1448,26 +1674,26 @@ function getMediaType(type) {
   }
 
   return "file";
+
 }
 
 
-/* =========================
+/* =========================================================
    RENDER MESSAGE
-   ========================= */
+   ========================================================= */
 
-async function renderMessage(
+function renderMessage(
   data,
   shouldScroll = true
 ) {
 
-  if (!messages || !data) {
+  if (
+    !messages ||
+    !data
+  ) {
     return;
   }
 
-
-  /*
-    Prevent duplicate message.
-  */
 
   const existing =
     document.querySelector(
@@ -1481,7 +1707,10 @@ async function renderMessage(
 
 
   const wrapper =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   wrapper.className =
     "message";
@@ -1495,6 +1724,7 @@ async function renderMessage(
     wrapper.classList.add(
       "mine"
     );
+
   }
 
 
@@ -1503,49 +1733,52 @@ async function renderMessage(
 
 
   const bubble =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   bubble.className =
     "bubble";
 
 
-  /*
-    Sender.
-  */
-
   const sender =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   sender.className =
     "sender";
+
 
   sender.textContent =
     data.sender_name ||
     "Unknown";
 
 
-  bubble.appendChild(
-    sender
-  );
+  bubble.appendChild(sender);
 
-
-  /*
-    Message content.
-  */
 
   if (
-    data.message_type === "image" ||
-    data.message_type === "video" ||
-    data.message_type === "audio"
+    data.message_type ===
+      "image" ||
+    data.message_type ===
+      "video" ||
+    data.message_type ===
+      "audio"
   ) {
 
-    await renderMedia(
+    renderMedia(
       bubble,
       data
     );
 
-  } else if (
-    data.message_type === "code"
+  }
+
+  else if (
+    data.message_type ===
+    "code"
   ) {
 
     renderCode(
@@ -1553,24 +1786,27 @@ async function renderMessage(
       data.message || ""
     );
 
-  } else {
+  }
+
+  else {
 
     renderText(
       bubble,
       data.message || ""
     );
+
   }
 
 
-  /*
-    Time.
-  */
-
   const time =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   time.className =
     "time";
+
 
   time.textContent =
     formatTime(
@@ -1578,20 +1814,18 @@ async function renderMessage(
     );
 
 
-  bubble.appendChild(
-    time
-  );
+  bubble.appendChild(time);
 
-
-  /*
-    Delete button.
-  */
 
   const deleteButton =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
+
 
   deleteButton.className =
     "delete-message";
+
 
   deleteButton.textContent =
     "Delete";
@@ -1599,15 +1833,11 @@ async function renderMessage(
 
   deleteButton.addEventListener(
     "click",
-    () => {
-
-      deleteMessage(
-        data.id,
-        deleteButton,
-        wrapper
-      );
-
-    }
+    () => deleteMessage(
+      data.id,
+      deleteButton,
+      wrapper
+    )
   );
 
 
@@ -1620,6 +1850,7 @@ async function renderMessage(
     bubble
   );
 
+
   messages.appendChild(
     wrapper
   );
@@ -1628,25 +1859,22 @@ async function renderMessage(
   if (shouldScroll) {
     scrollToBottom();
   }
+
 }
 
 
-/* =========================
-   TEXT + LINKS
-   ========================= */
+/* =========================================================
+   TEXT
+   ========================================================= */
 
 function renderText(
   container,
   text
 ) {
 
-  /*
-    Detect normal http/https URLs
-    and www URLs.
-  */
-
   const urlRegex =
     /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
+
 
   let lastIndex = 0;
 
@@ -1672,18 +1900,16 @@ function renderText(
           before
         )
       );
+
     }
 
 
     let url =
       match[0];
 
+
     let trailing = "";
 
-
-    /*
-      Remove punctuation from URL end.
-    */
 
     while (
       /[.,!?;:]$/.test(url)
@@ -1694,12 +1920,19 @@ function renderText(
         trailing;
 
       url =
-        url.slice(0, -1);
+        url.slice(
+          0,
+          -1
+        );
+
     }
 
 
     const link =
-      document.createElement("a");
+      document.createElement(
+        "a"
+      );
+
 
     link.className =
       "message-link";
@@ -1735,17 +1968,21 @@ function renderText(
           trailing
         )
       );
+
     }
 
 
     lastIndex =
       match.index +
       match[0].length;
+
   }
 
 
   const remaining =
-    text.slice(lastIndex);
+    text.slice(
+      lastIndex
+    );
 
 
   if (remaining) {
@@ -1755,62 +1992,40 @@ function renderText(
         remaining
       )
     );
+
   }
+
 }
 
 
-/* =========================
-   CODE DETECTION
-   ========================= */
+/* =========================================================
+   CODE
+   ========================================================= */
 
 function detectCode(text) {
 
   const indicators = [
-
     "```",
-
     "function ",
-
     "const ",
-
     "let ",
-
     "var ",
-
     "=>",
-
     "<html",
-
     "<div",
-
     "<script",
-
     "SELECT ",
-
     "INSERT ",
-
     "UPDATE ",
-
     "CREATE TABLE",
-
-    "CREATE DATABASE",
-
     "def ",
-
     "import ",
-
     "from ",
-
     "public class ",
-
     "console.log",
-
     "#include",
-
     "System.out",
-
     "print("
-
   ];
 
 
@@ -1818,23 +2033,15 @@ function detectCode(text) {
     indicator =>
       text.includes(indicator)
   );
+
 }
 
-
-/* =========================
-   CLEAN CODE
-   ========================= */
 
 function cleanCode(text) {
 
   let code =
     String(text || "").trim();
 
-
-  /*
-    Remove opening and closing
-    markdown code fences.
-  */
 
   code =
     code.replace(
@@ -1851,39 +2058,39 @@ function cleanCode(text) {
 
 
   return code.trim();
+
 }
 
-
-/* =========================
-   RENDER CODE
-   ========================= */
 
 function renderCode(
   container,
   text
 ) {
 
-  const code =
-    cleanCode(text);
-
-
   const box =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   box.className =
     "code-box";
 
 
   const pre =
-    document.createElement("pre");
+    document.createElement(
+      "pre"
+    );
 
 
   const codeElement =
-    document.createElement("code");
+    document.createElement(
+      "code"
+    );
 
 
   codeElement.textContent =
-    code;
+    cleanCode(text);
 
 
   pre.appendChild(
@@ -1896,15 +2103,15 @@ function renderCode(
   );
 
 
-  /*
-    Copy Code button.
-  */
-
   const copyButton =
-    document.createElement("button");
+    document.createElement(
+      "button"
+    );
+
 
   copyButton.className =
     "copy-code";
+
 
   copyButton.textContent =
     "Copy Code";
@@ -1916,65 +2123,32 @@ function renderCode(
 
       try {
 
-        if (
-          navigator.clipboard &&
-          navigator.clipboard.writeText
-        ) {
-
-          await navigator.clipboard.writeText(
-            code
-          );
-
-        } else {
-
-          /*
-            Fallback for older browsers.
-          */
-
-          const textarea =
-            document.createElement(
-              "textarea"
-            );
-
-          textarea.value =
-            code;
-
-          document.body.appendChild(
-            textarea
-          );
-
-          textarea.select();
-
-          document.execCommand(
-            "copy"
-          );
-
-          textarea.remove();
-        }
+        await navigator.clipboard.writeText(
+          codeElement.textContent
+        );
 
 
         copyButton.textContent =
           "Copied!";
 
 
-        setTimeout(() => {
-
-          copyButton.textContent =
-            "Copy Code";
-
-        }, 1200);
-
-      } catch (error) {
-
-        console.error(
-          "Copy error:",
-          error
+        setTimeout(
+          () => {
+            copyButton.textContent =
+              "Copy Code";
+          },
+          1200
         );
+
+
+      } catch {
 
         alert(
           "Copy failed."
         );
+
       }
+
     }
   );
 
@@ -1989,10 +2163,6 @@ function renderCode(
   );
 
 
-  /*
-    Highlight.js if available.
-  */
-
   if (
     window.hljs &&
     typeof hljs.highlightElement ===
@@ -2005,21 +2175,18 @@ function renderCode(
         codeElement
       );
 
-    } catch (error) {
+    } catch {}
 
-      console.log(
-        "Syntax highlighting unavailable."
-      );
-    }
   }
+
 }
 
 
-/* =========================
-   RENDER MEDIA
-   ========================= */
+/* =========================================================
+   MEDIA
+   ========================================================= */
 
-async function renderMedia(
+function renderMedia(
   container,
   data
 ) {
@@ -2029,28 +2196,9 @@ async function renderMedia(
   }
 
 
-  let url =
+  const url =
     data.file_url;
 
-
-  /*
-    Try refreshing expired signed URL.
-  */
-
-  const freshUrl =
-    await refreshSignedUrl(
-      url
-    );
-
-
-  if (freshUrl) {
-    url = freshUrl;
-  }
-
-
-  /*
-    IMAGE
-  */
 
   if (
     data.message_type ===
@@ -2062,28 +2210,30 @@ async function renderMedia(
         "img"
       );
 
+
     image.className =
       "chat-media";
 
+
     image.src =
       url;
+
 
     image.alt =
       data.message ||
       "Image";
 
+
     image.loading =
       "lazy";
+
 
     container.appendChild(
       image
     );
+
   }
 
-
-  /*
-    VIDEO
-  */
 
   if (
     data.message_type ===
@@ -2095,30 +2245,33 @@ async function renderMedia(
         "video"
       );
 
+
     video.className =
       "chat-media";
+
 
     video.controls =
       true;
 
+
     video.playsInline =
       true;
+
 
     video.preload =
       "metadata";
 
+
     video.src =
       url;
+
 
     container.appendChild(
       video
     );
+
   }
 
-
-  /*
-    AUDIO
-  */
 
   if (
     data.message_type ===
@@ -2130,131 +2283,70 @@ async function renderMedia(
         "audio"
       );
 
+
     audio.controls =
       true;
+
 
     audio.preload =
       "metadata";
 
+
     audio.src =
       url;
+
 
     container.appendChild(
       audio
     );
+
   }
 
 
-  /*
-    SAVE MEDIA
-  */
-
-  const saveLink =
+  const save =
     document.createElement(
       "a"
     );
 
-  saveLink.className =
+
+  save.className =
     "save-media";
 
-  saveLink.href =
+
+  save.href =
     url;
 
-  saveLink.target =
+
+  save.target =
     "_blank";
 
-  saveLink.rel =
+
+  save.rel =
     "noopener noreferrer";
 
-  saveLink.download =
+
+  save.download =
     data.message ||
     "media";
 
-  saveLink.textContent =
+
+  save.textContent =
     "Save Media";
 
 
   container.appendChild(
-    saveLink
+    save
   );
+
 }
 
 
-/* =========================
-   REFRESH SIGNED URL
-   ========================= */
-
-async function refreshSignedUrl(
-  url
-) {
-
-  try {
-
-    const marker =
-      "/storage/v1/object/sign/neural-ninjas-media/";
-
-
-    const index =
-      url.indexOf(marker);
-
-
-    if (index === -1) {
-      return url;
-    }
-
-
-    const rest =
-      url.slice(
-        index +
-        marker.length
-      );
-
-
-    const path =
-      rest.split("?")[0];
-
-
-    const {
-      data,
-      error
-    } = await supabaseClient.storage
-      .from("neural-ninjas-media")
-      .createSignedUrl(
-        decodeURIComponent(path),
-        60 * 60 * 24 * 30
-      );
-
-
-    if (
-      error ||
-      !data ||
-      !data.signedUrl
-    ) {
-
-      return url;
-    }
-
-
-    return data.signedUrl;
-
-  } catch (error) {
-
-    console.error(
-      "Signed URL refresh error:",
-      error
-    );
-
-    return url;
-  }
-}
-
-
-/* =========================
-   DELETE MESSAGE
-   ========================= */
+/* =========================================================
+   DELETE
+   ========================================================= */
 
 async function deleteMessage(
-  messageId,
+  id,
   button,
   wrapper
 ) {
@@ -2270,6 +2362,7 @@ async function deleteMessage(
   button.disabled =
     true;
 
+
   button.textContent =
     "Deleting...";
 
@@ -2278,13 +2371,14 @@ async function deleteMessage(
 
     const {
       error
-    } = await supabaseClient
-      .from("messages")
-      .delete()
-      .eq(
-        "id",
-        messageId
-      );
+    } =
+      await supabaseClient
+        .from("messages")
+        .delete()
+        .eq(
+          "id",
+          id
+        );
 
 
     if (error) {
@@ -2292,13 +2386,8 @@ async function deleteMessage(
     }
 
 
-    /*
-      Remove immediately.
-    */
+    wrapper?.remove();
 
-    if (wrapper) {
-      wrapper.remove();
-    }
 
   } catch (error) {
 
@@ -2307,51 +2396,40 @@ async function deleteMessage(
       error
     );
 
+
     button.disabled =
       false;
+
 
     button.textContent =
       "Delete";
 
 
     alert(
-      error.message ||
+      error?.message ||
       "Delete failed."
     );
+
   }
+
 }
 
 
-/* =========================
-   EXIT CHAT
-   ========================= */
+/* =========================================================
+   EXIT
+   ========================================================= */
 
-async function exitChat() {
-
-  /*
-    IMPORTANT:
-    Do NOT sign out.
-
-    This keeps the anonymous session
-    on the device so the same identity
-    can return later.
-  */
+function exitChat() {
 
   closeSidebar();
 
+  chatScreen?.classList.add(
+    "hidden"
+  );
 
-  if (chatScreen) {
-    chatScreen.classList.add(
-      "hidden"
-    );
-  }
-
-
-  if (loginScreen) {
-    loginScreen.classList.remove(
-      "hidden"
-    );
-  }
+  loginScreen?.classList.remove(
+    "hidden"
+  );
 
 
   if (usernameInput) {
@@ -2360,48 +2438,46 @@ async function exitChat() {
       currentProfile?.username ||
       "";
 
-    usernameInput.focus();
   }
 
 
   if (loginStatus) {
 
     loginStatus.textContent =
-      "Your Neural Ninjas session is saved on this device.";
+      "Your session is saved on this device.";
+
   }
+
 }
 
 
-/* =========================
+/* =========================================================
    TIME
-   ========================= */
+   ========================================================= */
 
-function formatTime(
-  timestamp
-) {
+function formatTime(timestamp) {
 
   if (!timestamp) {
     return "";
   }
 
 
-  const date =
-    new Date(timestamp);
-
-
-  return date.toLocaleTimeString(
+  return new Date(
+    timestamp
+  ).toLocaleTimeString(
     [],
     {
       hour: "2-digit",
       minute: "2-digit"
     }
   );
+
 }
 
 
-/* =========================
+/* =========================================================
    SCROLL
-   ========================= */
+   ========================================================= */
 
 function scrollToBottom() {
 
@@ -2410,10 +2486,68 @@ function scrollToBottom() {
   }
 
 
-  requestAnimationFrame(() => {
+  requestAnimationFrame(
+    () => {
+      messages.scrollTop =
+        messages.scrollHeight;
+    }
+  );
 
-    messages.scrollTop =
-      messages.scrollHeight;
-
-  });
 }
+
+
+/* =========================================================
+   GLOBAL ERROR DISPLAY
+   ========================================================= */
+
+window.addEventListener(
+  "error",
+  event => {
+
+    console.error(
+      "GLOBAL ERROR:",
+      event.error || event.message
+    );
+
+
+    if (
+      loginStatus &&
+      !currentProfile
+    ) {
+
+      loginStatus.textContent =
+        "⚠️ JavaScript error: " +
+        event.message;
+
+    }
+
+  }
+);
+
+
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+
+    console.error(
+      "PROMISE ERROR:",
+      event.reason
+    );
+
+
+    if (
+      loginStatus &&
+      !currentProfile
+    ) {
+
+      loginStatus.textContent =
+        "⚠️ " +
+        (
+          event.reason?.message ||
+          "Something went wrong."
+        );
+
+    }
+
+  }
+);
