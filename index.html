@@ -1,136 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Neural Ninjas</title>
-
-  <link
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Neural Ninjas</title>  <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css"
+  >  <link rel="stylesheet" href="style.css">
+</head><body>  <!-- LOGIN -->  <section id="loginScreen" class="screen">
+    <div class="login-card">  <div class="logo">🥷</div>
+
+  <h1>NEURAL NINJAS</h1>
+  <p class="subtitle">Private Team Communication</p>
+
+  <input
+    id="usernameInput"
+    type="text"
+    maxlength="20"
+    placeholder="Enter your username"
+    autocomplete="off"
   >
 
-  <link rel="stylesheet" href="style.css">
-</head>
+  <button id="joinBtn">
+    JOIN TEAM
+  </button>
 
-<body>
+  <p id="loginStatus"></p>
 
-  <!-- LOGIN SCREEN -->
-  <section id="loginScreen" class="screen">
+</div>
 
-    <div class="login-card">
+  </section>  <!-- CHAT -->  <section id="chatScreen" class="screen hidden"><header class="chat-header">
 
-      <div class="logo">🥷</div>
+  <div class="header-info">
+    <h2>🥷 Neural Ninjas</h2>
 
-      <h1>NEURAL NINJAS</h1>
+    <span id="onlineStatus">
+      Connecting...
+    </span>
+  </div>
 
-      <p class="subtitle">
-        Private Team Communication
-      </p>
+  <div class="header-actions">
 
-      <input
-        id="usernameInput"
-        type="text"
-        maxlength="20"
-        placeholder="Enter your username"
-        autocomplete="off"
-      >
+    <button
+      id="menuBtn"
+      class="icon-btn"
+      title="Team members"
+    >
+      ⋮
+    </button>
 
-      <button id="joinBtn">
-        JOIN TEAM
-      </button>
+    <button
+      id="logoutBtn"
+      class="icon-btn"
+      title="Exit chat"
+    >
+      ⎋
+    </button>
 
-      <p id="loginStatus"></p>
+  </div>
 
+</header>
+
+
+<!-- MEMBERS SIDEBAR -->
+<aside id="membersSidebar" class="members-sidebar">
+
+  <div class="sidebar-header">
+
+    <div>
+      <h3>Neural Ninjas</h3>
+      <span id="memberCount">0 members</span>
     </div>
 
-  </section>
-
-
-  <!-- CHAT SCREEN -->
-  <section id="chatScreen" class="screen hidden">
-
-    <header class="chat-header">
-
-      <div>
-        <h2>🥷 Neural Ninjas</h2>
-        <span id="onlineStatus">
-          Connecting...
-        </span>
-      </div>
-
-      <button
-        id="logoutBtn"
-        class="icon-btn"
-      >
-        ⎋
-      </button>
-
-    </header>
-
-
-    <main id="messages"></main>
-
-
-    <footer class="composer">
-
-      <!-- MEDIA -->
-      <button
-        id="mediaBtn"
-        class="tool-btn"
-        title="Send image, video or audio"
-      >
-        ＋
-      </button>
-
-      <!-- TEXT -->
-      <input
-        id="messageInput"
-        type="text"
-        placeholder="Message Neural Ninjas..."
-        autocomplete="off"
-      >
-
-      <!-- SEND -->
-      <button
-        id="sendBtn"
-        class="send-btn"
-        title="Send message"
-      >
-        ➤
-      </button>
-
-    </footer>
-
-
-    <input
-      id="fileInput"
-      type="file"
-      accept="image/*,video/*,audio/*"
-      hidden
+    <button
+      id="closeSidebarBtn"
+      class="close-sidebar"
     >
+      ×
+    </button>
 
-  </section>
+  </div>
+
+  <div id="membersList" class="members-list"></div>
+
+</aside>
+
+<div
+  id="sidebarOverlay"
+  class="sidebar-overlay"
+></div>
 
 
-  <!-- SUPABASE -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- MESSAGES -->
+<main id="messages"></main>
 
 
-  <!-- HIGHLIGHT.JS -->
-  <script
+<!-- COMPOSER -->
+<footer class="composer">
+
+  <button
+    id="mediaBtn"
+    class="tool-btn"
+    title="Send image, video or audio"
+  >
+    ＋
+  </button>
+
+  <input
+    id="messageInput"
+    type="text"
+    placeholder="Message Neural Ninjas..."
+    autocomplete="off"
+  >
+
+  <button
+    id="sendBtn"
+    class="send-btn"
+    title="Send message"
+  >
+    ➤
+  </button>
+
+</footer>
+
+
+<input
+  id="fileInput"
+  type="file"
+  accept="image/*,video/*,audio/*"
+  hidden
+>
+
+  </section>  <!-- SUPABASE -->  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>  <!-- HIGHLIGHT.JS -->  <script
     src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"
-  ></script>
-
-
-  <!-- APP -->
-  <script src="app.js"></script>
-
-</body>
-
+  ></script>  <!-- APP -->  <script src="app.js"></script></body>
 </html>
