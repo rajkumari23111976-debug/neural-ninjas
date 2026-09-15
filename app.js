@@ -1,110 +1,75 @@
 const SUPABASE_URL = "https://uzletbnjofnxwmlgvnxp.supabase.co";
-
-const SUPABASE_KEY = "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
-
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 const supabaseClient = supabase.createClient(
 SUPABASE_URL,
 SUPABASE_KEY
 );
-
 /* =========================
 GLOBAL STATE
 ========================= */
-
 let currentUser = null;
 let currentProfile = null;
-
 let realtimeChannel = null;
 let presenceChannel = null;
-
 let presenceUsers = {};
-
 let sending = false;
 let uploading = false;
-
 /* =========================
 DOM
 ========================= */
-
 const loginScreen = document.getElementById("loginScreen");
 const chatScreen = document.getElementById("chatScreen");
-
 const usernameInput = document.getElementById("usernameInput");
 const joinBtn = document.getElementById("joinBtn");
 const loginStatus = document.getElementById("loginStatus");
-
 const messages = document.getElementById("messages");
 const messageInput = document.getElementById("messageInput");
-
 const sendBtn = document.getElementById("sendBtn");
 const mediaBtn = document.getElementById("mediaBtn");
 const fileInput = document.getElementById("fileInput");
-
 const logoutBtn = document.getElementById("logoutBtn");
-
 const menuBtn = document.getElementById("menuBtn");
 const membersSidebar = document.getElementById("membersSidebar");
 const closeSidebarBtn = document.getElementById("closeSidebarBtn");
 const sidebarOverlay = document.getElementById("sidebarOverlay");
-
 const membersList = document.getElementById("membersList");
 const memberCount = document.getElementById("memberCount");
 const onlineStatus = document.getElementById("onlineStatus");
-
 /* =========================
 INITIAL START
 ========================= */
-
 document.addEventListener("DOMContentLoaded", () => {
-
 joinBtn.addEventListener("click", joinTeam);
-
 sendBtn.addEventListener("click", sendMessage);
-
 mediaBtn.addEventListener("click", () => {
 fileInput.click();
 });
-
 fileInput.addEventListener("change", handleFileUpload);
-
 messageInput.addEventListener("keydown", event => {
-
 if (event.key === "Enter") {
   event.preventDefault();
   sendMessage();
 }
 
 });
-
 usernameInput.addEventListener("keydown", event => {
-
 if (event.key === "Enter") {
   event.preventDefault();
   joinTeam();
 }
 
 });
-
 logoutBtn.addEventListener("click", exitChat);
-
 menuBtn.addEventListener("click", openSidebar);
-
 closeSidebarBtn.addEventListener("click", closeSidebar);
-
 sidebarOverlay.addEventListener("click", closeSidebar);
-
 checkSession();
-
 });
-
 /* =========================
 SESSION
 ========================= */
-
 async function checkSession() {
-
 try {
-
 const {
   data: { session }
 } = await supabaseClient.auth.getSession();
@@ -141,50 +106,36 @@ showChat();
 await startChat();
 
 } catch (error) {
-
 console.error(error);
 
 showLogin();
 
 }
-
 }
-
 /* =========================
 JOIN TEAM
 ========================= */
-
 async function joinTeam() {
-
 if (joinBtn.disabled) {
 return;
 }
-
 const username = usernameInput.value.trim();
-
 if (!username) {
-
 loginStatus.textContent = "Please enter a username.";
 
 return;
 
 }
-
 if (username.length < 2) {
-
 loginStatus.textContent =
   "Username must be at least 2 characters.";
 
 return;
 
 }
-
 joinBtn.disabled = true;
-
 loginStatus.textContent = "Connecting...";
-
 try {
-
 /*
  First check whether a valid current session already exists.
  This prevents creating a new anonymous identity every time
@@ -336,24 +287,18 @@ showChat();
 await startChat();
 
 } catch (error) {
-
 console.error(error);
 
 loginStatus.textContent =
   error.message || "Could not join the team.";
 
 }
-
 joinBtn.disabled = false;
-
 }
-
 /* =========================
 GET PROFILE
 ========================= */
-
 async function getProfile(userId) {
-
 const {
 data,
 error
@@ -362,70 +307,44 @@ error
 .select("*")
 .eq("id", userId)
 .maybeSingle();
-
 if (error) {
-
 console.error("Profile error:", error);
 
 return null;
 
 }
-
 return data;
 }
-
 /* =========================
 SHOW LOGIN
 ========================= */
-
 function showLogin() {
-
 loginScreen.classList.remove("hidden");
-
 chatScreen.classList.add("hidden");
-
 usernameInput.focus();
-
 }
-
 /* =========================
 SHOW CHAT
 ========================= */
-
 function showChat() {
-
 loginScreen.classList.add("hidden");
-
 chatScreen.classList.remove("hidden");
-
 }
-
 /* =========================
 START CHAT
 ========================= */
-
 async function startChat() {
-
 await loadMessages();
-
 setupRealtime();
-
 await setupPresence();
-
 await loadMembers();
-
 messageInput.focus();
-
 }
-
 /* =========================
 LOAD MESSAGES
 ========================= */
-
 async function loadMessages() {
-
 messages.innerHTML = "";
-
 const {
 data,
 error
@@ -435,43 +354,31 @@ error
 .order("created_at", {
 ascending: true
 });
-
 if (error) {
-
 console.error(error);
 
 return;
 
 }
-
 for (const message of data) {
-
 await renderMessage(message, false);
 
 }
-
 scrollToBottom();
-
 }
-
 /* =========================
 REALTIME
 ========================= */
-
 function setupRealtime() {
-
 if (realtimeChannel) {
-
 supabaseClient.removeChannel(
   realtimeChannel
 );
 
 }
-
 realtimeChannel =
 supabaseClient
 .channel("neural-ninjas-messages")
-
   .on(
     "postgres_changes",
     {
@@ -524,23 +431,17 @@ supabaseClient
   .subscribe();
 
 }
-
 /* =========================
 PRESENCE
 ========================= */
-
 async function setupPresence() {
-
 if (presenceChannel) {
-
 await supabaseClient.removeChannel(
   presenceChannel
 );
 
 }
-
 presenceUsers = {};
-
 presenceChannel =
 supabaseClient.channel(
 "neural-ninjas-presence",
@@ -552,49 +453,41 @@ key: currentUser.id
 }
 }
 );
-
 presenceChannel.on(
 "presence",
 {
 event: "sync"
 },
 () => {
-
   rebuildPresence();
 
 }
 
 );
-
 presenceChannel.on(
 "presence",
 {
 event: "join"
 },
 () => {
-
   rebuildPresence();
 
 }
 
 );
-
 presenceChannel.on(
 "presence",
 {
 event: "leave"
 },
 () => {
-
   rebuildPresence();
 
 }
 
 );
-
 presenceChannel.subscribe(
 async status => {
-
   if (status === "SUBSCRIBED") {
 
     await presenceChannel.track({
@@ -609,26 +502,18 @@ async status => {
 }
 
 );
-
 }
-
 /* =========================
 PRESENCE STATE
 ========================= */
-
 function rebuildPresence() {
-
 if (!presenceChannel) {
 return;
 }
-
 const state =
 presenceChannel.presenceState();
-
 const online = {};
-
 Object.keys(state).forEach(key => {
-
 const entries = state[key];
 
 if (!entries || !entries.length) {
@@ -646,21 +531,14 @@ if (user.user_id) {
 }
 
 });
-
 presenceUsers = online;
-
 updateOnlineStatus();
-
 renderMembers();
-
 }
-
 /* =========================
 LOAD ALL MEMBERS
 ========================= */
-
 async function loadMembers() {
-
 const {
 data,
 error
@@ -670,37 +548,25 @@ error
 .order("created_at", {
 ascending: true
 });
-
 if (error) {
-
 console.error("Members error:", error);
 
 return;
 
 }
-
 window.allMembers = data || [];
-
 renderMembers();
-
 }
-
 /* =========================
 RENDER MEMBERS
 ========================= */
-
 function renderMembers() {
-
 const allMembers =
 window.allMembers || [];
-
 memberCount.textContent =
-"${allMembers.length} ${ allMembers.length === 1 ? "member" : "members" }";
-
+${allMembers.length} ${ allMembers.length === 1 ? "member" : "members" };
 membersList.innerHTML = "";
-
 for (const member of allMembers) {
-
 const isOnline =
   Boolean(
     presenceUsers[member.id]
@@ -778,72 +644,46 @@ item.appendChild(info);
 membersList.appendChild(item);
 
 }
-
 updateOnlineStatus();
-
 }
-
 /* =========================
 ONLINE STATUS
 ========================= */
-
 function updateOnlineStatus() {
-
 const count =
 Object.keys(
 presenceUsers
 ).length;
-
 onlineStatus.textContent =
-"${count} ${ count === 1 ? "member" : "members" } online";
-
+${count} ${ count === 1 ? "member" : "members" } online;
 }
-
 /* =========================
 SIDEBAR
 ========================= */
-
 function openSidebar() {
-
 membersSidebar.classList.add("open");
-
 sidebarOverlay.classList.add("show");
-
 renderMembers();
-
 }
-
 function closeSidebar() {
-
 membersSidebar.classList.remove("open");
-
 sidebarOverlay.classList.remove("show");
-
 }
-
 /* =========================
 SEND MESSAGE
 ========================= */
-
 async function sendMessage() {
-
 if (sending) {
 return;
 }
-
 const text =
 messageInput.value.trim();
-
 if (!text) {
 return;
 }
-
 sending = true;
-
 sendBtn.disabled = true;
-
 try {
-
 const {
   data,
   error
@@ -879,7 +719,6 @@ playSendSound();
 scrollToBottom();
 
 } catch (error) {
-
 console.error(error);
 
 alert(
@@ -888,23 +727,15 @@ alert(
 );
 
 }
-
 sending = false;
-
 sendBtn.disabled = false;
-
 messageInput.focus();
-
 }
-
 /* =========================
 SEND SOUND
 ========================= */
-
 function playSendSound() {
-
 try {
-
 const AudioContext =
   window.AudioContext ||
   window.webkitAudioContext;
@@ -966,34 +797,25 @@ oscillator.stop(
 );
 
 } catch (error) {
-
 console.log(
   "Sound unavailable."
 );
 
 }
-
 }
-
 /* =========================
 FILE UPLOAD
 ========================= */
-
 async function handleFileUpload() {
-
 const file =
 fileInput.files[0];
-
 if (!file) {
 return;
 }
-
 if (uploading) {
 return;
 }
-
 if (file.size > 50 * 1024 * 1024) {
-
 alert(
   "File is larger than 50 MB."
 );
@@ -1003,13 +825,9 @@ fileInput.value = "";
 return;
 
 }
-
 uploading = true;
-
 mediaBtn.disabled = true;
-
 try {
-
 const extension =
   file.name.includes(".")
     ? "." +
@@ -1093,7 +911,6 @@ playSendSound();
 scrollToBottom();
 
 } catch (error) {
-
 console.error(error);
 
 alert(
@@ -1102,93 +919,66 @@ alert(
 );
 
 }
-
 uploading = false;
-
 mediaBtn.disabled = false;
-
 fileInput.value = "";
-
 }
-
 /* =========================
 MEDIA TYPE
 ========================= */
-
 function getMediaType(type) {
-
 if (type.startsWith("image/")) {
 return "image";
 }
-
 if (type.startsWith("video/")) {
 return "video";
 }
-
 if (type.startsWith("audio/")) {
 return "audio";
 }
-
 return "file";
-
 }
-
 /* =========================
 RENDER MESSAGE
 ========================= */
-
 async function renderMessage(
 data,
 shouldScroll = true
 ) {
-
 if (
 document.querySelector(
-"[data-message-id="${data.id}"]"
+[data-message-id="${data.id}"]
 )
 ) {
 return;
 }
-
 const wrapper =
 document.createElement("div");
-
 wrapper.className = "message";
-
 if (
 data.sender_id === currentUser.id
 ) {
-
 wrapper.classList.add("mine");
 
 }
-
 wrapper.dataset.messageId =
 data.id;
-
 const bubble =
 document.createElement("div");
-
 bubble.className =
 "bubble";
-
 const sender =
 document.createElement("div");
-
 sender.className =
 "sender";
-
 sender.textContent =
 data.sender_name;
-
 bubble.appendChild(sender);
-
 if (
 data.message_type === "image" ||
 data.message_type === "video" ||
 data.message_type === "audio"
 ) {
-
 await renderMedia(
   bubble,
   data
@@ -1197,41 +987,31 @@ await renderMedia(
 } else if (
 data.message_type === "code"
 ) {
-
 renderCode(
   bubble,
   data.message || ""
 );
 
 } else {
-
 renderText(
   bubble,
   data.message || ""
 );
 
 }
-
 const time =
 document.createElement("div");
-
 time.className =
 "time";
-
 time.textContent =
 formatTime(data.created_at);
-
 bubble.appendChild(time);
-
 const deleteButton =
 document.createElement("button");
-
 deleteButton.className =
 "delete-message";
-
 deleteButton.textContent =
 "Delete";
-
 deleteButton.addEventListener(
 "click",
 () => deleteMessage(
@@ -1240,39 +1020,27 @@ deleteButton,
 wrapper
 )
 );
-
 bubble.appendChild(deleteButton);
-
 wrapper.appendChild(bubble);
-
 messages.appendChild(wrapper);
-
 if (shouldScroll) {
 scrollToBottom();
 }
-
 }
-
 /* =========================
 TEXT + LINKS
 ========================= */
-
 function renderText(
 container,
 text
 ) {
-
 const urlRegex =
 /(https?://[^\s]+|www.[^\s]+)/gi;
-
 let lastIndex = 0;
-
 let match;
-
 while (
 (match = urlRegex.exec(text)) !== null
 ) {
-
 const before =
   text.slice(
     lastIndex,
@@ -1347,26 +1115,19 @@ lastIndex =
   match[0].length;
 
 }
-
 const remaining =
 text.slice(lastIndex);
-
 if (remaining) {
-
 container.appendChild(
   document.createTextNode(remaining)
 );
 
 }
-
 }
-
 /* =========================
 CODE
 ========================= */
-
 function detectCode(text) {
-
 const indicators = [
 "```",
 "function ",
@@ -1384,62 +1145,43 @@ const indicators = [
 "public class ",
 "console.log"
 ];
-
 return indicators.some(
 indicator =>
 text.includes(indicator)
 );
-
 }
-
 function cleanCode(text) {
-
 return text
-.replace(/^"[a-zA-Z0-9_-]*\n?/, "") .replace(/"$/, "")
+.replace(/^[a-zA-Z0-9_-]*\n?/, "") .replace(/$/, "")
 .trim();
-
 }
-
 function renderCode(
 container,
 text
 ) {
-
 const code =
 cleanCode(text);
-
 const box =
 document.createElement("div");
-
 box.className =
 "code-box";
-
 const pre =
 document.createElement("pre");
-
 const codeElement =
 document.createElement("code");
-
 codeElement.textContent =
 code;
-
 pre.appendChild(codeElement);
-
 box.appendChild(pre);
-
 const copyButton =
 document.createElement("button");
-
 copyButton.className =
 "copy-code";
-
 copyButton.textContent =
 "Copy Code";
-
 copyButton.addEventListener(
 "click",
 async () => {
-
   try {
 
     await navigator.clipboard.writeText(
@@ -1467,58 +1209,44 @@ async () => {
 }
 
 );
-
 box.appendChild(copyButton);
-
 container.appendChild(box);
-
 if (
 window.hljs &&
 typeof hljs.highlightElement ===
 "function"
 ) {
-
 hljs.highlightElement(
   codeElement
 );
 
 }
-
 }
-
 /* =========================
 MEDIA RENDER
 ========================= */
-
 async function renderMedia(
 container,
 data
 ) {
-
 if (!data.file_url) {
 return;
 }
-
 let url =
 data.file_url;
-
 /*
 Existing signed URLs may expire.
 Try to extract storage path and create
 a fresh signed URL when possible.
 */
-
 const freshUrl =
 await refreshSignedUrl(url);
-
 if (freshUrl) {
 url = freshUrl;
 }
-
 if (
 data.message_type === "image"
 ) {
-
 const image =
   document.createElement("img");
 
@@ -1533,11 +1261,9 @@ image.alt =
 container.appendChild(image);
 
 }
-
 if (
 data.message_type === "video"
 ) {
-
 const video =
   document.createElement("video");
 
@@ -1553,11 +1279,9 @@ video.src = url;
 container.appendChild(video);
 
 }
-
 if (
 data.message_type === "audio"
 ) {
-
 const audio =
   document.createElement("audio");
 
@@ -1568,44 +1292,31 @@ audio.src = url;
 container.appendChild(audio);
 
 }
-
 const saveLink =
 document.createElement("a");
-
 saveLink.className =
 "save-media";
-
 saveLink.href =
 url;
-
 saveLink.target =
 "_blank";
-
 saveLink.rel =
 "noopener noreferrer";
-
 saveLink.download =
 data.message || "media";
-
 saveLink.textContent =
 "Save Media";
-
 container.appendChild(
 saveLink
 );
-
 }
-
 /* =========================
 SIGNED URL REFRESH
 ========================= */
-
 async function refreshSignedUrl(
 url
 ) {
-
 try {
-
 const marker =
   "/storage/v1/object/sign/neural-ninjas-media/";
 
@@ -1647,34 +1358,25 @@ if (error) {
 return data.signedUrl;
 
 } catch (error) {
-
 return url;
 
 }
-
 }
-
 /* =========================
 DELETE MESSAGE
 ========================= */
-
 async function deleteMessage(
 messageId,
 button,
 wrapper
 ) {
-
 if (button.disabled) {
 return;
 }
-
 button.disabled = true;
-
 button.textContent =
 "Deleting...";
-
 try {
-
 const {
   data,
   error
@@ -1699,7 +1401,6 @@ Realtime DELETE will also arrive,
 wrapper.remove();
 
 } catch (error) {
-
 console.error(error);
 
 button.disabled = false;
@@ -1713,55 +1414,38 @@ alert(
 );
 
 }
-
 }
-
 /* =========================
 EXIT CHAT
 ========================= */
-
 async function exitChat() {
-
 /*
 IMPORTANT:
 Do NOT sign out.
-
 This keeps the anonymous identity/session
 so the same device can return to the same
 Neural Ninjas identity.
 */
-
 closeSidebar();
-
 chatScreen.classList.add("hidden");
-
 loginScreen.classList.remove("hidden");
-
 usernameInput.value =
 currentProfile?.username || "";
-
 loginStatus.textContent =
 "Your Neural Ninjas session is saved on this device.";
-
 usernameInput.focus();
-
 }
-
 /* =========================
 TIME
 ========================= */
-
 function formatTime(
 timestamp
 ) {
-
 if (!timestamp) {
 return "";
 }
-
 const date =
 new Date(timestamp);
-
 return date.toLocaleTimeString(
 [],
 {
@@ -1769,20 +1453,14 @@ hour: "2-digit",
 minute: "2-digit"
 }
 );
-
 }
-
 /* =========================
 SCROLL
 ========================= */
-
 function scrollToBottom() {
-
 requestAnimationFrame(() => {
-
 messages.scrollTop =
   messages.scrollHeight;
 
 });
-
 }
