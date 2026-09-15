@@ -1,5 +1,6 @@
 /* =========================================================
    NEURAL NINJAS - APP.JS
+   Username + 6-Digit PIN Authentication
    ========================================================= */
 
 const SUPABASE_URL =
@@ -8,12 +9,7 @@ const SUPABASE_URL =
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
-
-/* =========================================================
-   STARTUP CHECK
-   ========================================================= */
-
-let supabaseClient;
+let supabaseClient = null;
 
 try {
   if (typeof supabase === "undefined") {
@@ -24,18 +20,8 @@ try {
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY
   );
-
 } catch (error) {
   console.error("STARTUP ERROR:", error);
-
-  window.addEventListener("DOMContentLoaded", () => {
-    const status = document.getElementById("loginStatus");
-
-    if (status) {
-      status.textContent =
-        "App error: " + error.message;
-    }
-  });
 }
 
 
@@ -63,6 +49,7 @@ let uploading = false;
 let loginScreen;
 let chatScreen;
 let usernameInput;
+let pinInput;
 let joinBtn;
 let loginStatus;
 
@@ -91,84 +78,53 @@ let onlineStatus;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  loginScreen =
-    document.getElementById("loginScreen");
+  loginScreen = document.getElementById("loginScreen");
+  chatScreen = document.getElementById("chatScreen");
 
-  chatScreen =
-    document.getElementById("chatScreen");
+  usernameInput = document.getElementById("usernameInput");
+  joinBtn = document.getElementById("joinBtn");
+  loginStatus = document.getElementById("loginStatus");
 
-  usernameInput =
-    document.getElementById("usernameInput");
+  messages = document.getElementById("messages");
+  messageInput = document.getElementById("messageInput");
+  sendBtn = document.getElementById("sendBtn");
 
-  joinBtn =
-    document.getElementById("joinBtn");
+  mediaBtn = document.getElementById("mediaBtn");
+  fileInput = document.getElementById("fileInput");
 
-  loginStatus =
-    document.getElementById("loginStatus");
+  logoutBtn = document.getElementById("logoutBtn");
+  menuBtn = document.getElementById("menuBtn");
 
-  messages =
-    document.getElementById("messages");
+  membersSidebar = document.getElementById("membersSidebar");
+  closeSidebarBtn = document.getElementById("closeSidebarBtn");
+  sidebarOverlay = document.getElementById("sidebarOverlay");
 
-  messageInput =
-    document.getElementById("messageInput");
+  membersList = document.getElementById("membersList");
+  memberCount = document.getElementById("memberCount");
+  onlineStatus = document.getElementById("onlineStatus");
 
-  sendBtn =
-    document.getElementById("sendBtn");
-
-  mediaBtn =
-    document.getElementById("mediaBtn");
-
-  fileInput =
-    document.getElementById("fileInput");
-
-  logoutBtn =
-    document.getElementById("logoutBtn");
-
-  menuBtn =
-    document.getElementById("menuBtn");
-
-  membersSidebar =
-    document.getElementById("membersSidebar");
-
-  closeSidebarBtn =
-    document.getElementById("closeSidebarBtn");
-
-  sidebarOverlay =
-    document.getElementById("sidebarOverlay");
-
-  membersList =
-    document.getElementById("membersList");
-
-  memberCount =
-    document.getElementById("memberCount");
-
-  onlineStatus =
-    document.getElementById("onlineStatus");
-
-
-  /* ---------------------------------
-     Check HTML
-     --------------------------------- */
-
-  if (!joinBtn) {
-    showFatalError("JOIN button not found.");
-    return;
-  }
-
-  if (!usernameInput) {
-    showFatalError("Username input not found.");
-    return;
-  }
 
   if (!supabaseClient) {
     showFatalError("Supabase failed to initialize.");
     return;
   }
 
+  if (!usernameInput || !joinBtn) {
+    showFatalError("Login elements not found.");
+    return;
+  }
 
-  /* ---------------------------------
+
+  /* ---------------------------------------------------------
+     Create PIN input automatically
+     --------------------------------------------------------- */
+
+  createPinInput();
+
+
+  /* ---------------------------------------------------------
      Events
-     --------------------------------- */
+     --------------------------------------------------------- */
 
   joinBtn.addEventListener(
     "click",
@@ -179,107 +135,158 @@ document.addEventListener("DOMContentLoaded", () => {
   usernameInput.addEventListener(
     "keydown",
     event => {
-
       if (event.key === "Enter") {
         event.preventDefault();
-        joinTeam();
+        pinInput?.focus();
       }
-
     }
   );
 
 
-  if (sendBtn) {
-    sendBtn.addEventListener(
-      "click",
-      sendMessage
-    );
-  }
-
-
-  if (messageInput) {
-
-    messageInput.addEventListener(
-      "keydown",
-      event => {
-
-        if (event.key === "Enter") {
-          event.preventDefault();
-          sendMessage();
-        }
-
+  pinInput.addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        joinTeam();
       }
-    );
-  }
+    }
+  );
 
 
-  if (mediaBtn && fileInput) {
-
-    mediaBtn.addEventListener(
-      "click",
-      () => fileInput.click()
-    );
-
-  }
+  sendBtn?.addEventListener(
+    "click",
+    sendMessage
+  );
 
 
-  if (fileInput) {
-
-    fileInput.addEventListener(
-      "change",
-      handleFileUpload
-    );
-
-  }
-
-
-  if (logoutBtn) {
-
-    logoutBtn.addEventListener(
-      "click",
-      exitChat
-    );
-
-  }
+  messageInput?.addEventListener(
+    "keydown",
+    event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+  );
 
 
-  if (menuBtn) {
-
-    menuBtn.addEventListener(
-      "click",
-      openSidebar
-    );
-
-  }
+  mediaBtn?.addEventListener(
+    "click",
+    () => fileInput?.click()
+  );
 
 
-  if (closeSidebarBtn) {
-
-    closeSidebarBtn.addEventListener(
-      "click",
-      closeSidebar
-    );
-
-  }
+  fileInput?.addEventListener(
+    "change",
+    handleFileUpload
+  );
 
 
-  if (sidebarOverlay) {
-
-    sidebarOverlay.addEventListener(
-      "click",
-      closeSidebar
-    );
-
-  }
+  logoutBtn?.addEventListener(
+    "click",
+    exitChat
+  );
 
 
-  /* ---------------------------------
-     Start
-     --------------------------------- */
+  menuBtn?.addEventListener(
+    "click",
+    openSidebar
+  );
+
+
+  closeSidebarBtn?.addEventListener(
+    "click",
+    closeSidebar
+  );
+
+
+  sidebarOverlay?.addEventListener(
+    "click",
+    closeSidebar
+  );
+
 
   checkSession();
 
 });
+
+
+/* =========================================================
+   PIN INPUT
+   ========================================================= */
+
+function createPinInput() {
+
+  if (document.getElementById("pinInput")) {
+    pinInput =
+      document.getElementById("pinInput");
+
+    return;
+  }
+
+
+  pinInput =
+    document.createElement("input");
+
+  pinInput.id =
+    "pinInput";
+
+  pinInput.type =
+    "password";
+
+  pinInput.inputMode =
+    "numeric";
+
+  pinInput.maxLength =
+    6;
+
+  pinInput.placeholder =
+    "Enter 6-digit PIN";
+
+  pinInput.autocomplete =
+    "current-password";
+
+  pinInput.style.marginTop =
+    "10px";
+
+  pinInput.style.width =
+    "100%";
+
+  pinInput.style.boxSizing =
+    "border-box";
+
+
+  usernameInput.insertAdjacentElement(
+    "afterend",
+    pinInput
+  );
+
+}
+
+
+/* =========================================================
+   HIDDEN AUTH IDENTIFIER
+   ========================================================= */
+
+function makeAuthEmail(username) {
+
+  const clean =
+    username
+      .trim()
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9._-]/g,
+        "_"
+      );
+
+
+  return (
+    clean +
+    "@neuralninjas.local"
+  );
+
+}
 
 
 /* =========================================================
@@ -378,13 +385,10 @@ async function checkSession() {
 
 
 /* =========================================================
-   JOIN
+   JOIN / LOGIN
    ========================================================= */
 
 async function joinTeam() {
-
-  console.log("JOIN TEAM CLICKED");
-
 
   if (sending || uploading) {
     return;
@@ -392,15 +396,23 @@ async function joinTeam() {
 
 
   const username =
-    usernameInput
-      ? usernameInput.value.trim()
-      : "";
+    usernameInput.value.trim();
 
+
+  const pin =
+    pinInput.value.trim();
+
+
+  /* ---------------------------------------------------------
+     Validation
+     --------------------------------------------------------- */
 
   if (!username) {
 
     loginStatus.textContent =
-      "Please enter a username.";
+      "Please enter your username.";
+
+    usernameInput.focus();
 
     return;
   }
@@ -424,193 +436,194 @@ async function joinTeam() {
   }
 
 
+  if (!/^\d{6}$/.test(pin)) {
+
+    loginStatus.textContent =
+      "PIN must contain exactly 6 digits.";
+
+    pinInput.focus();
+
+    return;
+  }
+
+
   joinBtn.disabled = true;
 
   loginStatus.textContent =
-    "Connecting...";
+    "Checking account...";
 
 
   try {
 
-    /* ---------------------------------
-       Get session
-       --------------------------------- */
-
-    let {
-      data,
-      error
-    } =
-      await supabaseClient.auth.getSession();
+    const authEmail =
+      makeAuthEmail(username);
 
 
-    if (error) {
-      throw error;
-    }
+    /* -------------------------------------------------------
+       FIRST: Try existing account login
+       ------------------------------------------------------- */
+
+    const loginResult =
+      await supabaseClient.auth.signInWithPassword({
+        email: authEmail,
+        password: pin
+      });
 
 
-    let session =
-      data?.session;
+    if (
+      !loginResult.error &&
+      loginResult.data?.user
+    ) {
+
+      currentUser =
+        loginResult.data.user;
 
 
-    /* ---------------------------------
-       Anonymous login
-       --------------------------------- */
-
-    if (!session) {
-
-      loginStatus.textContent =
-        "Creating secure session...";
+      const profile =
+        await getProfile(
+          currentUser.id
+        );
 
 
-      const result =
-        await supabaseClient.auth
-          .signInAnonymously();
+      if (!profile) {
 
+        await supabaseClient.auth.signOut();
 
-      if (result.error) {
-        throw result.error;
+        throw new Error(
+          "Account profile is missing."
+        );
+
       }
 
 
-      session =
-        result.data?.session;
+      currentProfile =
+        profile;
+
+
+      loginStatus.textContent =
+        "Login successful. Opening Neural Ninjas...";
+
+
+      showChat();
+
+      await startChat();
+
+      return;
+    }
+
+
+    /* -------------------------------------------------------
+       LOGIN FAILED
+       Try creating a NEW account
+       ------------------------------------------------------- */
+
+    loginStatus.textContent =
+      "Creating account...";
+
+
+    const signupResult =
+      await supabaseClient.auth.signUp({
+        email: authEmail,
+        password: pin,
+        options: {
+          data: {
+            neural_ninjas_username:
+              username
+          }
+        }
+      });
+
+
+    if (signupResult.error) {
+
+      const errorMessage =
+        signupResult.error.message || "";
+
+
+      /* Existing account with wrong PIN */
+      if (
+        errorMessage
+          .toLowerCase()
+          .includes("already")
+      ) {
+
+        throw new Error(
+          "Incorrect PIN for this username."
+        );
+
+      }
+
+
+      throw signupResult.error;
 
     }
 
 
-    if (!session?.user) {
+    if (!signupResult.data?.user) {
 
       throw new Error(
-        "Could not create session."
+        "Could not create account."
+      );
+
+    }
+
+
+    if (!signupResult.data?.session) {
+
+      throw new Error(
+        "Account created, but login session was not created. Check that email confirmation is disabled in Supabase."
       );
 
     }
 
 
     currentUser =
-      session.user;
+      signupResult.data.user;
 
 
-    /* ---------------------------------
-       Existing profile
-       --------------------------------- */
+    /* -------------------------------------------------------
+       Create profile
+       ------------------------------------------------------- */
 
-    const existingProfile =
-      await getProfile(
-        currentUser.id
-      );
+    const {
+      data: newProfile,
+      error: profileError
+    } =
+      await supabaseClient
+        .from("profiles")
+        .insert({
+          id: currentUser.id,
+          username: username
+        })
+        .select()
+        .single();
 
 
-    if (existingProfile) {
+    if (profileError) {
+
+      await supabaseClient.auth.signOut();
 
       if (
-        existingProfile.username
-          .toLowerCase() !==
-        username.toLowerCase()
+        profileError.code === "23505"
       ) {
 
-        loginStatus.textContent =
-          `This device is already logged in as "${existingProfile.username}".`;
+        throw new Error(
+          "That username is already in use."
+        );
 
-        joinBtn.disabled = false;
-
-        return;
       }
 
-
-      currentProfile =
-        existingProfile;
+      throw profileError;
 
     }
 
 
-    /* ---------------------------------
-       New profile
-       --------------------------------- */
+    currentProfile =
+      newProfile;
 
-    else {
-
-      loginStatus.textContent =
-        "Creating your Neural Ninjas profile...";
-
-
-      const {
-        data: existingUsername,
-        error: usernameError
-      } =
-        await supabaseClient
-          .from("profiles")
-          .select("id, username")
-          .ilike(
-            "username",
-            username
-          )
-          .maybeSingle();
-
-
-      if (usernameError) {
-        throw usernameError;
-      }
-
-
-      if (existingUsername) {
-
-        loginStatus.textContent =
-          `Username "${existingUsername.username}" is already in use.`;
-
-        joinBtn.disabled = false;
-
-        return;
-      }
-
-
-      const {
-        data: newProfile,
-        error: profileError
-      } =
-        await supabaseClient
-          .from("profiles")
-          .insert({
-            id: currentUser.id,
-            username: username
-          })
-          .select()
-          .single();
-
-
-      if (profileError) {
-
-        if (
-          profileError.code ===
-          "23505"
-        ) {
-
-          loginStatus.textContent =
-            "That username is already in use.";
-
-          joinBtn.disabled = false;
-
-          return;
-        }
-
-
-        throw profileError;
-
-      }
-
-
-      currentProfile =
-        newProfile;
-
-    }
-
-
-    /* ---------------------------------
-       Open chat
-       --------------------------------- */
 
     loginStatus.textContent =
-      "Opening Neural Ninjas...";
+      "Account created. Opening Neural Ninjas...";
 
 
     showChat();
@@ -621,15 +634,14 @@ async function joinTeam() {
   } catch (error) {
 
     console.error(
-      "JOIN ERROR:",
+      "LOGIN ERROR:",
       error
     );
 
 
     loginStatus.textContent =
       error?.message ||
-      "Could not join Neural Ninjas.";
-
+      "Could not login.";
 
   } finally {
 
@@ -726,7 +738,6 @@ async function startChat() {
   await setupPresence();
 
   await loadMembers();
-
 
   messageInput?.focus();
 
@@ -1184,17 +1195,12 @@ function renderMembers() {
 
 
     status.appendChild(dot);
-
-    status.appendChild(
-      statusText
-    );
+    status.appendChild(statusText);
 
     info.appendChild(name);
-
     info.appendChild(status);
 
     item.appendChild(avatar);
-
     item.appendChild(info);
 
     membersList.appendChild(item);
@@ -1429,18 +1435,13 @@ function playSendSound() {
 
 
     oscillator.connect(gain);
-
-    gain.connect(
-      ctx.destination
-    );
-
+    gain.connect(ctx.destination);
 
     oscillator.start();
 
     oscillator.stop(
       ctx.currentTime + 0.1
     );
-
 
   } catch (error) {
 
@@ -1512,8 +1513,9 @@ async function handleFileUpload() {
 
   uploading = true;
 
-  mediaBtn &&
-    (mediaBtn.disabled = true);
+  if (mediaBtn) {
+    mediaBtn.disabled = true;
+  }
 
 
   try {
@@ -1649,8 +1651,9 @@ async function handleFileUpload() {
 
     uploading = false;
 
-    mediaBtn &&
-      (mediaBtn.disabled = false);
+    if (mediaBtn) {
+      mediaBtn.disabled = false;
+    }
 
     fileInput.value = "";
 
@@ -1761,12 +1764,9 @@ function renderMessage(
 
 
   if (
-    data.message_type ===
-      "image" ||
-    data.message_type ===
-      "video" ||
-    data.message_type ===
-      "audio"
+    data.message_type === "image" ||
+    data.message_type === "video" ||
+    data.message_type === "audio"
   ) {
 
     renderMedia(
@@ -1777,8 +1777,7 @@ function renderMessage(
   }
 
   else if (
-    data.message_type ===
-    "code"
+    data.message_type === "code"
   ) {
 
     renderCode(
@@ -1833,11 +1832,12 @@ function renderMessage(
 
   deleteButton.addEventListener(
     "click",
-    () => deleteMessage(
-      data.id,
-      deleteButton,
-      wrapper
-    )
+    () =>
+      deleteMessage(
+        data.id,
+        deleteButton,
+        wrapper
+      )
   );
 
 
@@ -1877,7 +1877,6 @@ function renderText(
 
 
   let lastIndex = 0;
-
   let match;
 
 
@@ -1980,9 +1979,7 @@ function renderText(
 
 
   const remaining =
-    text.slice(
-      lastIndex
-    );
+    text.slice(lastIndex);
 
 
   if (remaining) {
@@ -2170,11 +2167,9 @@ function renderCode(
   ) {
 
     try {
-
       hljs.highlightElement(
         codeElement
       );
-
     } catch {}
 
   }
@@ -2416,35 +2411,65 @@ async function deleteMessage(
 
 
 /* =========================================================
-   EXIT
+   EXIT / LOGOUT
    ========================================================= */
 
-function exitChat() {
+async function exitChat() {
 
   closeSidebar();
 
-  chatScreen?.classList.add(
-    "hidden"
-  );
 
-  loginScreen?.classList.remove(
-    "hidden"
-  );
+  if (presenceChannel) {
+
+    try {
+      await supabaseClient.removeChannel(
+        presenceChannel
+      );
+    } catch {}
+
+    presenceChannel = null;
+
+  }
+
+
+  if (realtimeChannel) {
+
+    try {
+      await supabaseClient.removeChannel(
+        realtimeChannel
+      );
+    } catch {}
+
+    realtimeChannel = null;
+
+  }
+
+
+  await supabaseClient.auth.signOut();
+
+
+  currentUser = null;
+  currentProfile = null;
+  presenceUsers = {};
+
+
+  showLogin();
 
 
   if (usernameInput) {
+    usernameInput.value = "";
+  }
 
-    usernameInput.value =
-      currentProfile?.username ||
-      "";
 
+  if (pinInput) {
+    pinInput.value = "";
   }
 
 
   if (loginStatus) {
 
     loginStatus.textContent =
-      "Your session is saved on this device.";
+      "Enter your username and PIN to login.";
 
   }
 
