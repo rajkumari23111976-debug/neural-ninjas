@@ -1,1844 +1,1788 @@
-// ======================================================
-// NEURAL NINJAS
-// Text + Images + Videos + Audio + Code
-// No Voice Recording
-// ======================================================
+const SUPABASE_URL = "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
+const SUPABASE_KEY = "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
-// ======================================================
-// SUPABASE CONFIG
-// ======================================================
-
-const SUPABASE_URL =
-  "https://uzletbnjofnxwmlgvnxp.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
-
-const supabaseClient =
-  supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
-
-
-// ======================================================
-// DOM
-// ======================================================
-
-const loginScreen =
-  document.getElementById("loginScreen");
-
-const chatScreen =
-  document.getElementById("chatScreen");
-
-const usernameInput =
-  document.getElementById("usernameInput");
-
-const joinBtn =
-  document.getElementById("joinBtn");
-
-const loginStatus =
-  document.getElementById("loginStatus");
-
-const logoutBtn =
-  document.getElementById("logoutBtn");
-
-const messagesBox =
-  document.getElementById("messages");
-
-const onlineStatus =
-  document.getElementById("onlineStatus");
-
-const messageInput =
-  document.getElementById("messageInput");
-
-const sendBtn =
-  document.getElementById("sendBtn");
-
-const mediaBtn =
-  document.getElementById("mediaBtn");
-
-const fileInput =
-  document.getElementById("fileInput");
-
-
-// ======================================================
-// GLOBAL
-// ======================================================
-
-let currentUser = null;
-
-let currentUsername = null;
-
-let realtimeChannel = null;
-
-
-// ======================================================
-// START
-// ======================================================
-
-window.addEventListener(
-  "load",
-  async function () {
-
-    console.log(
-      "🥷 Neural Ninjas loaded"
-    );
-
-    await checkSession();
-
-  }
+const supabaseClient = supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
 );
 
+/* =========================
+GLOBAL STATE
+========================= */
 
-// ======================================================
-// SESSION
-// ======================================================
+let currentUser = null;
+let currentProfile = null;
+
+let realtimeChannel = null;
+let presenceChannel = null;
+
+let presenceUsers = {};
+
+let sending = false;
+let uploading = false;
+
+/* =========================
+DOM
+========================= */
+
+const loginScreen = document.getElementById("loginScreen");
+const chatScreen = document.getElementById("chatScreen");
+
+const usernameInput = document.getElementById("usernameInput");
+const joinBtn = document.getElementById("joinBtn");
+const loginStatus = document.getElementById("loginStatus");
+
+const messages = document.getElementById("messages");
+const messageInput = document.getElementById("messageInput");
+
+const sendBtn = document.getElementById("sendBtn");
+const mediaBtn = document.getElementById("mediaBtn");
+const fileInput = document.getElementById("fileInput");
+
+const logoutBtn = document.getElementById("logoutBtn");
+
+const menuBtn = document.getElementById("menuBtn");
+const membersSidebar = document.getElementById("membersSidebar");
+const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+const membersList = document.getElementById("membersList");
+const memberCount = document.getElementById("memberCount");
+const onlineStatus = document.getElementById("onlineStatus");
+
+/* =========================
+INITIAL START
+========================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+joinBtn.addEventListener("click", joinTeam);
+
+sendBtn.addEventListener("click", sendMessage);
+
+mediaBtn.addEventListener("click", () => {
+fileInput.click();
+});
+
+fileInput.addEventListener("change", handleFileUpload);
+
+messageInput.addEventListener("keydown", event => {
+
+if (event.key === "Enter") {
+  event.preventDefault();
+  sendMessage();
+}
+
+});
+
+usernameInput.addEventListener("keydown", event => {
+
+if (event.key === "Enter") {
+  event.preventDefault();
+  joinTeam();
+}
+
+});
+
+logoutBtn.addEventListener("click", exitChat);
+
+menuBtn.addEventListener("click", openSidebar);
+
+closeSidebarBtn.addEventListener("click", closeSidebar);
+
+sidebarOverlay.addEventListener("click", closeSidebar);
+
+checkSession();
+
+});
+
+/* =========================
+SESSION
+========================= */
 
 async function checkSession() {
 
-  try {
+try {
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient.auth.getSession();
+const {
+  data: { session }
+} = await supabaseClient.auth.getSession();
 
+if (!session) {
+  showLogin();
+  return;
+}
 
-    if (error) {
+currentUser = session.user;
 
-      console.error(error);
+const profile = await getProfile(currentUser.id);
 
-      showLogin();
+if (!profile) {
 
-      return;
+  /*
+   The anonymous session exists but its profile
+   does not exist anymore.
+  */
 
-    }
+  await supabaseClient.auth.signOut();
 
+  currentUser = null;
 
-    if (!data.session) {
+  showLogin();
 
-      showLogin();
+  return;
+}
 
-      return;
+currentProfile = profile;
 
-    }
+showChat();
 
+await startChat();
 
-    currentUser =
-      data.session.user;
+} catch (error) {
 
+console.error(error);
 
-    const profile =
-      await getProfile();
-
-
-    if (!profile) {
-
-      showLogin();
-
-      return;
-
-    }
-
-
-    currentUsername =
-      profile.username;
-
-
-    showChat();
-
-    await loadMessages();
-
-    subscribeRealtime();
-
-
-  } catch (error) {
-
-    console.error(
-      "Session error:",
-      error
-    );
-
-    showLogin();
-
-  }
+showLogin();
 
 }
 
+}
 
-// ======================================================
-// JOIN TEAM
-// ======================================================
-
-joinBtn.addEventListener(
-  "click",
-  joinTeam
-);
-
-
-usernameInput.addEventListener(
-  "keydown",
-  function (event) {
-
-    if (event.key === "Enter") {
-
-      event.preventDefault();
-
-      joinTeam();
-
-    }
-
-  }
-);
-
+/* =========================
+JOIN TEAM
+========================= */
 
 async function joinTeam() {
 
-  const username =
-    usernameInput.value.trim();
+if (joinBtn.disabled) {
+return;
+}
+
+const username = usernameInput.value.trim();
+
+if (!username) {
+
+loginStatus.textContent = "Please enter a username.";
+
+return;
+
+}
+
+if (username.length < 2) {
+
+loginStatus.textContent =
+  "Username must be at least 2 characters.";
+
+return;
+
+}
+
+joinBtn.disabled = true;
+
+loginStatus.textContent = "Connecting...";
+
+try {
+
+/*
+ First check whether a valid current session already exists.
+ This prevents creating a new anonymous identity every time
+ the page is opened.
+*/
+
+let {
+  data: { session }
+} = await supabaseClient.auth.getSession();
 
 
-  if (!username) {
+/*
+ If there is no session, create ONE anonymous identity.
+*/
 
-    loginStatus.textContent =
-      "Please enter a username.";
+if (!session) {
 
-    return;
+  const {
+    data,
+    error
+  } = await supabaseClient.auth.signInAnonymously();
 
+  if (error) {
+    throw error;
   }
 
-
-  if (username.length < 2) {
-
-    loginStatus.textContent =
-      "Username must be at least 2 characters.";
-
-    return;
-
-  }
+  session = data.session;
+}
 
 
-  joinBtn.disabled = true;
-
-  loginStatus.textContent =
-    "Joining Neural Ninjas...";
+currentUser = session.user;
 
 
-  try {
+/*
+ Check if this anonymous identity already has a profile.
+*/
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient.auth
-        .signInAnonymously();
+const existingProfile =
+  await getProfile(currentUser.id);
 
 
-    if (error) {
+if (existingProfile) {
 
-      throw error;
+  /*
+   Same browser/session returning.
+   We use the existing identity.
 
-    }
+   If the entered username is different,
+   don't change the existing identity automatically.
+  */
 
-
-    currentUser =
-      data.user;
-
-
-    const {
-      error: profileError
-    } =
-      await supabaseClient
-        .from("profiles")
-        .insert({
-
-          id:
-            currentUser.id,
-
-          username:
-            username
-
-        });
-
-
-    if (profileError) {
-
-      const existingProfile =
-        await getProfile();
-
-
-      if (!existingProfile) {
-
-        throw profileError;
-
-      }
-
-
-      currentUsername =
-        existingProfile.username;
-
-    } else {
-
-      currentUsername =
-        username;
-
-    }
-
-
-    showChat();
-
-    await loadMessages();
-
-    subscribeRealtime();
-
-
-  } catch (error) {
-
-    console.error(error);
+  if (
+    existingProfile.username.toLowerCase() !==
+    username.toLowerCase()
+  ) {
 
     loginStatus.textContent =
-      "Error: " + error.message;
-
-
-  } finally {
+      `This device is already logged in as "${existingProfile.username}".`;
 
     joinBtn.disabled = false;
 
+    return;
   }
 
-}
+  currentProfile = existingProfile;
 
+} else {
 
-// ======================================================
-// PROFILE
-// ======================================================
-
-async function getProfile() {
-
-  if (!currentUser) {
-
-    return null;
-
-  }
-
+  /*
+   Before creating a new profile, check whether
+   the username is already owned by another identity.
+  */
 
   const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("profiles")
-      .select("username")
-      .eq(
-        "id",
-        currentUser.id
-      )
-      .maybeSingle();
+    data: existingUsername,
+    error: usernameError
+  } = await supabaseClient
+    .from("profiles")
+    .select("id, username")
+    .ilike("username", username)
+    .maybeSingle();
 
 
-  if (error) {
+  /*
+   If maybeSingle finds multiple rows, the database will
+   complain. This should no longer happen because we cleaned
+   the duplicates and created the unique lower-case index.
+  */
 
-    console.error(
-      "Profile error:",
-      error
-    );
-
-    return null;
-
+  if (usernameError) {
+    throw usernameError;
   }
 
 
-  return data;
+  if (existingUsername) {
+
+    loginStatus.textContent =
+      `Username "${existingUsername.username}" is already in use.`;
+
+    joinBtn.disabled = false;
+
+    return;
+  }
+
+
+  /*
+   Create profile for this anonymous identity.
+  */
+
+  const {
+    data: newProfile,
+    error: profileError
+  } = await supabaseClient
+    .from("profiles")
+    .insert({
+      id: currentUser.id,
+      username: username
+    })
+    .select()
+    .single();
+
+
+  if (profileError) {
+
+    /*
+     Unique-index race condition protection.
+    */
+
+    if (profileError.code === "23505") {
+
+      loginStatus.textContent =
+        "That username is already in use.";
+
+      joinBtn.disabled = false;
+
+      return;
+    }
+
+    throw profileError;
+  }
+
+  currentProfile = newProfile;
 
 }
 
 
-// ======================================================
-// SHOW LOGIN
-// ======================================================
+showChat();
+
+await startChat();
+
+} catch (error) {
+
+console.error(error);
+
+loginStatus.textContent =
+  error.message || "Could not join the team.";
+
+}
+
+joinBtn.disabled = false;
+
+}
+
+/* =========================
+GET PROFILE
+========================= */
+
+async function getProfile(userId) {
+
+const {
+data,
+error
+} = await supabaseClient
+.from("profiles")
+.select("*")
+.eq("id", userId)
+.maybeSingle();
+
+if (error) {
+
+console.error("Profile error:", error);
+
+return null;
+
+}
+
+return data;
+}
+
+/* =========================
+SHOW LOGIN
+========================= */
 
 function showLogin() {
 
-  loginScreen.classList.remove(
-    "hidden"
-  );
+loginScreen.classList.remove("hidden");
 
-  chatScreen.classList.add(
-    "hidden"
-  );
+chatScreen.classList.add("hidden");
+
+usernameInput.focus();
 
 }
 
-
-// ======================================================
-// SHOW CHAT
-// ======================================================
+/* =========================
+SHOW CHAT
+========================= */
 
 function showChat() {
 
-  loginScreen.classList.add(
-    "hidden"
-  );
+loginScreen.classList.add("hidden");
 
-  chatScreen.classList.remove(
-    "hidden"
-  );
-
-  onlineStatus.textContent =
-    "● Connected";
+chatScreen.classList.remove("hidden");
 
 }
 
+/* =========================
+START CHAT
+========================= */
 
-// ======================================================
-// LOGOUT
-// ======================================================
+async function startChat() {
 
-logoutBtn.addEventListener(
-  "click",
-  async function () {
+await loadMessages();
 
-    try {
+setupRealtime();
 
-      if (realtimeChannel) {
+await setupPresence();
 
-        await supabaseClient
-          .removeChannel(
-            realtimeChannel
-          );
+await loadMembers();
 
-        realtimeChannel =
-          null;
+messageInput.focus();
 
-      }
+}
 
-
-      await supabaseClient.auth
-        .signOut();
-
-
-      currentUser = null;
-
-      currentUsername = null;
-
-
-      messagesBox.innerHTML = "";
-
-      usernameInput.value = "";
-
-
-      showLogin();
-
-
-    } catch (error) {
-
-      console.error(error);
-
-    }
-
-  }
-);
-
-
-// ======================================================
-// LOAD MESSAGES
-// ======================================================
+/* =========================
+LOAD MESSAGES
+========================= */
 
 async function loadMessages() {
 
-  messagesBox.innerHTML = "";
+messages.innerHTML = "";
 
+const {
+data,
+error
+} = await supabaseClient
+.from("messages")
+.select("*")
+.order("created_at", {
+ascending: true
+});
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("messages")
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
+if (error) {
 
+console.error(error);
 
-  if (error) {
-
-    console.error(
-      "Load messages error:",
-      error
-    );
-
-    return;
-
-  }
-
-
-  for (
-    const message of data
-  ) {
-
-    renderMessage(message);
-
-  }
-
-
-  scrollToBottom();
+return;
 
 }
 
+for (const message of data) {
 
-// ======================================================
-// REALTIME
-// ======================================================
-
-function subscribeRealtime() {
-
-  if (realtimeChannel) {
-
-    supabaseClient
-      .removeChannel(
-        realtimeChannel
-      );
-
-  }
-
-
-  realtimeChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-chat"
-      )
-
-
-      // INSERT
-      .on(
-
-        "postgres_changes",
-
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages"
-        },
-
-        function (payload) {
-
-          renderMessage(
-            payload.new
-          );
-
-          scrollToBottom();
-
-        }
-
-      )
-
-
-      // DELETE
-      .on(
-
-        "postgres_changes",
-
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "messages"
-        },
-
-        function (payload) {
-
-          removeMessageFromScreen(
-            payload.old.id
-          );
-
-        }
-
-      )
-
-
-      .subscribe(
-        function (status) {
-
-          console.log(
-            "Realtime:",
-            status
-          );
-
-
-          if (
-            status ===
-            "SUBSCRIBED"
-          ) {
-
-            onlineStatus.textContent =
-              "● Connected";
-
-          }
-
-        }
-      );
+await renderMessage(message, false);
 
 }
 
+scrollToBottom();
 
-// ======================================================
-// SEND TEXT
-// ======================================================
+}
 
-sendBtn.addEventListener(
-  "click",
-  sendTextMessage
+/* =========================
+REALTIME
+========================= */
+
+function setupRealtime() {
+
+if (realtimeChannel) {
+
+supabaseClient.removeChannel(
+  realtimeChannel
 );
 
-
-messageInput.addEventListener(
-  "keydown",
-  function (event) {
-
-    if (
-      event.key === "Enter"
-    ) {
-
-      event.preventDefault();
-
-      sendTextMessage();
-
-    }
-
-  }
-);
-
-
-async function sendTextMessage() {
-
-  const text =
-    messageInput.value.trim();
-
-
-  if (!text) {
-
-    return;
-
-  }
-
-
-  if (!currentUser) {
-
-    alert(
-      "Please join the team first."
-    );
-
-    return;
-
-  }
-
-
-  sendBtn.disabled = true;
-
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert({
-
-          sender_id:
-            currentUser.id,
-
-          sender_name:
-            currentUsername,
-
-          message_type:
-            detectMessageType(text),
-
-          message:
-            cleanCodeMessage(text)
-
-        })
-        .select()
-        .single();
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    // Sender ko immediately message dikhao
-    if (data) {
-
-      renderMessage(data);
-
-      scrollToBottom();
-
-    }
-
-
-    messageInput.value = "";
-
-
-  } catch (error) {
-
-    console.error(
-      "Message error:",
-      error
-    );
-
-
-    alert(
-      "Message send failed:\n" +
-      error.message
-    );
-
-
-  } finally {
-
-    sendBtn.disabled = false;
-
-    messageInput.focus();
-
-  }
-
 }
 
+realtimeChannel =
+supabaseClient
+.channel("neural-ninjas-messages")
 
-// ======================================================
-// DETECT CODE
-// ======================================================
+  .on(
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages"
+    },
+    async payload => {
 
-function detectMessageType(text) {
+      /*
+       Avoid duplicate rendering because the sender
+       already renders their own newly inserted message.
+      */
 
-  if (
-    text.startsWith("```") &&
-    text.endsWith("```")
-  ) {
+      if (
+        payload.new.sender_id === currentUser?.id
+      ) {
+        return;
+      }
 
-    return "code";
-
-  }
-
-
-  return "text";
-
-}
-
-
-// ======================================================
-// CLEAN CODE
-// ======================================================
-
-function cleanCodeMessage(text) {
-
-  if (
-    text.startsWith("```") &&
-    text.endsWith("```")
-  ) {
-
-    return text
-      .replace(
-        /^```[a-zA-Z0-9_-]*\n?/,
-        ""
-      )
-      .replace(
-        /```$/,
-        ""
-      )
-      .trim();
-
-  }
-
-
-  return text;
-
-}
-
-
-// ======================================================
-// MEDIA BUTTON
-// ======================================================
-
-mediaBtn.addEventListener(
-  "click",
-  function () {
-
-    fileInput.click();
-
-  }
-);
-
-
-fileInput.addEventListener(
-  "change",
-  async function () {
-
-    const file =
-      fileInput.files[0];
-
-
-    if (!file) {
-
-      return;
-
-    }
-
-
-    await uploadMedia(file);
-
-
-    fileInput.value = "";
-
-  }
-);
-
-
-// ======================================================
-// UPLOAD MEDIA
-// ======================================================
-
-async function uploadMedia(file) {
-
-  if (!currentUser) {
-
-    return;
-
-  }
-
-
-  try {
-
-    mediaBtn.disabled = true;
-
-    mediaBtn.textContent =
-      "⏳";
-
-
-    const extension =
-      getFileExtension(
-        file.name
+      await renderMessage(
+        payload.new,
+        true
       );
 
+    }
+  )
 
-    const filePath =
-      currentUser.id +
-      "/" +
-      Date.now() +
-      "_" +
-      Math.random()
-        .toString(36)
-        .substring(2) +
-      extension;
+  .on(
+    "postgres_changes",
+    {
+      event: "DELETE",
+      schema: "public",
+      table: "messages"
+    },
+    payload => {
 
-
-    const {
-      error: uploadError
-    } =
-      await supabaseClient
-        .storage
-        .from(
-          "neural-ninjas-media"
-        )
-        .upload(
-          filePath,
-          file
+      const element =
+        document.querySelector(
+          `[data-message-id="${payload.old.id}"]`
         );
 
-
-    if (uploadError) {
-
-      throw uploadError;
-
-    }
-
-
-    const {
-      data: signedData,
-      error: signedError
-    } =
-      await supabaseClient
-        .storage
-        .from(
-          "neural-ninjas-media"
-        )
-        .createSignedUrl(
-          filePath,
-          60 * 60 * 24 * 30
-        );
-
-
-    if (signedError) {
-
-      throw signedError;
+      if (element) {
+        element.remove();
+      }
 
     }
+  )
 
+  .subscribe();
 
-    let messageType =
-      "file";
+}
 
+/* =========================
+PRESENCE
+========================= */
 
-    if (
-      file.type.startsWith(
-        "image/"
-      )
-    ) {
+async function setupPresence() {
 
-      messageType =
-        "image";
+if (presenceChannel) {
 
-    }
+await supabaseClient.removeChannel(
+  presenceChannel
+);
 
-    else if (
-      file.type.startsWith(
-        "video/"
-      )
-    ) {
+}
 
-      messageType =
-        "video";
+presenceUsers = {};
 
-    }
+presenceChannel =
+supabaseClient.channel(
+"neural-ninjas-presence",
+{
+config: {
+presence: {
+key: currentUser.id
+}
+}
+}
+);
 
-    else if (
-      file.type.startsWith(
-        "audio/"
-      )
-    ) {
+presenceChannel.on(
+"presence",
+{
+event: "sync"
+},
+() => {
 
-      messageType =
-        "audio";
+  rebuildPresence();
 
-    }
+}
 
+);
 
-    const {
-      data: messageData,
-      error: messageError
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert({
+presenceChannel.on(
+"presence",
+{
+event: "join"
+},
+() => {
 
-          sender_id:
-            currentUser.id,
+  rebuildPresence();
 
-          sender_name:
-            currentUsername,
+}
 
-          message_type:
-            messageType,
+);
 
-          message:
-            file.name,
+presenceChannel.on(
+"presence",
+{
+event: "leave"
+},
+() => {
 
-          file_url:
-            signedData.signedUrl
+  rebuildPresence();
 
-        })
-        .select()
-        .single();
+}
 
+);
 
-    if (messageError) {
+presenceChannel.subscribe(
+async status => {
 
-      throw messageError;
+  if (status === "SUBSCRIBED") {
 
-    }
+    await presenceChannel.track({
+      user_id: currentUser.id,
+      username: currentProfile.username
+    });
 
-
-    // Sender ko media bhi immediately dikhao
-    if (messageData) {
-
-      renderMessage(messageData);
-
-      scrollToBottom();
-
-    }
-
-
-  } catch (error) {
-
-    console.error(
-      "Upload error:",
-      error
-    );
-
-
-    alert(
-      "Upload failed:\n" +
-      error.message
-    );
-
-
-  } finally {
-
-    mediaBtn.disabled = false;
-
-    mediaBtn.textContent =
-      "＋";
+    rebuildPresence();
 
   }
 
 }
 
+);
 
-// ======================================================
-// FILE EXTENSION
-// ======================================================
+}
 
-function getFileExtension(
-  filename
+/* =========================
+PRESENCE STATE
+========================= */
+
+function rebuildPresence() {
+
+if (!presenceChannel) {
+return;
+}
+
+const state =
+presenceChannel.presenceState();
+
+const online = {};
+
+Object.keys(state).forEach(key => {
+
+const entries = state[key];
+
+if (!entries || !entries.length) {
+  return;
+}
+
+const user = entries[0];
+
+if (user.user_id) {
+
+  online[user.user_id] = {
+    username: user.username || "Unknown"
+  };
+
+}
+
+});
+
+presenceUsers = online;
+
+updateOnlineStatus();
+
+renderMembers();
+
+}
+
+/* =========================
+LOAD ALL MEMBERS
+========================= */
+
+async function loadMembers() {
+
+const {
+data,
+error
+} = await supabaseClient
+.from("profiles")
+.select("id, username, created_at")
+.order("created_at", {
+ascending: true
+});
+
+if (error) {
+
+console.error("Members error:", error);
+
+return;
+
+}
+
+window.allMembers = data || [];
+
+renderMembers();
+
+}
+
+/* =========================
+RENDER MEMBERS
+========================= */
+
+function renderMembers() {
+
+const allMembers =
+window.allMembers || [];
+
+memberCount.textContent =
+"${allMembers.length} ${ allMembers.length === 1 ? "member" : "members" }";
+
+membersList.innerHTML = "";
+
+for (const member of allMembers) {
+
+const isOnline =
+  Boolean(
+    presenceUsers[member.id]
+  );
+
+
+const item =
+  document.createElement("div");
+
+item.className = "member";
+
+
+const avatar =
+  document.createElement("div");
+
+avatar.className =
+  "member-avatar";
+
+avatar.textContent =
+  member.username
+    .charAt(0)
+    .toUpperCase();
+
+
+const info =
+  document.createElement("div");
+
+info.className =
+  "member-info";
+
+
+const name =
+  document.createElement("div");
+
+name.className =
+  "member-name";
+
+name.textContent =
+  member.username;
+
+
+const status =
+  document.createElement("div");
+
+status.className =
+  "member-status";
+
+
+const dot =
+  document.createElement("span");
+
+dot.className =
+  "status-dot" +
+  (isOnline ? " online" : "");
+
+
+const statusText =
+  document.createElement("span");
+
+statusText.textContent =
+  isOnline
+    ? "Online"
+    : "Offline";
+
+
+status.appendChild(dot);
+status.appendChild(statusText);
+
+info.appendChild(name);
+info.appendChild(status);
+
+item.appendChild(avatar);
+item.appendChild(info);
+
+membersList.appendChild(item);
+
+}
+
+updateOnlineStatus();
+
+}
+
+/* =========================
+ONLINE STATUS
+========================= */
+
+function updateOnlineStatus() {
+
+const count =
+Object.keys(
+presenceUsers
+).length;
+
+onlineStatus.textContent =
+"${count} ${ count === 1 ? "member" : "members" } online";
+
+}
+
+/* =========================
+SIDEBAR
+========================= */
+
+function openSidebar() {
+
+membersSidebar.classList.add("open");
+
+sidebarOverlay.classList.add("show");
+
+renderMembers();
+
+}
+
+function closeSidebar() {
+
+membersSidebar.classList.remove("open");
+
+sidebarOverlay.classList.remove("show");
+
+}
+
+/* =========================
+SEND MESSAGE
+========================= */
+
+async function sendMessage() {
+
+if (sending) {
+return;
+}
+
+const text =
+messageInput.value.trim();
+
+if (!text) {
+return;
+}
+
+sending = true;
+
+sendBtn.disabled = true;
+
+try {
+
+const {
+  data,
+  error
+} = await supabaseClient
+  .from("messages")
+  .insert({
+    sender_id: currentUser.id,
+    sender_name: currentProfile.username,
+    message_type: detectCode(text)
+      ? "code"
+      : "text",
+    message: text
+  })
+  .select()
+  .single();
+
+
+if (error) {
+  throw error;
+}
+
+
+/*
+ Render immediately for sender.
+*/
+
+await renderMessage(data, true);
+
+messageInput.value = "";
+
+playSendSound();
+
+scrollToBottom();
+
+} catch (error) {
+
+console.error(error);
+
+alert(
+  error.message ||
+  "Message could not be sent."
+);
+
+}
+
+sending = false;
+
+sendBtn.disabled = false;
+
+messageInput.focus();
+
+}
+
+/* =========================
+SEND SOUND
+========================= */
+
+function playSendSound() {
+
+try {
+
+const AudioContext =
+  window.AudioContext ||
+  window.webkitAudioContext;
+
+
+if (!AudioContext) {
+  return;
+}
+
+
+const ctx =
+  new AudioContext();
+
+
+const oscillator =
+  ctx.createOscillator();
+
+const gain =
+  ctx.createGain();
+
+
+oscillator.type = "sine";
+
+oscillator.frequency.setValueAtTime(
+  850,
+  ctx.currentTime
+);
+
+oscillator.frequency.exponentialRampToValueAtTime(
+  1200,
+  ctx.currentTime + 0.06
+);
+
+
+gain.gain.setValueAtTime(
+  0.0001,
+  ctx.currentTime
+);
+
+gain.gain.exponentialRampToValueAtTime(
+  0.08,
+  ctx.currentTime + 0.01
+);
+
+gain.gain.exponentialRampToValueAtTime(
+  0.0001,
+  ctx.currentTime + 0.09
+);
+
+
+oscillator.connect(gain);
+
+gain.connect(ctx.destination);
+
+oscillator.start();
+
+oscillator.stop(
+  ctx.currentTime + 0.1
+);
+
+} catch (error) {
+
+console.log(
+  "Sound unavailable."
+);
+
+}
+
+}
+
+/* =========================
+FILE UPLOAD
+========================= */
+
+async function handleFileUpload() {
+
+const file =
+fileInput.files[0];
+
+if (!file) {
+return;
+}
+
+if (uploading) {
+return;
+}
+
+if (file.size > 50 * 1024 * 1024) {
+
+alert(
+  "File is larger than 50 MB."
+);
+
+fileInput.value = "";
+
+return;
+
+}
+
+uploading = true;
+
+mediaBtn.disabled = true;
+
+try {
+
+const extension =
+  file.name.includes(".")
+    ? "." +
+      file.name
+        .split(".")
+        .pop()
+    : "";
+
+
+const safeName =
+  `${Date.now()}-${crypto.randomUUID()}${extension}`;
+
+
+const path =
+  `${currentUser.id}/${safeName}`;
+
+
+const {
+  error: uploadError
+} = await supabaseClient.storage
+  .from("neural-ninjas-media")
+  .upload(
+    path,
+    file,
+    {
+      contentType: file.type,
+      upsert: false
+    }
+  );
+
+
+if (uploadError) {
+  throw uploadError;
+}
+
+
+const {
+  data: signedData,
+  error: signedError
+} = await supabaseClient.storage
+  .from("neural-ninjas-media")
+  .createSignedUrl(
+    path,
+    60 * 60 * 24 * 30
+  );
+
+
+if (signedError) {
+  throw signedError;
+}
+
+
+const {
+  data: message,
+  error: messageError
+} = await supabaseClient
+  .from("messages")
+  .insert({
+    sender_id: currentUser.id,
+    sender_name: currentProfile.username,
+    message_type: getMediaType(file.type),
+    message: file.name,
+    file_url: signedData.signedUrl
+  })
+  .select()
+  .single();
+
+
+if (messageError) {
+  throw messageError;
+}
+
+
+await renderMessage(
+  message,
+  true
+);
+
+playSendSound();
+
+scrollToBottom();
+
+} catch (error) {
+
+console.error(error);
+
+alert(
+  error.message ||
+  "File upload failed."
+);
+
+}
+
+uploading = false;
+
+mediaBtn.disabled = false;
+
+fileInput.value = "";
+
+}
+
+/* =========================
+MEDIA TYPE
+========================= */
+
+function getMediaType(type) {
+
+if (type.startsWith("image/")) {
+return "image";
+}
+
+if (type.startsWith("video/")) {
+return "video";
+}
+
+if (type.startsWith("audio/")) {
+return "audio";
+}
+
+return "file";
+
+}
+
+/* =========================
+RENDER MESSAGE
+========================= */
+
+async function renderMessage(
+data,
+shouldScroll = true
 ) {
 
-  const index =
-    filename.lastIndexOf(".");
+if (
+document.querySelector(
+"[data-message-id="${data.id}"]"
+)
+) {
+return;
+}
 
+const wrapper =
+document.createElement("div");
 
-  if (index === -1) {
+wrapper.className = "message";
 
-    return "";
+if (
+data.sender_id === currentUser.id
+) {
 
-  }
-
-
-  return filename.substring(
-    index
-  );
+wrapper.classList.add("mine");
 
 }
 
+wrapper.dataset.messageId =
+data.id;
 
-// ======================================================
-// RENDER MESSAGE
-// ======================================================
+const bubble =
+document.createElement("div");
 
-function renderMessage(message) {
+bubble.className =
+"bubble";
 
-  if (
-    document.querySelector(
-      `[data-message-id="${message.id}"]`
-    )
-  ) {
+const sender =
+document.createElement("div");
 
-    return;
+sender.className =
+"sender";
 
-  }
+sender.textContent =
+data.sender_name;
 
+bubble.appendChild(sender);
 
-  const wrapper =
-    document.createElement("div");
+if (
+data.message_type === "image" ||
+data.message_type === "video" ||
+data.message_type === "audio"
+) {
 
+await renderMedia(
+  bubble,
+  data
+);
 
-  wrapper.className =
-    "message";
+} else if (
+data.message_type === "code"
+) {
 
+renderCode(
+  bubble,
+  data.message || ""
+);
 
-  wrapper.dataset.messageId =
-    message.id;
+} else {
 
-
-  if (
-    message.sender_id ===
-    currentUser?.id
-  ) {
-
-    wrapper.classList.add(
-      "mine"
-    );
-
-  }
-
-
-  const bubble =
-    document.createElement("div");
-
-
-  bubble.className =
-    "bubble";
-
-
-  const sender =
-    document.createElement("div");
-
-
-  sender.className =
-    "sender";
-
-
-  sender.textContent =
-    message.sender_name ||
-    "Unknown";
-
-
-  bubble.appendChild(
-    sender
-  );
-
-
-  switch (
-    message.message_type
-  ) {
-
-    case "image":
-
-      renderImage(
-        bubble,
-        message
-      );
-
-      break;
-
-
-    case "video":
-
-      renderVideo(
-        bubble,
-        message
-      );
-
-      break;
-
-
-    case "audio":
-
-      renderAudio(
-        bubble,
-        message
-      );
-
-      break;
-
-
-    case "code":
-
-      renderCode(
-        bubble,
-        message.message || ""
-      );
-
-      break;
-
-
-    default:
-
-      renderText(
-        bubble,
-        message.message || ""
-      );
-      break;
-
-  }
-
-
-  const time =
-    document.createElement("div");
-
-
-  time.className =
-    "time";
-
-
-  time.textContent =
-    formatTime(
-      message.created_at
-    );
-
-
-  bubble.appendChild(
-    time
-  );
-
-
-  // ====================================================
-  // DELETE BUTTON
-  // ====================================================
-
-  const deleteButton =
-    document.createElement("button");
-
-
-  deleteButton.className =
-    "delete-message";
-
-
-  deleteButton.textContent =
-    "Delete";
-
-
-  deleteButton.addEventListener(
-    "click",
-    async function () {
-
-      await deleteMessage(
-        message.id,
-        deleteButton
-      );
-
-    }
-  );
-
-
-  bubble.appendChild(
-    deleteButton
-  );
-
-
-  wrapper.appendChild(
-    bubble
-  );
-
-
-  messagesBox.appendChild(
-    wrapper
-  );
-
-
-  if (
-    typeof hljs !==
-    "undefined"
-  ) {
-
-    wrapper
-      .querySelectorAll(
-        "pre code"
-      )
-      .forEach(
-        function (block) {
-
-          hljs.highlightElement(
-            block
-          );
-
-        }
-      );
-
-  }
+renderText(
+  bubble,
+  data.message || ""
+);
 
 }
 
+const time =
+document.createElement("div");
 
-// ======================================================
-// TEXT
-// ======================================================
+time.className =
+"time";
+
+time.textContent =
+formatTime(data.created_at);
+
+bubble.appendChild(time);
+
+const deleteButton =
+document.createElement("button");
+
+deleteButton.className =
+"delete-message";
+
+deleteButton.textContent =
+"Delete";
+
+deleteButton.addEventListener(
+"click",
+() => deleteMessage(
+data.id,
+deleteButton,
+wrapper
+)
+);
+
+bubble.appendChild(deleteButton);
+
+wrapper.appendChild(bubble);
+
+messages.appendChild(wrapper);
+
+if (shouldScroll) {
+scrollToBottom();
+}
+
+}
+
+/* =========================
+TEXT + LINKS
+========================= */
 
 function renderText(
-  container,
-  text
+container,
+text
 ) {
-  
-  const element =
-    document.createElement("div");
-  
-  element.className =
-    "text";
-  
-  
-  const urlRegex =
-    /(https?:\/\/[^\s]+)/g;
-  
-  
-  let lastIndex = 0;
-  
-  let match;
-  
-  
-  while (
-    (match =
-      urlRegex.exec(text)) !== null
-  ) {
-    
-    // Normal text before URL
-    if (
-      match.index >
-      lastIndex
-    ) {
-      
-      element.appendChild(
-        document.createTextNode(
-          text.substring(
-            lastIndex,
-            match.index
-          )
-        )
-      );
-      
-    }
-    
-    
-    // Clickable URL
-    const link =
-      document.createElement("a");
-    
-    
-    link.href =
-      match[0];
-    
-    link.textContent =
-      match[0];
-    
-    link.target =
-      "_blank";
-    
-    link.rel =
-      "noopener noreferrer";
-    
-    
-    // High-contrast link style
-    link.style.color =
-      "#00e5ff";
-    
-    link.style.fontWeight =
-      "600";
-    
-    link.style.textDecoration =
-      "underline";
-    
-    link.style.textDecorationThickness =
-      "2px";
-    
-    link.style.textUnderlineOffset =
-      "3px";
-    
-    
-    // Touch/click feedback
-    link.addEventListener(
-      "touchstart",
-      function() {
-        
-        link.style.color =
-          "#ffffff";
-        
-      }
-    );
-    
-    
-    link.addEventListener(
-      "touchend",
-      function() {
-        
-        link.style.color =
-          "#00e5ff";
-        
-      }
-    );
-    
-    
-    element.appendChild(
-      link
-    );
-    
-    
-    lastIndex =
-      urlRegex.lastIndex;
-    
-  }
-  
-  
-  // Remaining text
-  if (
-    lastIndex <
-    text.length
-  ) {
-    
-    element.appendChild(
-      document.createTextNode(
-        text.substring(
-          lastIndex
-        )
-      )
-    );
-    
-  }
-  
-  
-  // Message without URL
-  if (
-    lastIndex === 0
-  ) {
-    
-    element.textContent =
-      text;
-    
-  }
-  
-  
-  container.appendChild(
-    element
+
+const urlRegex =
+/(https?://[^\s]+|www.[^\s]+)/gi;
+
+let lastIndex = 0;
+
+let match;
+
+while (
+(match = urlRegex.exec(text)) !== null
+) {
+
+const before =
+  text.slice(
+    lastIndex,
+    match.index
   );
-  
+
+
+if (before) {
+
+  container.appendChild(
+    document.createTextNode(before)
+  );
+
 }
 
 
-// ======================================================
-// CODE
-// ======================================================
+let url =
+  match[0];
+
+
+let trailing = "";
+
+
+while (
+  /[.,!?;:]$/.test(url)
+) {
+
+  trailing =
+    url.slice(-1) +
+    trailing;
+
+  url =
+    url.slice(0, -1);
+
+}
+
+
+const link =
+  document.createElement("a");
+
+link.className =
+  "message-link";
+
+link.href =
+  url.startsWith("www.")
+    ? "https://" + url
+    : url;
+
+link.target = "_blank";
+
+link.rel =
+  "noopener noreferrer";
+
+link.textContent =
+  url;
+
+
+container.appendChild(link);
+
+
+if (trailing) {
+
+  container.appendChild(
+    document.createTextNode(trailing)
+  );
+
+}
+
+
+lastIndex =
+  match.index +
+  match[0].length;
+
+}
+
+const remaining =
+text.slice(lastIndex);
+
+if (remaining) {
+
+container.appendChild(
+  document.createTextNode(remaining)
+);
+
+}
+
+}
+
+/* =========================
+CODE
+========================= */
+
+function detectCode(text) {
+
+const indicators = [
+"```",
+"function ",
+"const ",
+"let ",
+"var ",
+"=>",
+"<html",
+"<div",
+"SELECT ",
+"INSERT ",
+"CREATE TABLE",
+"def ",
+"import ",
+"public class ",
+"console.log"
+];
+
+return indicators.some(
+indicator =>
+text.includes(indicator)
+);
+
+}
+
+function cleanCode(text) {
+
+return text
+.replace(/^"[a-zA-Z0-9_-]*\n?/, "") .replace(/"$/, "")
+.trim();
+
+}
 
 function renderCode(
-  container,
-  code
+container,
+text
 ) {
 
-  const box =
-    document.createElement("div");
+const code =
+cleanCode(text);
 
+const box =
+document.createElement("div");
 
-  box.className =
-    "code-box";
+box.className =
+"code-box";
 
+const pre =
+document.createElement("pre");
 
-  const pre =
-    document.createElement("pre");
+const codeElement =
+document.createElement("code");
 
+codeElement.textContent =
+code;
 
-  const codeElement =
-    document.createElement("code");
+pre.appendChild(codeElement);
 
+box.appendChild(pre);
 
-  codeElement.textContent =
-    code;
+const copyButton =
+document.createElement("button");
 
+copyButton.className =
+"copy-code";
 
-  pre.appendChild(
-    codeElement
-  );
+copyButton.textContent =
+"Copy Code";
 
-
-  const copyButton =
-    document.createElement("button");
-
-
-  copyButton.className =
-    "copy-code";
-
-
-  copyButton.textContent =
-    "Copy Code";
-
-
-  copyButton.addEventListener(
-    "click",
-    async function () {
-
-      try {
-
-        await navigator.clipboard
-          .writeText(code);
-
-
-        copyButton.textContent =
-          "Copied!";
-
-
-        setTimeout(
-          function () {
-
-            copyButton.textContent =
-              "Copy Code";
-
-          },
-          1500
-        );
-
-
-      } catch (error) {
-
-        alert(
-          "Copy failed."
-        );
-
-      }
-
-    }
-  );
-
-
-  box.appendChild(
-    pre
-  );
-
-
-  box.appendChild(
-    copyButton
-  );
-
-
-  container.appendChild(
-    box
-  );
-
-}
-
-
-// ======================================================
-// IMAGE
-// ======================================================
-
-function renderImage(
-  container,
-  message
-) {
-
-  const image =
-    document.createElement("img");
-
-
-  image.className =
-    "chat-media";
-
-
-  image.src =
-    message.file_url;
-
-
-  image.alt =
-    message.message ||
-    "Image";
-
-
-  image.loading =
-    "lazy";
-
-
-  image.addEventListener(
-    "click",
-    function () {
-
-      window.open(
-        message.file_url,
-        "_blank"
-      );
-
-    }
-  );
-
-
-  container.appendChild(
-    image
-  );
-
-
-  addSaveButton(
-    container,
-    message.file_url,
-    message.message ||
-      "image"
-  );
-
-}
-
-
-// ======================================================
-// VIDEO
-// ======================================================
-
-function renderVideo(
-  container,
-  message
-) {
-
-  const video =
-    document.createElement("video");
-
-
-  video.className =
-    "chat-media";
-
-
-  video.src =
-    message.file_url;
-
-
-  video.controls = true;
-
-  video.playsInline = true;
-
-
-  container.appendChild(
-    video
-  );
-
-
-  addSaveButton(
-    container,
-    message.file_url,
-    message.message ||
-      "video"
-  );
-
-}
-
-
-// ======================================================
-// AUDIO FILE
-// ======================================================
-
-function renderAudio(
-  container,
-  message
-) {
-
-  const audio =
-    document.createElement("audio");
-
-
-  audio.src =
-    message.file_url;
-
-
-  audio.controls = true;
-
-
-  container.appendChild(
-    audio
-  );
-
-
-  addSaveButton(
-    container,
-    message.file_url,
-    message.message ||
-      "audio"
-  );
-
-}
-
-
-// ======================================================
-// SAVE MEDIA
-// ======================================================
-
-function addSaveButton(
-  container,
-  url,
-  filename
-) {
-
-  const button =
-    document.createElement("a");
-
-
-  button.className =
-    "copy-code";
-
-
-  button.textContent =
-    "Save Media";
-
-
-  button.href =
-    url;
-
-
-  button.target =
-    "_blank";
-
-
-  button.rel =
-    "noopener";
-
-
-  button.download =
-    filename;
-
-
-  container.appendChild(
-    button
-  );
-
-}
-
-
-// ======================================================
-// DELETE MESSAGE
-// ======================================================
-
-async function deleteMessage(
-  messageId,
-  button
-) {
-
-  if (
-    !confirm(
-      "Delete this message?"
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  if (!currentUser) {
-
-    alert(
-      "Please join the team first."
-    );
-
-    return;
-
-  }
-
-
-  button.disabled = true;
-
+copyButton.addEventListener(
+"click",
+async () => {
 
   try {
 
-    console.log(
-      "Deleting message:",
-      messageId
+    await navigator.clipboard.writeText(
+      code
     );
 
+    copyButton.textContent =
+      "Copied!";
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .delete()
-        .eq(
-          "id",
-          messageId
-        )
-        .select();
+    setTimeout(() => {
 
+      copyButton.textContent =
+        "Copy Code";
 
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    console.log(
-      "Delete response:",
-      data
-    );
-
-
-    // Agar row delete hui hai
-    if (
-      data &&
-      data.length > 0
-    ) {
-
-      removeMessageFromScreen(
-        messageId
-      );
-
-    } else {
-
-      // Realtime available ho to bhi
-      // UI ko immediately remove kar do
-      removeMessageFromScreen(
-        messageId
-      );
-
-    }
-
+    }, 1200);
 
   } catch (error) {
 
-    console.error(
-      "Delete error:",
-      error
-    );
-
-
     alert(
-      "Delete failed:\n" +
-      error.message
+      "Copy failed."
     );
-
-
-    button.disabled = false;
 
   }
 
 }
 
+);
 
-// ======================================================
-// REMOVE MESSAGE FROM SCREEN
-// ======================================================
+box.appendChild(copyButton);
 
-function removeMessageFromScreen(
-  messageId
+container.appendChild(box);
+
+if (
+window.hljs &&
+typeof hljs.highlightElement ===
+"function"
 ) {
 
-  const element =
-    document.querySelector(
-      `[data-message-id="${messageId}"]`
-    );
-
-
-  if (element) {
-
-    element.remove();
-
-  }
+hljs.highlightElement(
+  codeElement
+);
 
 }
 
+}
 
-// ======================================================
-// TIME
-// ======================================================
+/* =========================
+MEDIA RENDER
+========================= */
 
-function formatTime(
-  timestamp
+async function renderMedia(
+container,
+data
 ) {
 
-  if (!timestamp) {
+if (!data.file_url) {
+return;
+}
 
-    return "";
+let url =
+data.file_url;
 
-  }
+/*
+Existing signed URLs may expire.
+Try to extract storage path and create
+a fresh signed URL when possible.
+*/
+
+const freshUrl =
+await refreshSignedUrl(url);
+
+if (freshUrl) {
+url = freshUrl;
+}
+
+if (
+data.message_type === "image"
+) {
+
+const image =
+  document.createElement("img");
+
+image.className =
+  "chat-media";
+
+image.src = url;
+
+image.alt =
+  data.message || "Image";
+
+container.appendChild(image);
+
+}
+
+if (
+data.message_type === "video"
+) {
+
+const video =
+  document.createElement("video");
+
+video.className =
+  "chat-media";
+
+video.controls = true;
+
+video.playsInline = true;
+
+video.src = url;
+
+container.appendChild(video);
+
+}
+
+if (
+data.message_type === "audio"
+) {
+
+const audio =
+  document.createElement("audio");
+
+audio.controls = true;
+
+audio.src = url;
+
+container.appendChild(audio);
+
+}
+
+const saveLink =
+document.createElement("a");
+
+saveLink.className =
+"save-media";
+
+saveLink.href =
+url;
+
+saveLink.target =
+"_blank";
+
+saveLink.rel =
+"noopener noreferrer";
+
+saveLink.download =
+data.message || "media";
+
+saveLink.textContent =
+"Save Media";
+
+container.appendChild(
+saveLink
+);
+
+}
+
+/* =========================
+SIGNED URL REFRESH
+========================= */
+
+async function refreshSignedUrl(
+url
+) {
+
+try {
+
+const marker =
+  "/storage/v1/object/sign/neural-ninjas-media/";
+
+const index =
+  url.indexOf(marker);
 
 
-  const date =
-    new Date(timestamp);
+if (index === -1) {
+  return url;
+}
 
 
-  return date.toLocaleTimeString(
-    [],
-    {
-      hour: "2-digit",
-      minute: "2-digit"
-    }
+const rest =
+  url.slice(
+    index + marker.length
   );
 
+
+const path =
+  rest.split("?")[0];
+
+
+const {
+  data,
+  error
+} = await supabaseClient.storage
+  .from("neural-ninjas-media")
+  .createSignedUrl(
+    decodeURIComponent(path),
+    60 * 60 * 24 * 30
+  );
+
+
+if (error) {
+  return url;
 }
 
 
-// ======================================================
-// SCROLL
-// ======================================================
+return data.signedUrl;
+
+} catch (error) {
+
+return url;
+
+}
+
+}
+
+/* =========================
+DELETE MESSAGE
+========================= */
+
+async function deleteMessage(
+messageId,
+button,
+wrapper
+) {
+
+if (button.disabled) {
+return;
+}
+
+button.disabled = true;
+
+button.textContent =
+"Deleting...";
+
+try {
+
+const {
+  data,
+  error
+} = await supabaseClient
+  .from("messages")
+  .delete()
+  .eq("id", messageId)
+  .select();
+
+
+if (error) {
+  throw error;
+}
+
+
+/*
+ Remove immediately.
+Realtime DELETE will also arrive,
+ but the DOM check prevents problems.
+*/
+
+wrapper.remove();
+
+} catch (error) {
+
+console.error(error);
+
+button.disabled = false;
+
+button.textContent =
+  "Delete";
+
+alert(
+  error.message ||
+  "Delete failed."
+);
+
+}
+
+}
+
+/* =========================
+EXIT CHAT
+========================= */
+
+async function exitChat() {
+
+/*
+IMPORTANT:
+Do NOT sign out.
+
+This keeps the anonymous identity/session
+so the same device can return to the same
+Neural Ninjas identity.
+*/
+
+closeSidebar();
+
+chatScreen.classList.add("hidden");
+
+loginScreen.classList.remove("hidden");
+
+usernameInput.value =
+currentProfile?.username || "";
+
+loginStatus.textContent =
+"Your Neural Ninjas session is saved on this device.";
+
+usernameInput.focus();
+
+}
+
+/* =========================
+TIME
+========================= */
+
+function formatTime(
+timestamp
+) {
+
+if (!timestamp) {
+return "";
+}
+
+const date =
+new Date(timestamp);
+
+return date.toLocaleTimeString(
+[],
+{
+hour: "2-digit",
+minute: "2-digit"
+}
+);
+
+}
+
+/* =========================
+SCROLL
+========================= */
 
 function scrollToBottom() {
 
-  messagesBox.scrollTop =
-    messagesBox.scrollHeight;
+requestAnimationFrame(() => {
+
+messages.scrollTop =
+  messages.scrollHeight;
+
+});
 
 }
-
-
-// ======================================================
-// FINAL
-// ======================================================
-
-console.log(
-  "🥷 NEURAL NINJAS READY — NO VOICE SYSTEM"
-);
