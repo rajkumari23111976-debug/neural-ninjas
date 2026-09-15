@@ -1,8 +1,9 @@
 const SUPABASE_URL = "https://uzletbnjofnxwmlgvnxp.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
+
 const supabaseClient = supabase.createClient(
-SUPABASE_URL,
-SUPABASE_KEY
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
 );
 /* =========================
 GLOBAL STATE
