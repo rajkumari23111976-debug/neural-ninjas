@@ -162,7 +162,10 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  height: 100dvh;
   background: #08101f;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -184,7 +187,8 @@ body {
   font-size: 17px;
 }
 
-#onlineStatus {
+#onlineStatus,
+#onlineStatus span {
   display: block;
   margin-top: 3px;
   color: #46e58b !important;
@@ -404,6 +408,8 @@ pre code {
   gap: 8px;
 
   padding: 10px;
+
+  flex-shrink: 0;
 
   background: #0c1528;
   border-top: 1px solid #1c2942;
