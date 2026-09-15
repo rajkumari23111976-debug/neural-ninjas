@@ -187,8 +187,9 @@ body {
 #onlineStatus {
   display: block;
   margin-top: 3px;
-  color: #7f8da8;
+  color: #46e58b !important;
   font-size: 11px;
+  font-weight: 600;
 }
 
 .header-actions {
@@ -364,20 +365,33 @@ pre code {
 ========================= */
 
 .delete-btn {
-  display: block;
-  margin-top: 6px;
-  margin-left: auto;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
 
-  border: none;
-  background: transparent;
-  color: #8490aa;
+  margin-top: 7px !important;
+  margin-left: auto !important;
 
-  font-size: 10px;
+  padding: 5px 9px !important;
+
+  border: 1px solid #303b55 !important;
+  border-radius: 7px !important;
+
+  background: #10192b !important;
+  color: #8490aa !important;
+
+  font-family: Arial, sans-serif !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .delete-btn:hover {
-  color: #ff7777;
+  background: #24151b !important;
+  border-color: #713744 !important;
+  color: #ff7777 !important;
 }
 
 /* =========================
