@@ -1,28 +1,20 @@
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background: #050812;
+  color: white;
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #05070d;
-  color: white;
-  height: 100vh;
   overflow: hidden;
-}
-
-button,
-input {
-  font-family: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-.screen {
-  height: 100vh;
 }
 
 .hidden {
@@ -30,320 +22,209 @@ button {
 }
 
 /* =========================
-LOGIN
+   LOGIN
 ========================= */
+
+.screen {
+  width: 100%;
+  height: 100%;
+}
 
 #loginScreen {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   padding: 20px;
+  background:
+    radial-gradient(circle at top, #17234a 0%, #080d1d 45%, #03050b 100%);
 }
 
 .login-card {
   width: 100%;
-  max-width: 380px;
-  padding: 35px 25px;
+  max-width: 390px;
+  padding: 30px 24px;
+  border-radius: 20px;
+  background: rgba(10, 15, 30, 0.94);
+  border: 1px solid #263252;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   text-align: center;
-  background: #0d111c;
-  border: 1px solid #263044;
-  border-radius: 22px;
-  box-shadow: 0 0 40px rgba(70, 100, 255, 0.12);
 }
 
 .logo {
-  font-size: 60px;
-  margin-bottom: 10px;
+  font-size: 52px;
+  margin-bottom: 8px;
 }
 
 .login-card h1 {
+  margin: 0;
   font-size: 25px;
   letter-spacing: 2px;
 }
 
 .subtitle {
-  color: #8993a8;
-  margin: 10px 0 30px;
+  color: #8995ae;
+  margin: 8px 0 24px;
+  font-size: 14px;
 }
 
 /* Username */
 
 #usernameInput {
-  width: 100%;
-  padding: 15px;
-  border-radius: 12px;
-  border: 1px solid #303a50;
-  background: #070a12;
-  color: white;
-  outline: none;
-  font-size: 16px;
-  margin-bottom: 12px;
+  width: 100% !important;
+  height: 52px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  border: 1px solid #303a50 !important;
+  background: #070b16 !important;
+  color: white !important;
+  outline: none !important;
+  font-size: 16px !important;
 }
 
 #usernameInput:focus {
-  border-color: #536dfe;
-  box-shadow: 0 0 0 3px rgba(83, 109, 254, 0.12);
+  border-color: #536dfe !important;
 }
 
 /* =========================
-PIN INPUT
+   PIN INPUT
 ========================= */
 
-#pinInput {
-  width: 100%;
-  height: 52px;
-  padding: 0 16px;
-  margin-bottom: 12px;
+#loginScreen .login-card #pinInput {
+  display: block !important;
+  width: 100% !important;
+  height: 52px !important;
+  margin: 10px 0 12px !important;
+  padding: 0 16px !important;
 
-  border-radius: 12px;
-  border: 1px solid #303a50;
+  border-radius: 12px !important;
+  border: 1px solid #303a50 !important;
 
-  background: #070a12;
-  color: white;
+  background: #070b16 !important;
+  color: #ffffff !important;
 
-  outline: none;
+  outline: none !important;
 
-  font-size: 20px;
-  font-weight: bold;
-  letter-spacing: 8px;
-  text-align: center;
+  font-family: Arial, sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
 
-  transition: 0.2s ease;
+  letter-spacing: 8px !important;
+  text-align: center !important;
+
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-#pinInput::placeholder {
-  color: #68738a;
-  font-size: 14px;
-  letter-spacing: 1px;
-  font-weight: normal;
+#loginScreen .login-card #pinInput::placeholder {
+  color: #68738a !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px !important;
 }
 
-#pinInput:focus {
-  border-color: #536dfe;
-  box-shadow:
-    0 0 0 3px rgba(83, 109, 254, 0.12),
-    0 0 18px rgba(83, 109, 254, 0.08);
+#loginScreen .login-card #pinInput:focus {
+  border-color: #536dfe !important;
+  box-shadow: 0 0 0 3px rgba(83, 109, 254, 0.15) !important;
 }
 
 /* =========================
-JOIN BUTTON
+   BUTTON
 ========================= */
 
 #joinBtn {
   width: 100%;
-  padding: 15px;
+  height: 52px;
   border: none;
   border-radius: 12px;
   background: #536dfe;
   color: white;
-  font-weight: bold;
   font-size: 15px;
-  transition: 0.15s ease;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 #joinBtn:active {
   transform: scale(0.98);
 }
 
-#joinBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 #loginStatus {
-  margin-top: 15px;
-  color: #ff7373;
+  min-height: 20px;
+  margin: 14px 0 0;
+  color: #ff8a8a;
   font-size: 13px;
-  line-height: 1.4;
 }
 
 /* =========================
-HEADER
+   CHAT HEADER
 ========================= */
 
-.chat-header {
-  height: 70px;
+#chatScreen {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  background: #0d111c;
-  border-bottom: 1px solid #20283a;
+  flex-direction: column;
+  background: #08101f;
 }
 
-.chat-header h2 {
-  font-size: 18px;
+.chat-header {
+  height: 64px;
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 14px;
+
+  background: #0c1528;
+  border-bottom: 1px solid #1c2942;
+}
+
+.header-info h2 {
+  margin: 0;
+  font-size: 17px;
 }
 
 #onlineStatus {
-  font-size: 12px;
-  color: #62d98b;
+  display: block;
+  margin-top: 3px;
+  color: #7f8da8;
+  font-size: 11px;
 }
 
 .header-actions {
   display: flex;
-  align-items: center;
-  gap: 3px;
+  gap: 5px;
 }
 
 .icon-btn {
   width: 40px;
   height: 40px;
+  border: none;
+  border-radius: 10px;
   background: transparent;
   color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 25px;
+  font-size: 24px;
+  cursor: pointer;
 }
 
 .icon-btn:hover {
-  background: #182033;
-}
-
-.icon-btn:active {
-  transform: scale(0.9);
+  background: #17233a;
 }
 
 /* =========================
-SIDEBAR
-========================= */
-
-.members-sidebar {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  right: -310px;
-  width: 300px;
-  max-width: 85%;
-  height: 100vh;
-  background: #0d111c;
-  border-left: 1px solid #29344b;
-  transition: right 0.25s ease;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35);
-}
-
-.members-sidebar.open {
-  right: 0;
-}
-
-.sidebar-header {
-  height: 75px;
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #20283a;
-}
-
-.sidebar-header h3 {
-  font-size: 17px;
-}
-
-.sidebar-header span {
-  display: block;
-  margin-top: 4px;
-  color: #7e899f;
-  font-size: 12px;
-}
-
-.close-sidebar {
-  width: 38px;
-  height: 38px;
-  border: none;
-  border-radius: 50%;
-  background: #192134;
-  color: white;
-  font-size: 25px;
-}
-
-.sidebar-overlay {
-  position: fixed;
-  z-index: 999;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: none;
-}
-
-.sidebar-overlay.show {
-  display: block;
-}
-
-.members-list {
-  padding: 10px;
-  overflow-y: auto;
-  height: calc(100vh - 75px);
-}
-
-.member {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 8px;
-  border-radius: 12px;
-}
-
-.member:hover {
-  background: #151c2b;
-}
-
-.member-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #25336a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.member-info {
-  min-width: 0;
-  flex: 1;
-}
-
-.member-name {
-  font-size: 14px;
-  font-weight: bold;
-  word-break: break-word;
-}
-
-.member-status {
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #78849b;
-  font-size: 11px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #596274;
-}
-
-.status-dot.online {
-  background: #62d98b;
-  box-shadow: 0 0 8px rgba(98, 217, 139, 0.6);
-}
-
-/* =========================
-MESSAGES
+   MESSAGES
 ========================= */
 
 #messages {
-  height: calc(100vh - 130px);
+  flex: 1;
   overflow-y: auto;
-  padding: 15px 12px;
+  padding: 14px;
   scroll-behavior: smooth;
 }
 
 .message {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .message.mine {
@@ -351,269 +232,369 @@ MESSAGES
 }
 
 .bubble {
-  max-width: 82%;
+  max-width: min(78%, 600px);
   padding: 10px 12px;
-  border-radius: 16px;
-  background: #151b2a;
-  border: 1px solid #222d43;
+  border-radius: 15px;
+  background: #17233a;
+  color: #ffffff;
+  overflow-wrap: anywhere;
 }
 
 .mine .bubble {
-  background: #25336a;
+  background: #263a8f;
 }
 
 .sender {
-  font-size: 11px;
-  color: #8e9ab4;
   margin-bottom: 5px;
+  color: #78d7ff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.mine .sender {
+  color: #d5dcff;
 }
 
 .text {
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.4;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 /* =========================
-TIMESTAMP
+   TIMESTAMP
 ========================= */
 
-/* app.js uses .time */
-.time {
-  display: block;
-  margin-top: 5px;
+.message .bubble .time {
+  display: block !important;
 
+  width: 100% !important;
+
+  margin-top: 6px !important;
+  padding-top: 2px !important;
+
+  font-family: Arial, sans-serif !important;
   font-size: 10px !important;
-  line-height: 1;
+  line-height: 1 !important;
+  font-weight: 400 !important;
 
-  font-weight: normal;
-  color: #9aa5bb;
+  color: #9aa5bb !important;
+  opacity: 0.55 !important;
 
-  opacity: 0.55;
+  text-align: right !important;
+  white-space: nowrap !important;
 
-  text-align: right;
-  white-space: nowrap;
+  letter-spacing: 0 !important;
 }
 
-/* Make timestamp slightly different inside own messages */
-.mine .time {
-  color: #b9c4ff;
+.message.mine .bubble .time {
+  color: #c7d0ff !important;
+  opacity: 0.6 !important;
 }
 
 /* =========================
-LINKS
+   LINKS
 ========================= */
 
-.message-link {
-  color: #19e6ff;
+.text a {
+  color: #55dfff;
   text-decoration: underline;
-  font-weight: 600;
-  word-break: break-all;
+  font-weight: 500;
+}
+
+.text a:visited {
+  color: #55dfff;
 }
 
 /* =========================
-CODE
+   CODE
 ========================= */
 
-.code-box {
-  position: relative;
-}
-
-.code-box pre {
-  background: #070a10;
-  padding: 13px;
+.code-wrapper {
+  margin-top: 6px;
   border-radius: 10px;
-  overflow-x: auto;
-  margin-top: 5px;
+  overflow: hidden;
+  background: #050914;
 }
 
-.code-box code {
-  font-family: monospace;
-  font-size: 13px;
+.code-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px;
+  background: #0b1220;
 }
 
 .copy-code {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 7px 10px;
   border: none;
   border-radius: 7px;
-  background: #303c59;
-  color: white;
-  text-decoration: none;
-  font-size: 12px;
-}
-
-.copy-code:active {
-  transform: scale(0.96);
-}
-
-/* =========================
-MEDIA
-========================= */
-
-.chat-media {
-  display: block;
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 10px;
-  margin-top: 5px;
-}
-
-video.chat-media {
-  width: 100%;
-}
-
-audio {
-  display: block;
-  max-width: 100%;
-  margin-top: 5px;
-}
-
-.save-media {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 7px 10px;
-  border-radius: 7px;
-  background: #303c59;
-  color: white;
-  text-decoration: none;
-  font-size: 12px;
-}
-
-/* =========================
-DELETE
-========================= */
-
-.delete-message {
-  display: block;
-  margin-top: 7px;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 7px;
-  background: #303744;
-  color: #ff8585;
+  padding: 6px 9px;
+  background: #1b2944;
+  color: #dbe4ff;
   font-size: 11px;
+  cursor: pointer;
 }
 
-.delete-message:active {
-  transform: scale(0.96);
+pre {
+  margin: 0;
+  overflow-x: auto;
 }
 
-.delete-message:disabled {
-  opacity: 0.5;
+pre code {
+  display: block;
+  padding: 12px;
+  font-size: 13px;
 }
 
 /* =========================
-COMPOSER
+   MEDIA
+========================= */
+
+.message img,
+.message video {
+  display: block;
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+.message audio {
+  max-width: 100%;
+}
+
+/* =========================
+   DELETE
+========================= */
+
+.delete-btn {
+  display: block;
+  margin-top: 6px;
+  margin-left: auto;
+
+  border: none;
+  background: transparent;
+  color: #8490aa;
+
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  color: #ff7777;
+}
+
+/* =========================
+   COMPOSER
 ========================= */
 
 .composer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60px;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px;
-  background: #0d111c;
-  border-top: 1px solid #20283a;
-}
+  gap: 8px;
 
-.tool-btn,
-.send-btn {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  color: white;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  padding: 10px;
 
-.tool-btn {
-  background: #1a2132;
-}
-
-.tool-btn:active {
-  transform: scale(0.94);
-}
-
-.send-btn {
-  background: #536dfe;
-}
-
-.send-btn:active {
-  transform: scale(0.94);
-}
-
-.send-btn:disabled,
-.tool-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: #0c1528;
+  border-top: 1px solid #1c2942;
 }
 
 #messageInput {
   flex: 1;
   min-width: 0;
-  height: 44px;
-  padding: 0 14px;
-  border-radius: 22px;
-  border: 1px solid #303a50;
-  background: #070a12;
-  color: white;
-  outline: none;
-  font-size: 15px;
-}
 
-#messageInput::placeholder {
-  color: #68738a;
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid #273653;
+  border-radius: 12px;
+
+  background: #070d1b;
+  color: white;
+
+  outline: none;
+  font-size: 14px;
 }
 
 #messageInput:focus {
   border-color: #536dfe;
 }
 
+.tool-btn,
+.send-btn {
+  flex-shrink: 0;
+
+  width: 44px;
+  height: 44px;
+
+  border: none;
+  border-radius: 12px;
+
+  cursor: pointer;
+}
+
+.tool-btn {
+  background: #17233a;
+  color: #cbd5f5;
+  font-size: 23px;
+}
+
+.send-btn {
+  background: #536dfe;
+  color: white;
+  font-size: 19px;
+}
+
 /* =========================
-MOBILE
+   SIDEBAR
 ========================= */
 
-@media (max-width: 420px) {
+.members-sidebar {
+  position: absolute;
+  z-index: 20;
+
+  top: 0;
+  right: 0;
+
+  width: min(320px, 88vw);
+  height: 100%;
+
+  background: #0b1324;
+  border-left: 1px solid #263452;
+
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+
+  box-shadow: -15px 0 40px rgba(0, 0, 0, 0.35);
+}
+
+.members-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-header {
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 15px;
+
+  border-bottom: 1px solid #1c2942;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.sidebar-header span {
+  color: #7f8da8;
+  font-size: 11px;
+}
+
+.close-sidebar {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.members-list {
+  padding: 10px;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 11px;
+
+  border-radius: 10px;
+}
+
+.member:hover {
+  background: #121e35;
+}
+
+.member-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #69758c;
+}
+
+.member-dot.online {
+  background: #46e58b;
+}
+
+.member-name {
+  font-size: 14px;
+}
+
+/* =========================
+   SIDEBAR OVERLAY
+========================= */
+
+.sidebar-overlay {
+  position: absolute;
+  z-index: 19;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.45);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.25s ease;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+  .login-card {
+    padding: 26px 18px;
+  }
+
+  .login-card h1 {
+    font-size: 22px;
+  }
+
+  .bubble {
+    max-width: 86%;
+  }
+
+  #messages {
+    padding: 10px;
+  }
+
+  .text {
+    font-size: 14px;
+  }
+
+  .message .bubble .time {
+    font-size: 9px !important;
+  }
 
   .composer {
-    gap: 5px;
-    padding: 7px;
+    padding: 8px;
+  }
+
+  #messageInput {
+    height: 42px;
   }
 
   .tool-btn,
   .send-btn {
     width: 42px;
-    min-width: 42px;
     height: 42px;
-    font-size: 18px;
-  }
-
-  #messageInput {
-    height: 42px;
-    font-size: 14px;
-  }
-
-  .bubble {
-    max-width: 88%;
-  }
-
-  .members-sidebar {
-    width: 285px;
-  }
-
-  #pinInput {
-    height: 50px;
-    font-size: 19px;
-    letter-spacing: 7px;
   }
 }
