@@ -128,7 +128,7 @@ body {
 }
 
 /* =========================
-   BUTTON
+   LOGIN BUTTON
 ========================= */
 
 #joinBtn {
@@ -155,21 +155,29 @@ body {
 }
 
 /* =========================
-   CHAT HEADER
+   CHAT SCREEN
 ========================= */
 
 #chatScreen {
   position: relative;
   display: flex;
   flex-direction: column;
+
   width: 100%;
   height: 100dvh;
+  min-height: 0;
+
   background: #08101f;
   overflow: hidden;
 }
 
+/* =========================
+   CHAT HEADER
+========================= */
+
 .chat-header {
   height: 64px;
+  min-height: 64px;
   flex-shrink: 0;
 
   display: flex;
@@ -187,13 +195,18 @@ body {
   font-size: 17px;
 }
 
-#onlineStatus,
-#onlineStatus span {
+#onlineStatus {
   display: block;
   margin-top: 3px;
+
   color: #46e58b !important;
+
   font-size: 11px;
   font-weight: 600;
+}
+
+#onlineStatus span {
+  color: #46e58b !important;
 }
 
 .header-actions {
@@ -206,8 +219,10 @@ body {
   height: 40px;
   border: none;
   border-radius: 10px;
+
   background: transparent;
   color: white;
+
   font-size: 24px;
   cursor: pointer;
 }
@@ -217,14 +232,20 @@ body {
 }
 
 /* =========================
-   MESSAGES
+   MESSAGES AREA
 ========================= */
 
 #messages {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+
   overflow-y: auto;
+  overflow-x: hidden;
+
   padding: 14px;
+
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .message {
@@ -238,10 +259,14 @@ body {
 
 .bubble {
   max-width: min(78%, 600px);
+
   padding: 10px 12px;
+
   border-radius: 15px;
+
   background: #17233a;
   color: #ffffff;
+
   overflow-wrap: anywhere;
 }
 
@@ -251,7 +276,9 @@ body {
 
 .sender {
   margin-bottom: 5px;
+
   color: #78d7ff;
+
   font-size: 11px;
   font-weight: bold;
 }
@@ -316,25 +343,34 @@ body {
 
 .code-wrapper {
   margin-top: 6px;
+
   border-radius: 10px;
+
   overflow: hidden;
+
   background: #050914;
 }
 
 .code-header {
   display: flex;
   justify-content: flex-end;
+
   padding: 6px;
+
   background: #0b1220;
 }
 
 .copy-code {
   border: none;
   border-radius: 7px;
+
   padding: 6px 9px;
+
   background: #1b2944;
   color: #dbe4ff;
+
   font-size: 11px;
+
   cursor: pointer;
 }
 
@@ -345,7 +381,9 @@ pre {
 
 pre code {
   display: block;
+
   padding: 12px;
+
   font-size: 13px;
 }
 
@@ -356,7 +394,9 @@ pre code {
 .message img,
 .message video {
   display: block;
+
   max-width: 100%;
+
   border-radius: 10px;
 }
 
@@ -365,37 +405,44 @@ pre code {
 }
 
 /* =========================
-   DELETE
+   DELETE BUTTON
 ========================= */
 
 .delete-btn {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
+  display: block !important;
 
-  margin-top: 7px !important;
+  margin-top: 6px !important;
   margin-left: auto !important;
 
   padding: 5px 9px !important;
 
-  border: 1px solid #303b55 !important;
+  border: 1px solid #303a50 !important;
   border-radius: 7px !important;
 
-  background: #10192b !important;
+  background: #101827 !important;
   color: #8490aa !important;
 
   font-family: Arial, sans-serif !important;
   font-size: 10px !important;
+  font-weight: 500 !important;
   line-height: 1 !important;
 
   cursor: pointer;
-  transition: 0.2s ease;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .delete-btn:hover {
   background: #24151b !important;
   border-color: #713744 !important;
   color: #ff7777 !important;
+}
+
+.delete-btn:active {
+  transform: scale(0.96);
 }
 
 /* =========================
@@ -405,6 +452,7 @@ pre code {
 .composer {
   display: flex;
   align-items: center;
+
   gap: 8px;
 
   padding: 10px;
@@ -430,6 +478,7 @@ pre code {
   color: white;
 
   outline: none;
+
   font-size: 14px;
 }
 
@@ -453,12 +502,14 @@ pre code {
 .tool-btn {
   background: #17233a;
   color: #cbd5f5;
+
   font-size: 23px;
 }
 
 .send-btn {
   background: #536dfe;
   color: white;
+
   font-size: 19px;
 }
 
@@ -477,20 +528,29 @@ pre code {
   height: 100%;
 
   background: #0b1324;
+
   border-left: 1px solid #263452;
 
   transform: translateX(100%);
+
   transition: transform 0.25s ease;
 
   box-shadow: -15px 0 40px rgba(0, 0, 0, 0.35);
+
+  overflow: hidden;
 }
 
 .members-sidebar.open {
   transform: translateX(0);
 }
 
+/* =========================
+   SIDEBAR HEADER
+========================= */
+
 .sidebar-header {
   height: 64px;
+  min-height: 64px;
 
   display: flex;
   align-items: center;
@@ -498,39 +558,85 @@ pre code {
 
   padding: 0 15px;
 
-  border-bottom: 1px solid #1c2942;
+  background: #0c172c;
+
+  border-bottom: 1px solid #263452;
+}
+
+.sidebar-header > div {
+  min-width: 0;
 }
 
 .sidebar-header h3 {
   margin: 0;
-  font-size: 16px;
+
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  letter-spacing: 0.5px;
 }
 
 .sidebar-header span {
-  color: #7f8da8;
+  display: block;
+
+  margin-top: 3px;
+
+  color: #46e58b !important;
+
   font-size: 11px;
+  font-weight: 600;
 }
 
 .close-sidebar {
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
   border: none;
+  border-radius: 9px;
+
   background: transparent;
-  color: white;
+  color: #c8d1e5;
+
   font-size: 28px;
+  line-height: 1;
+
   cursor: pointer;
 }
 
+.close-sidebar:hover {
+  background: #17233a;
+  color: #ffffff;
+}
+
+/* =========================
+   MEMBERS LIST
+========================= */
+
 .members-list {
   padding: 10px;
+
+  height: calc(100% - 64px);
+
+  overflow-y: auto;
 }
 
 .member {
   display: flex;
   align-items: center;
+
   gap: 10px;
 
   padding: 11px;
 
   border-radius: 10px;
+
+  color: #ffffff;
+
+  transition: background 0.2s ease;
 }
 
 .member:hover {
@@ -538,18 +644,29 @@ pre code {
 }
 
 .member-dot {
+  flex-shrink: 0;
+
   width: 9px;
   height: 9px;
+
   border-radius: 50%;
+
   background: #69758c;
+
+  box-shadow: 0 0 0 transparent;
 }
 
 .member-dot.online {
   background: #46e58b;
+
+  box-shadow: 0 0 8px rgba(70, 229, 139, 0.55);
 }
 
 .member-name {
+  color: #e8edfa;
+
   font-size: 14px;
+  font-weight: 500;
 }
 
 /* =========================
@@ -558,6 +675,7 @@ pre code {
 
 .sidebar-overlay {
   position: absolute;
+
   z-index: 19;
 
   inset: 0;
@@ -565,6 +683,7 @@ pre code {
   background: rgba(0, 0, 0, 0.45);
 
   opacity: 0;
+
   pointer-events: none;
 
   transition: opacity 0.25s ease;
@@ -572,6 +691,7 @@ pre code {
 
 .sidebar-overlay.show {
   opacity: 1;
+
   pointer-events: auto;
 }
 
