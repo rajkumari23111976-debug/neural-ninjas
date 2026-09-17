@@ -944,3 +944,20 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.member-info {
+  min-width: 0;
+}
+
+.member-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
