@@ -1,6 +1,7 @@
 /* =========================================================
    NEURAL NINJAS - APP.JS
    Username + 6-Digit PIN Authentication
+   Realtime Chat + Online Presence + Last Seen
    ========================================================= */
 
 const SUPABASE_URL =
@@ -24,7 +25,6 @@ try {
   console.error("STARTUP ERROR:", error);
 }
 
-
 /* =========================================================
    STATE
    ========================================================= */
@@ -41,6 +41,7 @@ let allMembers = [];
 let sending = false;
 let uploading = false;
 
+let lastSeenTimer = null;
 
 /* =========================================================
    DOM
@@ -48,14 +49,17 @@ let uploading = false;
 
 let loginScreen;
 let chatScreen;
+
 let usernameInput;
 let pinInput;
 let joinBtn;
 let loginStatus;
+
 let membersList;
 let memberCount;
 let onlineStatus;
 let deleteAccountBtn;
+
 let messages;
 let messageInput;
 let sendBtn;
@@ -70,151 +74,205 @@ let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
 
-
 /* =========================================================
    INITIALIZE
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  loginScreen = document.getElementById("loginScreen");
-  chatScreen = document.getElementById("chatScreen");
+  loginScreen =
+    document.getElementById("loginScreen");
 
-  usernameInput = document.getElementById("usernameInput");
-  joinBtn = document.getElementById("joinBtn");
-  loginStatus = document.getElementById("loginStatus");
+  chatScreen =
+    document.getElementById("chatScreen");
 
-  messages = document.getElementById("messages");
-  messageInput = document.getElementById("messageInput");
-  sendBtn = document.getElementById("sendBtn");
+  usernameInput =
+    document.getElementById("usernameInput");
 
-  mediaBtn = document.getElementById("mediaBtn");
-  fileInput = document.getElementById("fileInput");
+  joinBtn =
+    document.getElementById("joinBtn");
 
-  logoutBtn = document.getElementById("logoutBtn");
-  menuBtn = document.getElementById("menuBtn");
+  loginStatus =
+    document.getElementById("loginStatus");
 
-  membersSidebar = document.getElementById("membersSidebar");
-  closeSidebarBtn = document.getElementById("closeSidebarBtn");
-  sidebarOverlay = document.getElementById("sidebarOverlay");
+  messages =
+    document.getElementById("messages");
 
-  membersList = document.getElementById("membersList");
-  memberCount = document.getElementById("memberCount");
-  onlineStatus = document.getElementById("onlineStatus");
-   deleteAccountBtn =
-  document.getElementById("deleteAccountBtn");
+  messageInput =
+    document.getElementById("messageInput");
 
+  sendBtn =
+    document.getElementById("sendBtn");
+
+  mediaBtn =
+    document.getElementById("mediaBtn");
+
+  fileInput =
+    document.getElementById("fileInput");
+
+  logoutBtn =
+    document.getElementById("logoutBtn");
+
+  menuBtn =
+    document.getElementById("menuBtn");
+
+  membersSidebar =
+    document.getElementById("membersSidebar");
+
+  closeSidebarBtn =
+    document.getElementById("closeSidebarBtn");
+
+  sidebarOverlay =
+    document.getElementById("sidebarOverlay");
+
+  membersList =
+    document.getElementById("membersList");
+
+  memberCount =
+    document.getElementById("memberCount");
+
+  onlineStatus =
+    document.getElementById("onlineStatus");
+
+  deleteAccountBtn =
+    document.getElementById("deleteAccountBtn");
 
   if (!supabaseClient) {
-    showFatalError("Supabase failed to initialize.");
+    showFatalError(
+      "Supabase failed to initialize."
+    );
     return;
   }
 
   if (!usernameInput || !joinBtn) {
-    showFatalError("Login elements not found.");
+    showFatalError(
+      "Login elements not found."
+    );
     return;
   }
 
-
-  /* ---------------------------------------------------------
-     Create PIN input automatically
-     --------------------------------------------------------- */
-
   createPinInput();
 
-
-  /* ---------------------------------------------------------
-     Events
-     --------------------------------------------------------- */
+  /* -------------------------------------------------------
+     EVENTS
+     ------------------------------------------------------- */
 
   joinBtn.addEventListener(
     "click",
     joinTeam
   );
 
-
   usernameInput.addEventListener(
     "keydown",
     event => {
+
       if (event.key === "Enter") {
+
         event.preventDefault();
+
         pinInput?.focus();
       }
+
     }
   );
-
 
   pinInput.addEventListener(
     "keydown",
     event => {
+
       if (event.key === "Enter") {
+
         event.preventDefault();
+
         joinTeam();
       }
+
     }
   );
-
 
   sendBtn?.addEventListener(
     "click",
     sendMessage
   );
 
-
   messageInput?.addEventListener(
     "keydown",
     event => {
+
       if (event.key === "Enter") {
+
         event.preventDefault();
+
         sendMessage();
       }
+
     }
   );
-
 
   mediaBtn?.addEventListener(
     "click",
     () => fileInput?.click()
   );
 
-
   fileInput?.addEventListener(
     "change",
     handleFileUpload
   );
-
 
   logoutBtn?.addEventListener(
     "click",
     exitChat
   );
 
-
   menuBtn?.addEventListener(
     "click",
     openSidebar
   );
-deleteAccountBtn?.addEventListener(
-  "click",
-  deleteAccount
-);
+
+  deleteAccountBtn?.addEventListener(
+    "click",
+    deleteAccount
+  );
 
   closeSidebarBtn?.addEventListener(
     "click",
     closeSidebar
   );
 
-
   sidebarOverlay?.addEventListener(
     "click",
     closeSidebar
   );
 
+  /* Update last seen when user hides/leaves page */
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+
+      if (
+        document.visibilityState ===
+        "hidden"
+      ) {
+
+        updateLastSeen();
+
+      }
+
+    }
+  );
+
+  window.addEventListener(
+    "beforeunload",
+    () => {
+
+      updateLastSeen();
+
+    }
+  );
 
   checkSession();
 
 });
-
 
 /* =========================================================
    PIN INPUT
@@ -222,13 +280,17 @@ deleteAccountBtn?.addEventListener(
 
 function createPinInput() {
 
-  if (document.getElementById("pinInput")) {
+  if (
+    document.getElementById("pinInput")
+  ) {
+
     pinInput =
-      document.getElementById("pinInput");
+      document.getElementById(
+        "pinInput"
+      );
 
     return;
   }
-
 
   pinInput =
     document.createElement("input");
@@ -260,14 +322,12 @@ function createPinInput() {
   pinInput.style.boxSizing =
     "border-box";
 
-
   usernameInput.insertAdjacentElement(
     "afterend",
     pinInput
   );
 
 }
-
 
 /* =========================================================
    HIDDEN AUTH IDENTIFIER
@@ -284,14 +344,11 @@ function makeAuthEmail(username) {
         "_"
       );
 
-
   return (
     clean +
     "@neuralninjas.local"
   );
-
 }
-
 
 /* =========================================================
    FATAL ERROR
@@ -302,12 +359,13 @@ function showFatalError(message) {
   console.error(message);
 
   if (loginStatus) {
+
     loginStatus.textContent =
       "⚠️ " + message;
+
   }
 
 }
-
 
 /* =========================================================
    SESSION
@@ -323,31 +381,27 @@ async function checkSession() {
     } =
       await supabaseClient.auth.getSession();
 
-
     if (error) {
       throw error;
     }
 
-
     const session =
       data?.session;
 
-
     if (!session) {
+
       showLogin();
+
       return;
     }
 
-
     currentUser =
       session.user;
-
 
     const profile =
       await getProfile(
         currentUser.id
       );
-
 
     if (!profile) {
 
@@ -361,15 +415,12 @@ async function checkSession() {
       return;
     }
 
-
     currentProfile =
       profile;
-
 
     showChat();
 
     await startChat();
-
 
   } catch (error) {
 
@@ -387,29 +438,24 @@ async function checkSession() {
 
 }
 
-
 /* =========================================================
    JOIN / LOGIN
    ========================================================= */
 
 async function joinTeam() {
 
-  if (sending || uploading) {
+  if (
+    sending ||
+    uploading
+  ) {
     return;
   }
-
 
   const username =
     usernameInput.value.trim();
 
-
   const pin =
     pinInput.value.trim();
-
-
-  /* ---------------------------------------------------------
-     Validation
-     --------------------------------------------------------- */
 
   if (!username) {
 
@@ -421,7 +467,6 @@ async function joinTeam() {
     return;
   }
 
-
   if (username.length < 2) {
 
     loginStatus.textContent =
@@ -430,7 +475,6 @@ async function joinTeam() {
     return;
   }
 
-
   if (username.length > 30) {
 
     loginStatus.textContent =
@@ -438,7 +482,6 @@ async function joinTeam() {
 
     return;
   }
-
 
   if (!/^\d{6}$/.test(pin)) {
 
@@ -450,29 +493,32 @@ async function joinTeam() {
     return;
   }
 
-
-  joinBtn.disabled = true;
+  joinBtn.disabled =
+    true;
 
   loginStatus.textContent =
     "Checking account...";
-
 
   try {
 
     const authEmail =
       makeAuthEmail(username);
 
-
-    /* -------------------------------------------------------
-       FIRST: Try existing account login
-       ------------------------------------------------------- */
+    /* -----------------------------------------------------
+       EXISTING ACCOUNT
+       ----------------------------------------------------- */
 
     const loginResult =
-      await supabaseClient.auth.signInWithPassword({
-        email: authEmail,
-        password: pin
-      });
+      await supabaseClient.auth
+        .signInWithPassword({
 
+          email:
+            authEmail,
+
+          password:
+            pin
+
+        });
 
     if (
       !loginResult.error &&
@@ -482,12 +528,10 @@ async function joinTeam() {
       currentUser =
         loginResult.data.user;
 
-
       const profile =
         await getProfile(
           currentUser.id
         );
-
 
       if (!profile) {
 
@@ -499,14 +543,11 @@ async function joinTeam() {
 
       }
 
-
       currentProfile =
         profile;
 
-
       loginStatus.textContent =
         "Login successful. Opening Neural Ninjas...";
-
 
       showChat();
 
@@ -515,36 +556,40 @@ async function joinTeam() {
       return;
     }
 
-
-    /* -------------------------------------------------------
-       LOGIN FAILED
-       Try creating a NEW account
-       ------------------------------------------------------- */
+    /* -----------------------------------------------------
+       CREATE NEW ACCOUNT
+       ----------------------------------------------------- */
 
     loginStatus.textContent =
       "Creating account...";
 
-
     const signupResult =
-      await supabaseClient.auth.signUp({
-        email: authEmail,
-        password: pin,
-        options: {
-          data: {
-            neural_ninjas_username:
-              username
-          }
-        }
-      });
+      await supabaseClient.auth
+        .signUp({
 
+          email:
+            authEmail,
+
+          password:
+            pin,
+
+          options: {
+
+            data: {
+              neural_ninjas_username:
+                username
+            }
+
+          }
+
+        });
 
     if (signupResult.error) {
 
       const errorMessage =
-        signupResult.error.message || "";
+        signupResult.error.message ||
+        "";
 
-
-      /* Existing account with wrong PIN */
       if (
         errorMessage
           .toLowerCase()
@@ -557,11 +602,8 @@ async function joinTeam() {
 
       }
 
-
       throw signupResult.error;
-
     }
-
 
     if (!signupResult.data?.user) {
 
@@ -571,7 +613,6 @@ async function joinTeam() {
 
     }
 
-
     if (!signupResult.data?.session) {
 
       throw new Error(
@@ -580,14 +621,8 @@ async function joinTeam() {
 
     }
 
-
     currentUser =
       signupResult.data.user;
-
-
-    /* -------------------------------------------------------
-       Create profile
-       ------------------------------------------------------- */
 
     const {
       data: newProfile,
@@ -596,19 +631,27 @@ async function joinTeam() {
       await supabaseClient
         .from("profiles")
         .insert({
-          id: currentUser.id,
-          username: username
+
+          id:
+            currentUser.id,
+
+          username:
+            username,
+
+          last_seen_at:
+            new Date().toISOString()
+
         })
         .select()
         .single();
-
 
     if (profileError) {
 
       await supabaseClient.auth.signOut();
 
       if (
-        profileError.code === "23505"
+        profileError.code ===
+        "23505"
       ) {
 
         throw new Error(
@@ -618,22 +661,17 @@ async function joinTeam() {
       }
 
       throw profileError;
-
     }
-
 
     currentProfile =
       newProfile;
 
-
     loginStatus.textContent =
       "Account created. Opening Neural Ninjas...";
-
 
     showChat();
 
     await startChat();
-
 
   } catch (error) {
 
@@ -641,7 +679,6 @@ async function joinTeam() {
       "LOGIN ERROR:",
       error
     );
-
 
     loginStatus.textContent =
       error?.message ||
@@ -670,10 +707,8 @@ async function deleteAccount() {
     return;
   }
 
-
   const username =
     currentProfile.username;
-
 
   const confirmed =
     confirm(
@@ -683,11 +718,9 @@ async function deleteAccount() {
       `This action cannot be undone.`
     );
 
-
   if (!confirmed) {
     return;
   }
-
 
   const secondConfirmation =
     confirm(
@@ -696,63 +729,63 @@ async function deleteAccount() {
       `Press OK to permanently delete it.`
     );
 
-
   if (!secondConfirmation) {
     return;
   }
 
-
   deleteAccountBtn.disabled =
     true;
 
-
   deleteAccountBtn.textContent =
     "Deleting Account...";
-
 
   try {
 
     if (presenceChannel) {
 
       try {
-        await supabaseClient.removeChannel(
-          presenceChannel
-        );
+
+        await supabaseClient
+          .removeChannel(
+            presenceChannel
+          );
+
       } catch {}
 
-      presenceChannel = null;
-
+      presenceChannel =
+        null;
     }
-
 
     if (realtimeChannel) {
 
       try {
-        await supabaseClient.removeChannel(
-          realtimeChannel
-        );
+
+        await supabaseClient
+          .removeChannel(
+            realtimeChannel
+          );
+
       } catch {}
 
-      realtimeChannel = null;
-
+      realtimeChannel =
+        null;
     }
 
+    stopLastSeenTimer();
 
     const {
       data: sessionData,
       error: sessionError
     } =
-      await supabaseClient.auth.getSession();
-
+      await supabaseClient.auth
+        .getSession();
 
     if (sessionError) {
       throw sessionError;
     }
 
-
     const accessToken =
       sessionData?.session?.access_token;
-
 
     if (!accessToken) {
 
@@ -762,14 +795,16 @@ async function deleteAccount() {
 
     }
 
-
     const response =
       await fetch(
         `${SUPABASE_URL}/functions/v1/delete-account`,
         {
-          method: "POST",
+
+          method:
+            "POST",
 
           headers: {
+
             Authorization:
               `Bearer ${accessToken}`,
 
@@ -778,15 +813,17 @@ async function deleteAccount() {
 
             "Content-Type":
               "application/json"
+
           }
+
         }
       );
 
-
     const result =
       await response.json()
-        .catch(() => ({}));
-
+        .catch(
+          () => ({})
+        );
 
     if (
       !response.ok ||
@@ -800,9 +837,7 @@ async function deleteAccount() {
 
     }
 
-
     await supabaseClient.auth.signOut();
-
 
     currentUser = null;
     currentProfile = null;
@@ -810,26 +845,20 @@ async function deleteAccount() {
     presenceUsers = {};
     allMembers = [];
 
-
     closeSidebar();
-
     showLogin();
-
 
     if (usernameInput) {
       usernameInput.value = "";
     }
 
-
     if (pinInput) {
       pinInput.value = "";
     }
 
-
     if (messages) {
       messages.innerHTML = "";
     }
-
 
     if (loginStatus) {
 
@@ -838,11 +867,9 @@ async function deleteAccount() {
 
     }
 
-
     alert(
       "Your Neural Ninjas account has been permanently deleted."
     );
-
 
   } catch (error) {
 
@@ -851,12 +878,10 @@ async function deleteAccount() {
       error
     );
 
-
     alert(
       error?.message ||
       "Account deletion failed."
     );
-
 
   } finally {
 
@@ -874,7 +899,6 @@ async function deleteAccount() {
 
 }
 
-
 /* =========================================================
    PROFILE
    ========================================================= */
@@ -888,9 +912,11 @@ async function getProfile(userId) {
     await supabaseClient
       .from("profiles")
       .select("*")
-      .eq("id", userId)
+      .eq(
+        "id",
+        userId
+      )
       .maybeSingle();
-
 
   if (error) {
 
@@ -900,14 +926,11 @@ async function getProfile(userId) {
     );
 
     throw error;
-
   }
-
 
   return data;
 
 }
-
 
 /* =========================================================
    LOGIN / CHAT
@@ -925,7 +948,6 @@ function showLogin() {
 
 }
 
-
 function showChat() {
 
   loginScreen?.classList.add(
@@ -937,7 +959,6 @@ function showChat() {
   );
 
 }
-
 
 /* =========================================================
    CHAT START
@@ -952,7 +973,6 @@ async function startChat() {
     return;
   }
 
-
   await loadMessages();
 
   setupRealtime();
@@ -961,13 +981,16 @@ async function startChat() {
 
   await loadMembers();
 
+  startLastSeenTimer();
+
+  await updateLastSeen();
+
   messageInput?.focus();
 
 }
 
-
 /* =========================================================
-   MESSAGES
+   LOAD MESSAGES
    ========================================================= */
 
 async function loadMessages() {
@@ -976,9 +999,7 @@ async function loadMessages() {
     return;
   }
 
-
   messages.innerHTML = "";
-
 
   const {
     data,
@@ -994,7 +1015,6 @@ async function loadMessages() {
         }
       );
 
-
   if (error) {
 
     console.error(
@@ -1004,7 +1024,6 @@ async function loadMessages() {
 
     return;
   }
-
 
   for (
     const message
@@ -1018,50 +1037,65 @@ async function loadMessages() {
 
   }
 
-
   scrollToBottom();
 
 }
 
-
 /* =========================================================
-   REALTIME
+   REALTIME MESSAGES
    ========================================================= */
 
 function setupRealtime() {
 
   if (realtimeChannel) {
 
-    supabaseClient.removeChannel(
-      realtimeChannel
-    );
+    supabaseClient
+      .removeChannel(
+        realtimeChannel
+      );
 
+    realtimeChannel =
+      null;
   }
-
 
   realtimeChannel =
     supabaseClient
       .channel(
-        "neural-ninjas-messages"
+        "neural-ninjas-messages-" +
+        currentUser.id +
+        "-" +
+        Date.now()
       )
 
+      /* ---------------------------------------------------
+         NEW MESSAGE
+         --------------------------------------------------- */
 
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
-          schema: "public",
-          table: "messages"
+          event:
+            "INSERT",
+
+          schema:
+            "public",
+
+          table:
+            "messages"
         },
+
         payload => {
 
-          if (
-            payload.new.sender_id ===
-            currentUser?.id
-          ) {
-            return;
-          }
+          console.log(
+            "REALTIME MESSAGE:",
+            payload.new
+          );
 
+          /*
+             DO NOT manually skip our own messages.
+             renderMessage() already prevents duplicates
+             using data-message-id.
+          */
 
           renderMessage(
             payload.new,
@@ -1071,32 +1105,89 @@ function setupRealtime() {
         }
       )
 
+      /* ---------------------------------------------------
+         DELETE MESSAGE
+         --------------------------------------------------- */
 
       .on(
         "postgres_changes",
         {
-          event: "DELETE",
-          schema: "public",
-          table: "messages"
+          event:
+            "DELETE",
+
+          schema:
+            "public",
+
+          table:
+            "messages"
         },
+
         payload => {
+
+          console.log(
+            "REALTIME DELETE:",
+            payload.old
+          );
 
           const element =
             document.querySelector(
               `[data-message-id="${payload.old.id}"]`
             );
 
-
           element?.remove();
 
         }
       )
 
+      /* ---------------------------------------------------
+         SUBSCRIBE
+         --------------------------------------------------- */
 
-      .subscribe();
+      .subscribe(
+        status => {
+
+          console.log(
+            "MESSAGE REALTIME STATUS:",
+            status
+          );
+
+          if (
+            status ===
+            "SUBSCRIBED"
+          ) {
+
+            console.log(
+              "✅ Neural Ninjas realtime connected"
+            );
+
+          }
+
+          if (
+            status ===
+            "CHANNEL_ERROR"
+          ) {
+
+            console.error(
+              "❌ Realtime channel error"
+            );
+
+          }
+
+          if (
+            status ===
+            "TIMED_OUT"
+          ) {
+
+            console.error(
+              "❌ Realtime connection timed out"
+            );
+
+          }
+
+        }
+      );
 
 }
-
 
 /* =========================================================
    PRESENCE
@@ -1111,62 +1202,74 @@ async function setupPresence() {
     return;
   }
 
-
   if (presenceChannel) {
 
-    await supabaseClient
-      .removeChannel(
-        presenceChannel
-      );
+    try {
+
+      await supabaseClient
+        .removeChannel(
+          presenceChannel
+        );
+
+    } catch {}
 
   }
 
-
   presenceUsers = {};
-
 
   presenceChannel =
     supabaseClient.channel(
       "neural-ninjas-presence",
       {
+
         config: {
+
           presence: {
-            key: currentUser.id
+
+            key:
+              currentUser.id
+
           }
+
         }
+
       }
     );
 
-
   presenceChannel.on(
     "presence",
     {
-      event: "sync"
+      event:
+        "sync"
     },
     rebuildPresence
   );
 
-
   presenceChannel.on(
     "presence",
     {
-      event: "join"
+      event:
+        "join"
     },
     rebuildPresence
   );
 
-
   presenceChannel.on(
     "presence",
     {
-      event: "leave"
+      event:
+        "leave"
     },
     rebuildPresence
   );
-
 
   presenceChannel.subscribe(
     async status => {
+
+      console.log(
+        "PRESENCE STATUS:",
+        status
+      );
 
       if (
         status ===
@@ -1174,13 +1277,14 @@ async function setupPresence() {
       ) {
 
         await presenceChannel.track({
+
           user_id:
             currentUser.id,
 
           username:
             currentProfile.username
-        });
 
+        });
 
         rebuildPresence();
 
@@ -1190,7 +1294,6 @@ async function setupPresence() {
   );
 
 }
-
 
 /* =========================================================
    PRESENCE REBUILD
@@ -1202,20 +1305,16 @@ function rebuildPresence() {
     return;
   }
 
-
   const state =
     presenceChannel.presenceState();
 
-
   const online = {};
-
 
   Object.keys(state)
     .forEach(key => {
 
       const entries =
         state[key];
-
 
       if (
         !entries ||
@@ -1224,34 +1323,31 @@ function rebuildPresence() {
         return;
       }
 
-
       const user =
         entries[0];
-
 
       if (user.user_id) {
 
         online[user.user_id] = {
+
           username:
             user.username ||
             "Unknown"
+
         };
 
       }
 
     });
 
-
   presenceUsers =
     online;
-
 
   updateOnlineStatus();
 
   renderMembers();
 
 }
-
 
 /* =========================================================
    MEMBERS
@@ -1266,7 +1362,7 @@ async function loadMembers() {
     await supabaseClient
       .from("profiles")
       .select(
-        "id, username, created_at"
+        "id, username, created_at, last_seen_at"
       )
       .order(
         "created_at",
@@ -1274,7 +1370,6 @@ async function loadMembers() {
           ascending: true
         }
       );
-
 
   if (error) {
 
@@ -1286,15 +1381,16 @@ async function loadMembers() {
     return;
   }
 
-
   allMembers =
     data || [];
-
 
   renderMembers();
 
 }
 
+/* =========================================================
+   RENDER MEMBERS
+   ========================================================= */
 
 function renderMembers() {
 
@@ -1302,10 +1398,8 @@ function renderMembers() {
     return;
   }
 
-
   const count =
     allMembers.length;
-
 
   if (memberCount) {
 
@@ -1318,9 +1412,7 @@ function renderMembers() {
 
   }
 
-
   membersList.innerHTML = "";
-
 
   for (
     const member
@@ -1334,7 +1426,6 @@ function renderMembers() {
         ]
       );
 
-
     const item =
       document.createElement(
         "div"
@@ -1343,6 +1434,9 @@ function renderMembers() {
     item.className =
       "member";
 
+    /* -----------------------------------------------------
+       AVATAR
+       ----------------------------------------------------- */
 
     const avatar =
       document.createElement(
@@ -1352,12 +1446,14 @@ function renderMembers() {
     avatar.className =
       "member-avatar";
 
-
     avatar.textContent =
       member.username
         .charAt(0)
         .toUpperCase();
 
+    /* -----------------------------------------------------
+       INFO
+       ----------------------------------------------------- */
 
     const info =
       document.createElement(
@@ -1367,6 +1463,7 @@ function renderMembers() {
     info.className =
       "member-info";
 
+    /* NAME */
 
     const name =
       document.createElement(
@@ -1376,10 +1473,10 @@ function renderMembers() {
     name.className =
       "member-name";
 
-
     name.textContent =
       member.username;
 
+    /* STATUS */
 
     const status =
       document.createElement(
@@ -1388,7 +1485,6 @@ function renderMembers() {
 
     status.className =
       "member-status";
-
 
     const dot =
       document.createElement(
@@ -1403,18 +1499,24 @@ function renderMembers() {
           : ""
       );
 
-
     const statusText =
       document.createElement(
         "span"
       );
 
+    if (online) {
 
-    statusText.textContent =
-      online
-        ? "Online"
-        : "Offline";
+      statusText.textContent =
+        "Online";
 
+    } else {
+
+      statusText.textContent =
+        formatLastSeen(
+          member.last_seen_at
+        );
+
+    }
 
     status.appendChild(dot);
     status.appendChild(statusText);
@@ -1429,11 +1531,268 @@ function renderMembers() {
 
   }
 
-
   updateOnlineStatus();
 
 }
 
+/* =========================================================
+   LAST SEEN FORMAT
+   ========================================================= */
+
+function formatLastSeen(timestamp) {
+
+  if (!timestamp) {
+
+    return "Last seen unknown";
+
+  }
+
+  const date =
+    new Date(timestamp);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "Last seen unknown";
+
+  }
+
+  const now =
+    new Date();
+
+  const diff =
+    now.getTime() -
+    date.getTime();
+
+  const minute =
+    60 * 1000;
+
+  const hour =
+    60 * minute;
+
+  const day =
+    24 * hour;
+
+  if (diff < minute) {
+
+    return "Last seen just now";
+
+  }
+
+  if (diff < hour) {
+
+    const minutes =
+      Math.floor(
+        diff / minute
+      );
+
+    return `Last seen ${minutes} ${
+      minutes === 1
+        ? "minute"
+        : "minutes"
+    } ago`;
+
+  }
+
+  if (
+    date.toDateString() ===
+    now.toDateString()
+  ) {
+
+    return (
+      "Last seen today at " +
+      date.toLocaleTimeString(
+        [],
+        {
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit"
+        }
+      )
+    );
+
+  }
+
+  const yesterday =
+    new Date(now);
+
+  yesterday.setDate(
+    now.getDate() - 1
+  );
+
+  if (
+    date.toDateString() ===
+    yesterday.toDateString()
+  ) {
+
+    return (
+      "Last seen yesterday at " +
+      date.toLocaleTimeString(
+        [],
+        {
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit"
+        }
+      )
+    );
+
+  }
+
+  return (
+    "Last seen " +
+    date.toLocaleDateString(
+      [],
+      {
+        day:
+          "2-digit",
+
+        month:
+          "short"
+      }
+    ) +
+    " at " +
+    date.toLocaleTimeString(
+      [],
+      {
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit"
+      }
+    )
+  );
+
+}
+
+/* =========================================================
+   UPDATE LAST SEEN
+   ========================================================= */
+
+async function updateLastSeen() {
+
+  if (
+    !currentUser
+  ) {
+    return;
+  }
+
+  const now =
+    new Date().toISOString();
+
+  try {
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("profiles")
+        .update({
+
+          last_seen_at:
+            now
+
+        })
+        .eq(
+          "id",
+          currentUser.id
+        );
+
+    if (error) {
+
+      console.error(
+        "Last seen update error:",
+        error
+      );
+
+      return;
+    }
+
+    if (currentProfile) {
+
+      currentProfile.last_seen_at =
+        now;
+
+    }
+
+    const member =
+      allMembers.find(
+        item =>
+          item.id ===
+          currentUser.id
+      );
+
+    if (member) {
+
+      member.last_seen_at =
+        now;
+
+    }
+
+    renderMembers();
+
+  } catch (error) {
+
+    console.error(
+      "LAST SEEN ERROR:",
+      error
+    );
+
+  }
+
+}
+
+/* =========================================================
+   LAST SEEN TIMER
+   ========================================================= */
+
+function startLastSeenTimer() {
+
+  stopLastSeenTimer();
+
+  /*
+     Update every 30 seconds.
+     This keeps the last-seen timestamp reasonably fresh.
+  */
+
+  lastSeenTimer =
+    setInterval(
+      () => {
+
+        updateLastSeen();
+
+      },
+      30000
+    );
+
+}
+
+function stopLastSeenTimer() {
+
+  if (lastSeenTimer) {
+
+    clearInterval(
+      lastSeenTimer
+    );
+
+    lastSeenTimer =
+      null;
+
+  }
+
+}
+
+/* =========================================================
+   ONLINE COUNT
+   ========================================================= */
 
 function updateOnlineStatus() {
 
@@ -1441,7 +1800,6 @@ function updateOnlineStatus() {
     Object.keys(
       presenceUsers
     ).length;
-
 
   if (onlineStatus) {
 
@@ -1455,7 +1813,6 @@ function updateOnlineStatus() {
   }
 
 }
-
 
 /* =========================================================
    SIDEBAR
@@ -1475,7 +1832,6 @@ function openSidebar() {
 
 }
 
-
 function closeSidebar() {
 
   membersSidebar?.classList.remove(
@@ -1487,7 +1843,6 @@ function closeSidebar() {
   );
 
 }
-
 
 /* =========================================================
    SEND MESSAGE
@@ -1503,22 +1858,19 @@ async function sendMessage() {
     return;
   }
 
-
   const text =
     messageInput?.value.trim();
-
 
   if (!text) {
     return;
   }
 
-
   sending = true;
 
   if (sendBtn) {
-    sendBtn.disabled = true;
+    sendBtn.disabled =
+      true;
   }
-
 
   try {
 
@@ -1529,6 +1881,7 @@ async function sendMessage() {
       await supabaseClient
         .from("messages")
         .insert({
+
           sender_id:
             currentUser.id,
 
@@ -1542,26 +1895,31 @@ async function sendMessage() {
 
           message:
             text
+
         })
         .select()
         .single();
-
 
     if (error) {
       throw error;
     }
 
+    /*
+       Show instantly on our own screen.
+       If Realtime also sends the event,
+       renderMessage() detects the same ID
+       and prevents duplication.
+    */
 
     renderMessage(
       data,
       true
     );
 
-
-    messageInput.value = "";
+    messageInput.value =
+      "";
 
     playSendSound();
-
 
   } catch (error) {
 
@@ -1570,19 +1928,20 @@ async function sendMessage() {
       error
     );
 
-
     alert(
       error?.message ||
       "Message could not be sent."
     );
-
 
   } finally {
 
     sending = false;
 
     if (sendBtn) {
-      sendBtn.disabled = false;
+
+      sendBtn.disabled =
+        false;
+
     }
 
     messageInput?.focus();
@@ -1590,7 +1949,6 @@ async function sendMessage() {
   }
 
 }
-
 
 /* =========================================================
    SOUND
@@ -1604,57 +1962,46 @@ function playSendSound() {
       window.AudioContext ||
       window.webkitAudioContext;
 
-
     if (!AudioContext) {
       return;
     }
 
-
     const ctx =
       new AudioContext();
-
 
     const oscillator =
       ctx.createOscillator();
 
-
     const gain =
       ctx.createGain();
 
-
     oscillator.type =
       "sine";
-
 
     oscillator.frequency.setValueAtTime(
       850,
       ctx.currentTime
     );
 
-
     oscillator.frequency.exponentialRampToValueAtTime(
       1200,
       ctx.currentTime + 0.06
     );
-
 
     gain.gain.setValueAtTime(
       0.0001,
       ctx.currentTime
     );
 
-
     gain.gain.exponentialRampToValueAtTime(
       0.08,
       ctx.currentTime + 0.01
     );
 
-
     gain.gain.exponentialRampToValueAtTime(
       0.0001,
       ctx.currentTime + 0.09
     );
-
 
     oscillator.connect(gain);
     gain.connect(ctx.destination);
@@ -1665,7 +2012,7 @@ function playSendSound() {
       ctx.currentTime + 0.1
     );
 
-  } catch (error) {
+  } catch {
 
     console.log(
       "Sound unavailable"
@@ -1674,7 +2021,6 @@ function playSendSound() {
   }
 
 }
-
 
 /* =========================================================
    FILE UPLOAD
@@ -1685,11 +2031,9 @@ async function handleFileUpload() {
   const file =
     fileInput?.files?.[0];
 
-
   if (!file) {
     return;
   }
-
 
   if (
     uploading ||
@@ -1698,7 +2042,6 @@ async function handleFileUpload() {
   ) {
     return;
   }
-
 
   if (
     file.size >
@@ -1709,17 +2052,22 @@ async function handleFileUpload() {
       "File is larger than 50 MB."
     );
 
-    fileInput.value = "";
+    fileInput.value =
+      "";
 
     return;
   }
 
-
   const allowed =
-    file.type.startsWith("image/") ||
-    file.type.startsWith("video/") ||
-    file.type.startsWith("audio/");
-
+    file.type.startsWith(
+      "image/"
+    ) ||
+    file.type.startsWith(
+      "video/"
+    ) ||
+    file.type.startsWith(
+      "audio/"
+    );
 
   if (!allowed) {
 
@@ -1727,18 +2075,20 @@ async function handleFileUpload() {
       "Only images, videos and audio files are allowed."
     );
 
-    fileInput.value = "";
+    fileInput.value =
+      "";
 
     return;
   }
 
-
   uploading = true;
 
   if (mediaBtn) {
-    mediaBtn.disabled = true;
-  }
 
+    mediaBtn.disabled =
+      true;
+
+  }
 
   try {
 
@@ -1754,20 +2104,16 @@ async function handleFileUpload() {
             )
         : "";
 
-
     const random =
       Math.random()
         .toString(36)
         .substring(2);
 
-
     const path =
       `${currentUser.id}/${Date.now()}-${random}${extension}`;
 
-
     const {
-      error:
-        uploadError
+      error: uploadError
     } =
       await supabaseClient.storage
         .from(
@@ -1779,22 +2125,19 @@ async function handleFileUpload() {
           {
             contentType:
               file.type,
+
             upsert:
               false
           }
         );
 
-
     if (uploadError) {
       throw uploadError;
     }
 
-
     const {
-      data:
-        signedData,
-      error:
-        signedError
+      data: signedData,
+      error: signedError
     } =
       await supabaseClient.storage
         .from(
@@ -1805,21 +2148,18 @@ async function handleFileUpload() {
           60 * 60 * 24 * 30
         );
 
-
     if (signedError) {
       throw signedError;
     }
 
-
     const {
-      data:
-        message,
-      error:
-        messageError
+      data: message,
+      error: messageError
     } =
       await supabaseClient
         .from("messages")
         .insert({
+
           sender_id:
             currentUser.id,
 
@@ -1836,24 +2176,21 @@ async function handleFileUpload() {
 
           file_url:
             signedData.signedUrl
+
         })
         .select()
         .single();
 
-
     if (messageError) {
       throw messageError;
     }
-
 
     renderMessage(
       message,
       true
     );
 
-
     playSendSound();
-
 
   } catch (error) {
 
@@ -1862,46 +2199,58 @@ async function handleFileUpload() {
       error
     );
 
-
     alert(
       error?.message ||
       "File upload failed."
     );
-
 
   } finally {
 
     uploading = false;
 
     if (mediaBtn) {
-      mediaBtn.disabled = false;
+
+      mediaBtn.disabled =
+        false;
+
     }
 
-    fileInput.value = "";
+    fileInput.value =
+      "";
 
   }
 
 }
 
-
 function getMediaType(type) {
 
-  if (type.startsWith("image/")) {
+  if (
+    type.startsWith(
+      "image/"
+    )
+  ) {
     return "image";
   }
 
-  if (type.startsWith("video/")) {
+  if (
+    type.startsWith(
+      "video/"
+    )
+  ) {
     return "video";
   }
 
-  if (type.startsWith("audio/")) {
+  if (
+    type.startsWith(
+      "audio/"
+    )
+  ) {
     return "audio";
   }
 
   return "file";
 
 }
-
 
 /* =========================================================
    RENDER MESSAGE
@@ -1919,27 +2268,29 @@ function renderMessage(
     return;
   }
 
-
   const existing =
     document.querySelector(
       `[data-message-id="${data.id}"]`
     );
 
+  /*
+     VERY IMPORTANT:
+     Prevent duplicate message when:
+     1. We render immediately after INSERT
+     2. Supabase Realtime sends the same INSERT
+  */
 
   if (existing) {
     return;
   }
-
 
   const wrapper =
     document.createElement(
       "div"
     );
 
-
   wrapper.className =
     "message";
-
 
   if (
     data.sender_id ===
@@ -1952,43 +2303,40 @@ function renderMessage(
 
   }
 
-
   wrapper.dataset.messageId =
     data.id;
-
 
   const bubble =
     document.createElement(
       "div"
     );
 
-
   bubble.className =
     "bubble";
-
 
   const sender =
     document.createElement(
       "div"
     );
 
-
   sender.className =
     "sender";
-
 
   sender.textContent =
     data.sender_name ||
     "Unknown";
 
-
-  bubble.appendChild(sender);
-
+  bubble.appendChild(
+    sender
+  );
 
   if (
-    data.message_type === "image" ||
-    data.message_type === "video" ||
-    data.message_type === "audio"
+    data.message_type ===
+      "image" ||
+    data.message_type ===
+      "video" ||
+    data.message_type ===
+      "audio"
   ) {
 
     renderMedia(
@@ -1996,10 +2344,9 @@ function renderMessage(
       data
     );
 
-  }
-
-  else if (
-    data.message_type === "code"
+  } else if (
+    data.message_type ===
+    "code"
   ) {
 
     renderCode(
@@ -2007,9 +2354,7 @@ function renderMessage(
       data.message || ""
     );
 
-  }
-
-  else {
+  } else {
 
     renderText(
       bubble,
@@ -2018,39 +2363,33 @@ function renderMessage(
 
   }
 
-
   const time =
     document.createElement(
       "div"
     );
 
-
   time.className =
     "time";
-
 
   time.textContent =
     formatTime(
       data.created_at
     );
 
-
-  bubble.appendChild(time);
-
+  bubble.appendChild(
+    time
+  );
 
   const deleteButton =
     document.createElement(
       "button"
     );
 
-
   deleteButton.className =
     "delete-message";
 
-
   deleteButton.textContent =
     "Delete";
-
 
   deleteButton.addEventListener(
     "click",
@@ -2062,28 +2401,23 @@ function renderMessage(
       )
   );
 
-
   bubble.appendChild(
     deleteButton
   );
-
 
   wrapper.appendChild(
     bubble
   );
 
-
   messages.appendChild(
     wrapper
   );
-
 
   if (shouldScroll) {
     scrollToBottom();
   }
 
 }
-
 
 /* =========================================================
    TEXT
@@ -2097,10 +2431,8 @@ function renderText(
   const urlRegex =
     /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
 
-
   let lastIndex = 0;
   let match;
-
 
   while (
     (match =
@@ -2113,7 +2445,6 @@ function renderText(
         match.index
       );
 
-
     if (before) {
 
       container.appendChild(
@@ -2124,13 +2455,10 @@ function renderText(
 
     }
 
-
     let url =
       match[0];
 
-
     let trailing = "";
-
 
     while (
       /[.,!?;:]$/.test(url)
@@ -2148,39 +2476,31 @@ function renderText(
 
     }
 
-
     const link =
       document.createElement(
         "a"
       );
 
-
     link.className =
       "message-link";
-
 
     link.href =
       url.startsWith("www.")
         ? "https://" + url
         : url;
 
-
     link.target =
       "_blank";
-
 
     link.rel =
       "noopener noreferrer";
 
-
     link.textContent =
       url;
-
 
     container.appendChild(
       link
     );
-
 
     if (trailing) {
 
@@ -2192,17 +2512,16 @@ function renderText(
 
     }
 
-
     lastIndex =
       match.index +
       match[0].length;
 
   }
 
-
   const remaining =
-    text.slice(lastIndex);
-
+    text.slice(
+      lastIndex
+    );
 
   if (remaining) {
 
@@ -2216,7 +2535,6 @@ function renderText(
 
 }
 
-
 /* =========================================================
    CODE
    ========================================================= */
@@ -2224,6 +2542,7 @@ function renderText(
 function detectCode(text) {
 
   const indicators = [
+
     "```",
     "function ",
     "const ",
@@ -2245,22 +2564,24 @@ function detectCode(text) {
     "#include",
     "System.out",
     "print("
-  ];
 
+  ];
 
   return indicators.some(
     indicator =>
-      text.includes(indicator)
+      text.includes(
+        indicator
+      )
   );
 
 }
 
-
 function cleanCode(text) {
 
   let code =
-    String(text || "").trim();
-
+    String(
+      text || ""
+    ).trim();
 
   code =
     code.replace(
@@ -2268,18 +2589,15 @@ function cleanCode(text) {
       ""
     );
 
-
   code =
     code.replace(
       /\s*```$/,
       ""
     );
 
-
   return code.trim();
 
 }
-
 
 function renderCode(
   container,
@@ -2291,50 +2609,40 @@ function renderCode(
       "div"
     );
 
-
   box.className =
     "code-box";
-
 
   const pre =
     document.createElement(
       "pre"
     );
 
-
   const codeElement =
     document.createElement(
       "code"
     );
 
-
   codeElement.textContent =
     cleanCode(text);
-
 
   pre.appendChild(
     codeElement
   );
 
-
   box.appendChild(
     pre
   );
-
 
   const copyButton =
     document.createElement(
       "button"
     );
 
-
   copyButton.className =
     "copy-code";
 
-
   copyButton.textContent =
     "Copy Code";
-
 
   copyButton.addEventListener(
     "click",
@@ -2346,19 +2654,18 @@ function renderCode(
           codeElement.textContent
         );
 
-
         copyButton.textContent =
           "Copied!";
 
-
         setTimeout(
           () => {
+
             copyButton.textContent =
               "Copy Code";
+
           },
           1200
         );
-
 
       } catch {
 
@@ -2371,16 +2678,13 @@ function renderCode(
     }
   );
 
-
   box.appendChild(
     copyButton
   );
 
-
   container.appendChild(
     box
   );
-
 
   if (
     window.hljs &&
@@ -2389,15 +2693,16 @@ function renderCode(
   ) {
 
     try {
+
       hljs.highlightElement(
         codeElement
       );
+
     } catch {}
 
   }
 
 }
-
 
 /* =========================================================
    MEDIA
@@ -2412,10 +2717,8 @@ function renderMedia(
     return;
   }
 
-
   const url =
     data.file_url;
-
 
   if (
     data.message_type ===
@@ -2427,30 +2730,24 @@ function renderMedia(
         "img"
       );
 
-
     image.className =
       "chat-media";
 
-
     image.src =
       url;
-
 
     image.alt =
       data.message ||
       "Image";
 
-
     image.loading =
       "lazy";
-
 
     container.appendChild(
       image
     );
 
   }
-
 
   if (
     data.message_type ===
@@ -2462,33 +2759,26 @@ function renderMedia(
         "video"
       );
 
-
     video.className =
       "chat-media";
-
 
     video.controls =
       true;
 
-
     video.playsInline =
       true;
-
 
     video.preload =
       "metadata";
 
-
     video.src =
       url;
-
 
     container.appendChild(
       video
     );
 
   }
-
 
   if (
     data.message_type ===
@@ -2500,18 +2790,14 @@ function renderMedia(
         "audio"
       );
 
-
     audio.controls =
       true;
-
 
     audio.preload =
       "metadata";
 
-
     audio.src =
       url;
-
 
     container.appendChild(
       audio
@@ -2519,37 +2805,29 @@ function renderMedia(
 
   }
 
-
   const save =
     document.createElement(
       "a"
     );
 
-
   save.className =
     "save-media";
-
 
   save.href =
     url;
 
-
   save.target =
     "_blank";
 
-
   save.rel =
     "noopener noreferrer";
-
 
   save.download =
     data.message ||
     "media";
 
-
   save.textContent =
     "Save Media";
-
 
   container.appendChild(
     save
@@ -2557,9 +2835,8 @@ function renderMedia(
 
 }
 
-
 /* =========================================================
-   DELETE
+   DELETE MESSAGE
    ========================================================= */
 
 async function deleteMessage(
@@ -2575,14 +2852,11 @@ async function deleteMessage(
     return;
   }
 
-
   button.disabled =
     true;
 
-
   button.textContent =
     "Deleting...";
-
 
   try {
 
@@ -2597,14 +2871,11 @@ async function deleteMessage(
           id
         );
 
-
     if (error) {
       throw error;
     }
 
-
     wrapper?.remove();
-
 
   } catch (error) {
 
@@ -2613,14 +2884,11 @@ async function deleteMessage(
       error
     );
 
-
     button.disabled =
       false;
 
-
     button.textContent =
       "Delete";
-
 
     alert(
       error?.message ||
@@ -2631,7 +2899,6 @@ async function deleteMessage(
 
 }
 
-
 /* =========================================================
    EXIT / LOGOUT
    ========================================================= */
@@ -2640,53 +2907,58 @@ async function exitChat() {
 
   closeSidebar();
 
+  stopLastSeenTimer();
+
+  await updateLastSeen();
 
   if (presenceChannel) {
 
     try {
-      await supabaseClient.removeChannel(
-        presenceChannel
-      );
+
+      await supabaseClient
+        .removeChannel(
+          presenceChannel
+        );
+
     } catch {}
 
-    presenceChannel = null;
+    presenceChannel =
+      null;
 
   }
-
 
   if (realtimeChannel) {
 
     try {
-      await supabaseClient.removeChannel(
-        realtimeChannel
-      );
+
+      await supabaseClient
+        .removeChannel(
+          realtimeChannel
+        );
+
     } catch {}
 
-    realtimeChannel = null;
+    realtimeChannel =
+      null;
 
   }
 
-
   await supabaseClient.auth.signOut();
-
 
   currentUser = null;
   currentProfile = null;
+
   presenceUsers = {};
 
-
   showLogin();
-
 
   if (usernameInput) {
     usernameInput.value = "";
   }
 
-
   if (pinInput) {
     pinInput.value = "";
   }
-
 
   if (loginStatus) {
 
@@ -2696,7 +2968,6 @@ async function exitChat() {
   }
 
 }
-
 
 /* =========================================================
    TIME
@@ -2708,19 +2979,20 @@ function formatTime(timestamp) {
     return "";
   }
 
-
   return new Date(
     timestamp
   ).toLocaleTimeString(
     [],
     {
-      hour: "2-digit",
-      minute: "2-digit"
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit"
     }
   );
 
 }
-
 
 /* =========================================================
    SCROLL
@@ -2732,16 +3004,16 @@ function scrollToBottom() {
     return;
   }
 
-
   requestAnimationFrame(
     () => {
+
       messages.scrollTop =
         messages.scrollHeight;
+
     }
   );
 
 }
-
 
 /* =========================================================
    GLOBAL ERROR DISPLAY
@@ -2753,9 +3025,9 @@ window.addEventListener(
 
     console.error(
       "GLOBAL ERROR:",
-      event.error || event.message
+      event.error ||
+      event.message
     );
-
 
     if (
       loginStatus &&
@@ -2771,7 +3043,6 @@ window.addEventListener(
   }
 );
 
-
 window.addEventListener(
   "unhandledrejection",
   event => {
@@ -2780,7 +3051,6 @@ window.addEventListener(
       "PROMISE ERROR:",
       event.reason
     );
-
 
     if (
       loginStatus &&
