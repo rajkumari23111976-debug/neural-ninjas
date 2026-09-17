@@ -718,7 +718,7 @@ async function deleteAccount() {
     console.log("Delete account: session found");
 
     const functionUrl =
-      `${SUPABASE_URL}/functions/v1/delete-account`;
+      `${SUPABASE_URL}/functions/v1/super-responder`;
 
     console.log("Delete account URL:", functionUrl);
 
