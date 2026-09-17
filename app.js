@@ -244,7 +244,6 @@ document.addEventListener("DOMContentLoaded", () => {
     closeSidebar
   );
 
-  /* Update last seen when user hides/leaves page */
   document.addEventListener(
     "visibilitychange",
     () => {
@@ -504,10 +503,6 @@ async function joinTeam() {
     const authEmail =
       makeAuthEmail(username);
 
-    /* -----------------------------------------------------
-       EXISTING ACCOUNT
-       ----------------------------------------------------- */
-
     const loginResult =
       await supabaseClient.auth
         .signInWithPassword({
@@ -555,10 +550,6 @@ async function joinTeam() {
 
       return;
     }
-
-    /* -----------------------------------------------------
-       CREATE NEW ACCOUNT
-       ----------------------------------------------------- */
 
     loginStatus.textContent =
       "Creating account...";
@@ -1044,10 +1035,17 @@ async function loadMessages() {
 /* =========================================================
    REALTIME MESSAGES
    ========================================================= */
+
 function setupRealtime() {
+
   if (realtimeChannel) {
-    supabaseClient.removeChannel(realtimeChannel);
+
+    supabaseClient.removeChannel(
+      realtimeChannel
+    );
+
     realtimeChannel = null;
+
   }
 
   const channelName =
@@ -1056,58 +1054,116 @@ function setupRealtime() {
     "-" +
     Date.now();
 
-  console.log("🔌 Creating realtime channel:", channelName);
+  console.log(
+    "🔌 Creating realtime channel:",
+    channelName
+  );
 
-  realtimeChannel = supabaseClient
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "messages"
-      },
-      payload => {
-        console.log("📨 REALTIME MESSAGE RECEIVED:", payload.new);
+  realtimeChannel =
+    supabaseClient
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event:
+            "INSERT",
 
-        renderMessage(payload.new, true);
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "DELETE",
-        schema: "public",
-        table: "messages"
-      },
-      payload => {
-        console.log("🗑️ REALTIME DELETE:", payload.old);
+          schema:
+            "public",
 
-        const element = document.querySelector(
-          `[data-message-id="${payload.old.id}"]`
-        );
+          table:
+            "messages"
+        },
+        payload => {
 
-        if (element) {
-          element.remove();
+          console.log(
+            "📨 REALTIME MESSAGE RECEIVED:",
+            payload.new
+          );
+
+          renderMessage(
+            payload.new,
+            true
+          );
+
         }
-      }
-    )
-    .subscribe(status => {
-      console.log("📡 REALTIME STATUS:", status);
+      )
+      .on(
+        "postgres_changes",
+        {
+          event:
+            "DELETE",
 
-      if (status === "SUBSCRIBED") {
-        console.log("✅ NEURAL NINJAS REALTIME CONNECTED");
-      }
+          schema:
+            "public",
 
-      if (status === "CHANNEL_ERROR") {
-        console.error("❌ REALTIME CHANNEL ERROR");
-      }
+          table:
+            "messages"
+        },
+        payload => {
 
-      if (status === "TIMED_OUT") {
-        console.error("⏱️ REALTIME CONNECTION TIMED OUT");
-      }
-    });
+          console.log(
+            "🗑️ REALTIME DELETE:",
+            payload.old
+          );
+
+          const element =
+            document.querySelector(
+              `[data-message-id="${payload.old.id}"]`
+            );
+
+          if (element) {
+            element.remove();
+          }
+
+        }
+      )
+      .subscribe(
+        status => {
+
+          console.log(
+            "📡 REALTIME STATUS:",
+            status
+          );
+
+          if (
+            status ===
+            "SUBSCRIBED"
+          ) {
+
+            console.log(
+              "✅ NEURAL NINJAS REALTIME CONNECTED"
+            );
+
+          }
+
+          if (
+            status ===
+            "CHANNEL_ERROR"
+          ) {
+
+            console.error(
+              "❌ REALTIME CHANNEL ERROR"
+            );
+
+          }
+
+          if (
+            status ===
+            "TIMED_OUT"
+          ) {
+
+            console.error(
+              "⏱️ REALTIME CONNECTION TIMED OUT"
+            );
+
+          }
+
+        }
+      );
+
 }
+
 /* =========================================================
    PRESENCE
    ========================================================= */
@@ -1353,10 +1409,6 @@ function renderMembers() {
     item.className =
       "member";
 
-    /* -----------------------------------------------------
-       AVATAR
-       ----------------------------------------------------- */
-
     const avatar =
       document.createElement(
         "div"
@@ -1370,10 +1422,6 @@ function renderMembers() {
         .charAt(0)
         .toUpperCase();
 
-    /* -----------------------------------------------------
-       INFO
-       ----------------------------------------------------- */
-
     const info =
       document.createElement(
         "div"
@@ -1381,8 +1429,6 @@ function renderMembers() {
 
     info.className =
       "member-info";
-
-    /* NAME */
 
     const name =
       document.createElement(
@@ -1394,8 +1440,6 @@ function renderMembers() {
 
     name.textContent =
       member.username;
-
-    /* STATUS */
 
     const status =
       document.createElement(
@@ -1491,9 +1535,6 @@ function formatLastSeen(timestamp) {
 
   const hour =
     60 * minute;
-
-  const day =
-    24 * hour;
 
   if (diff < minute) {
 
@@ -1677,11 +1718,6 @@ function startLastSeenTimer() {
 
   stopLastSeenTimer();
 
-  /*
-     Update every 30 seconds.
-     This keeps the last-seen timestamp reasonably fresh.
-  */
-
   lastSeenTimer =
     setInterval(
       () => {
@@ -1822,13 +1858,6 @@ async function sendMessage() {
     if (error) {
       throw error;
     }
-
-    /*
-       Show instantly on our own screen.
-       If Realtime also sends the event,
-       renderMessage() detects the same ID
-       and prevents duplication.
-    */
 
     renderMessage(
       data,
@@ -2191,13 +2220,6 @@ function renderMessage(
     document.querySelector(
       `[data-message-id="${data.id}"]`
     );
-
-  /*
-     VERY IMPORTANT:
-     Prevent duplicate message when:
-     1. We render immediately after INSERT
-     2. Supabase Realtime sends the same INSERT
-  */
 
   if (existing) {
     return;
