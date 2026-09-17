@@ -961,3 +961,39 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.member-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.member-name {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.2;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #777;
+}
+
+.status-dot.online {
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+}
