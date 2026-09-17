@@ -688,7 +688,9 @@ async function joinTeam() {
    DELETE ACCOUNT
    ========================================================= */
 
-async function deleteAccount() {
+ 
+    async function deleteAccount() {
+
   const confirmed = confirm(
     "Are you sure you want to permanently delete your Neural Ninjas account?\n\nThis cannot be undone."
   );
@@ -697,49 +699,89 @@ async function deleteAccount() {
     return;
   }
 
+  if (!supabaseClient) {
+    alert("Supabase is not initialized.");
+    return;
+  }
+
   try {
+
     deleteAccountBtn.disabled = true;
     deleteAccountBtn.textContent = "Deleting...";
 
-    // Get current session
+    /* =========================
+       GET CURRENT SESSION
+       ========================= */
+
     const {
-      data: { session },
+      data: sessionData,
       error: sessionError
-    } = await supabase.auth.getSession();
+    } =
+      await supabaseClient.auth.getSession();
 
     if (sessionError) {
-      throw new Error(sessionError.message);
+      throw sessionError;
     }
 
-    if (!session || !session.access_token) {
-      throw new Error("Your login session has expired. Please login again.");
+    const session =
+      sessionData?.session;
+
+    if (
+      !session ||
+      !session.access_token
+    ) {
+
+      throw new Error(
+        "Your login session has expired. Please login again."
+      );
+
     }
 
-    console.log("Delete account: session found");
+    console.log(
+      "Delete account: session found"
+    );
+
+    /* =========================
+       EDGE FUNCTION
+       ========================= */
 
     const functionUrl =
-      `${SUPABASE_URL}/functions/v1/super-responder`;
+      `${SUPABASE_URL}/functions/v1/delete-account`;
 
-    console.log("Delete account URL:", functionUrl);
+    console.log(
+      "Delete account URL:",
+      functionUrl
+    );
 
-    const response = await fetch(functionUrl, {
-      method: "POST",
+    const response =
+      await fetch(
+        functionUrl,
+        {
+          method: "POST",
 
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        "Content-Type": "application/json"
-      },
+          headers: {
+            Authorization:
+              `Bearer ${session.access_token}`,
 
-      body: JSON.stringify({})
-    });
+            apikey:
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({})
+        }
+      );
 
     console.log(
       "Delete account response status:",
       response.status
     );
 
-    const responseText = await response.text();
+    const responseText =
+      await response.text();
 
     console.log(
       "Delete account response:",
@@ -749,65 +791,117 @@ async function deleteAccount() {
     let result = {};
 
     try {
-      result = responseText
-        ? JSON.parse(responseText)
-        : {};
+
+      result =
+        responseText
+          ? JSON.parse(responseText)
+          : {};
+
     } catch {
+
       result = {
-        error: responseText || "Invalid server response"
+        error:
+          responseText ||
+          "Invalid server response"
       };
+
     }
 
     if (!response.ok) {
+
       throw new Error(
         result.error ||
         `Delete failed (${response.status})`
       );
+
     }
 
-    if (result.success !== true) {
+    if (
+      result.success !== true
+    ) {
+
       throw new Error(
         result.error ||
         "Account deletion failed."
       );
+
     }
 
-    // Remove realtime/presence
-    try {
-      if (presenceChannel) {
-        await supabase.removeChannel(presenceChannel);
-        presenceChannel = null;
+    /* =========================
+       CLEANUP REALTIME
+       ========================= */
+
+    if (presenceChannel) {
+
+      try {
+
+        await supabaseClient
+          .removeChannel(
+            presenceChannel
+          );
+
+      } catch (error) {
+
+        console.warn(
+          "Presence cleanup:",
+          error
+        );
+
       }
-    } catch (e) {
-      console.warn("Presence cleanup:", e);
+
+      presenceChannel =
+        null;
+
     }
 
-    try {
-      if (realtimeChannel) {
-        await supabase.removeChannel(realtimeChannel);
-        realtimeChannel = null;
+    if (realtimeChannel) {
+
+      try {
+
+        await supabaseClient
+          .removeChannel(
+            realtimeChannel
+          );
+
+      } catch (error) {
+
+        console.warn(
+          "Realtime cleanup:",
+          error
+        );
+
       }
-    } catch (e) {
-      console.warn("Realtime cleanup:", e);
+
+      realtimeChannel =
+        null;
+
     }
 
-    // Stop last-seen timer
-    if (lastSeenTimer) {
-      clearInterval(lastSeenTimer);
-      lastSeenTimer = null;
-    }
+    /* =========================
+       STOP LAST SEEN
+       ========================= */
 
-    // Sign out locally
-    await supabase.auth.signOut();
+    stopLastSeenTimer();
 
-    // Reset app state
+    /* =========================
+       RESET LOCAL SESSION
+       ========================= */
+
+    await supabaseClient.auth.signOut();
+
     currentUser = null;
     currentProfile = null;
+
     presenceUsers = {};
     allMembers = [];
 
-    // Clear UI
-    messagesEl.innerHTML = "";
+    /* =========================
+       CLEAR UI
+       ========================= */
+
+    if (messages) {
+      messages.innerHTML = "";
+    }
 
     if (usernameInput) {
       usernameInput.value = "";
@@ -817,27 +911,47 @@ async function deleteAccount() {
       pinInput.value = "";
     }
 
-    loginStatus.textContent = "";
+    if (loginStatus) {
+      loginStatus.textContent = "";
+    }
 
-    membersSidebar.classList.remove("open");
-    sidebarOverlay.classList.remove("show");
+    closeSidebar();
 
     showLogin();
 
-    alert("Your Neural Ninjas account has been deleted successfully.");
+    alert(
+      "Your Neural Ninjas account has been deleted successfully."
+    );
 
   } catch (error) {
-    console.error("DELETE ACCOUNT ERROR:", error);
+
+    console.error(
+      "DELETE ACCOUNT ERROR:",
+      error
+    );
 
     alert(
       "Failed to delete account.\n\n" +
-      (error.message || "Network error. Please try again.")
+      (
+        error?.message ||
+        "Network error. Please try again."
+      )
     );
 
   } finally {
-    deleteAccountBtn.disabled = false;
-    deleteAccountBtn.textContent = "Delete Account";
+
+    if (deleteAccountBtn) {
+
+      deleteAccountBtn.disabled =
+        false;
+
+      deleteAccountBtn.textContent =
+        "Delete Account";
+
+    }
+
   }
+
 }
 
 /* =========================================================
