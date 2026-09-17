@@ -1044,151 +1044,70 @@ async function loadMessages() {
 /* =========================================================
    REALTIME MESSAGES
    ========================================================= */
-
 function setupRealtime() {
-
   if (realtimeChannel) {
-
-    supabaseClient
-      .removeChannel(
-        realtimeChannel
-      );
-
-    realtimeChannel =
-      null;
+    supabaseClient.removeChannel(realtimeChannel);
+    realtimeChannel = null;
   }
 
-  realtimeChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-messages-" +
-        currentUser.id +
-        "-" +
-        Date.now()
-      )
+  const channelName =
+    "neural-ninjas-messages-" +
+    currentUser.id +
+    "-" +
+    Date.now();
 
-      /* ---------------------------------------------------
-         NEW MESSAGE
-         --------------------------------------------------- */
+  console.log("🔌 Creating realtime channel:", channelName);
 
-      .on(
-        "postgres_changes",
-        {
-          event:
-            "INSERT",
+  realtimeChannel = supabaseClient
+    .channel(channelName)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        console.log("📨 REALTIME MESSAGE RECEIVED:", payload.new);
 
-          schema:
-            "public",
+        renderMessage(payload.new, true);
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        console.log("🗑️ REALTIME DELETE:", payload.old);
 
-          table:
-            "messages"
-        },
+        const element = document.querySelector(
+          `[data-message-id="${payload.old.id}"]`
+        );
 
-        payload => {
-
-          console.log(
-            "REALTIME MESSAGE:",
-            payload.new
-          );
-
-          /*
-             DO NOT manually skip our own messages.
-             renderMessage() already prevents duplicates
-             using data-message-id.
-          */
-
-          renderMessage(
-            payload.new,
-            true
-          );
-
+        if (element) {
+          element.remove();
         }
-      )
+      }
+    )
+    .subscribe(status => {
+      console.log("📡 REALTIME STATUS:", status);
 
-      /* ---------------------------------------------------
-         DELETE MESSAGE
-         --------------------------------------------------- */
+      if (status === "SUBSCRIBED") {
+        console.log("✅ NEURAL NINJAS REALTIME CONNECTED");
+      }
 
-      .on(
-        "postgres_changes",
-        {
-          event:
-            "DELETE",
+      if (status === "CHANNEL_ERROR") {
+        console.error("❌ REALTIME CHANNEL ERROR");
+      }
 
-          schema:
-            "public",
-
-          table:
-            "messages"
-        },
-
-        payload => {
-
-          console.log(
-            "REALTIME DELETE:",
-            payload.old
-          );
-
-          const element =
-            document.querySelector(
-              `[data-message-id="${payload.old.id}"]`
-            );
-
-          element?.remove();
-
-        }
-      )
-
-      /* ---------------------------------------------------
-         SUBSCRIBE
-         --------------------------------------------------- */
-
-      .subscribe(
-        status => {
-
-          console.log(
-            "MESSAGE REALTIME STATUS:",
-            status
-          );
-
-          if (
-            status ===
-            "SUBSCRIBED"
-          ) {
-
-            console.log(
-              "✅ Neural Ninjas realtime connected"
-            );
-
-          }
-
-          if (
-            status ===
-            "CHANNEL_ERROR"
-          ) {
-
-            console.error(
-              "❌ Realtime channel error"
-            );
-
-          }
-
-          if (
-            status ===
-            "TIMED_OUT"
-          ) {
-
-            console.error(
-              "❌ Realtime connection timed out"
-            );
-
-          }
-
-        }
-      );
-
+      if (status === "TIMED_OUT") {
+        console.error("⏱️ REALTIME CONNECTION TIMED OUT");
+      }
+    });
 }
-
 /* =========================================================
    PRESENCE
    ========================================================= */
