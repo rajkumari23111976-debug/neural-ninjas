@@ -1,30 +1,20 @@
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html,
 body {
+  margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   font-family: Arial, sans-serif;
-  background: #050914;
-  color: #ffffff;
+  background: #050812;
+  color: white;
 }
 
 body {
-  min-height: 100vh;
-}
-
-/* =========================
-   SCREEN
-========================= */
-
-.screen {
-  width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
 .hidden {
@@ -35,70 +25,126 @@ body {
    LOGIN
 ========================= */
 
+.screen {
+  width: 100%;
+  height: 100%;
+}
+
 #loginScreen {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   background:
-    radial-gradient(circle at top, rgba(0, 229, 255, 0.12), transparent 40%),
-    #050914;
+    radial-gradient(circle at top, #17234a 0%, #080d1d 45%, #03050b 100%);
 }
 
 .login-card {
-  width: min(420px, 100%);
-  padding: 32px 24px;
-  text-align: center;
-  background: rgba(11, 19, 36, 0.95);
-  border: 1px solid #263452;
+  width: 100%;
+  max-width: 390px;
+  padding: 30px 24px;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  background: rgba(10, 15, 30, 0.94);
+  border: 1px solid #263252;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
 
 .logo {
-  font-size: 55px;
-  margin-bottom: 12px;
-}
-
-.login-card h1 {
-  color: #00e5ff;
-  font-size: 27px;
-  letter-spacing: 2px;
+  font-size: 52px;
   margin-bottom: 8px;
 }
 
-.subtitle {
-  color: #8fa3c7;
-  font-size: 14px;
-  margin-bottom: 28px;
+.login-card h1 {
+  margin: 0;
+  font-size: 25px;
+  letter-spacing: 2px;
 }
 
+.subtitle {
+  color: #8995ae;
+  margin: 8px 0 24px;
+  font-size: 14px;
+}
+
+/* =========================
+   USERNAME
+========================= */
+
 #usernameInput {
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid #30415f;
-  border-radius: 10px;
-  outline: none;
-  background: #101a2e;
-  color: white;
-  font-size: 16px;
-  margin-bottom: 14px;
+  width: 100% !important;
+  height: 52px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  border: 1px solid #303a50 !important;
+  background: #070b16 !important;
+  color: white !important;
+  outline: none !important;
+  font-size: 16px !important;
 }
 
 #usernameInput:focus {
-  border-color: #00e5ff;
-  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.08);
+  border-color: #536dfe !important;
 }
+
+/* =========================
+   PIN
+========================= */
+
+#loginScreen .login-card #pinInput {
+  display: block !important;
+  width: 100% !important;
+  height: 52px !important;
+  margin: 10px 0 12px !important;
+  padding: 0 16px !important;
+
+  border-radius: 12px !important;
+  border: 1px solid #303a50 !important;
+
+  background: #070b16 !important;
+  color: #ffffff !important;
+
+  outline: none !important;
+
+  font-family: Arial, sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+
+  letter-spacing: 8px !important;
+  text-align: center !important;
+
+  box-shadow: none !important;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#loginScreen .login-card #pinInput::placeholder {
+  color: #68738a !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px !important;
+}
+
+#loginScreen .login-card #pinInput:focus {
+  border-color: #536dfe !important;
+  box-shadow: 0 0 0 3px rgba(83, 109, 254, 0.15) !important;
+}
+
+/* =========================
+   LOGIN BUTTON
+========================= */
 
 #joinBtn {
   width: 100%;
-  padding: 14px;
+  height: 52px;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #00e5ff, #0077ff);
+  border-radius: 12px;
+  background: #536dfe;
   color: white;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: bold;
   cursor: pointer;
 }
 
@@ -108,8 +154,8 @@ body {
 
 #loginStatus {
   min-height: 20px;
-  margin-top: 14px;
-  color: #ff7188;
+  margin: 14px 0 0;
+  color: #ff8a8a;
   font-size: 13px;
 }
 
@@ -119,63 +165,76 @@ body {
 
 #chatScreen {
   position: relative;
+
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at top left, rgba(0, 229, 255, 0.07), transparent 35%),
-    #07101f;
+
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+
+  background: #08101f;
+
+  overflow: hidden;
 }
 
 /* =========================
-   HEADER
+   CHAT HEADER
 ========================= */
 
 .chat-header {
+  height: 64px;
+  min-height: 64px;
   flex-shrink: 0;
-  height: 65px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px 0 18px;
-  background: #0b1324;
-  border-bottom: 1px solid #263452;
+
+  padding: 0 14px;
+
+  background: #0c1528;
+  border-bottom: 1px solid #1c2942;
 }
 
 .header-info h2 {
+  margin: 0;
   font-size: 17px;
-  color: #ffffff;
-  margin-bottom: 4px;
 }
 
 #onlineStatus {
-  font-size: 12px;
-  color: #00e5ff;
+  display: block;
+
+  margin-top: 3px;
+
+  color: #46e58b !important;
+
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .header-actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .icon-btn {
   width: 40px;
   height: 40px;
+
   border: none;
   border-radius: 10px;
+
   background: transparent;
-  color: #c8d5ee;
-  font-size: 25px;
+  color: white;
+
+  font-size: 24px;
+
   cursor: pointer;
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #00e5ff;
-}
-
-.icon-btn:active {
-  transform: scale(0.94);
+  background: #17233a;
 }
 
 /* =========================
@@ -183,168 +242,256 @@ body {
 ========================= */
 
 #messages {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+
   overflow-y: auto;
-  padding: 16px 12px 12px;
+  overflow-x: hidden;
+
+  padding: 14px;
+
   scroll-behavior: smooth;
-}
 
-#messages::-webkit-scrollbar {
-  width: 5px;
+  -webkit-overflow-scrolling: touch;
 }
-
-#messages::-webkit-scrollbar-thumb {
-  background: #263452;
-  border-radius: 10px;
-}
-
-/* =========================
-   MESSAGE
-========================= */
 
 .message {
-  max-width: 88%;
-  margin-bottom: 12px;
+  display: flex;
+
+  margin-bottom: 10px;
+}
+
+.message.mine {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: min(78%, 600px);
+
   padding: 10px 12px;
-  border-radius: 13px;
-  background: #101c31;
-  border: 1px solid #263452;
-  word-wrap: break-word;
+
+  border-radius: 15px;
+
+  background: #17233a;
+  color: #ffffff;
+
   overflow-wrap: anywhere;
 }
 
-.message.own {
-  margin-left: auto;
-  background: #0d2940;
-  border-color: #075b75;
+.mine .bubble {
+  background: #263a8f;
 }
 
-.message-sender {
-  color: #00e5ff;
-  font-size: 12px;
-  font-weight: 700;
+.sender {
   margin-bottom: 5px;
+
+  color: #78d7ff;
+
+  font-size: 11px;
+  font-weight: bold;
 }
 
-.message-text {
-  color: #e8eef9;
-  font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+.mine .sender {
+  color: #d5dcff;
 }
 
-.message-time {
-  color: #687b9e;
-  font-size: 10px;
-  margin-top: 6px;
-  text-align: right;
+.text {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* =========================
+   TIMESTAMP
+========================= */
+
+.message .bubble .time {
+  display: block !important;
+
+  width: 100% !important;
+
+  margin-top: 6px !important;
+  padding-top: 2px !important;
+
+  font-family: Arial, sans-serif !important;
+
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 400 !important;
+
+  color: #9aa5bb !important;
+
+  opacity: 0.55 !important;
+
+  text-align: right !important;
+
+  white-space: nowrap !important;
+
+  letter-spacing: 0 !important;
+}
+
+.message.mine .bubble .time {
+  color: #c7d0ff !important;
+  opacity: 0.6 !important;
 }
 
 /* =========================
    LINKS
 ========================= */
 
-.message a {
-  color: #00e5ff;
+.text a,
+.message-link {
+  color: #55dfff !important;
   text-decoration: underline;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-.message a:hover {
-  color: #6ff3ff;
+.text a:visited,
+.message-link:visited {
+  color: #55dfff !important;
 }
 
 /* =========================
    CODE
 ========================= */
 
-.code-message {
-  position: relative;
+.code-box {
+  margin-top: 6px;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  background: #050914;
 }
 
-.code-message pre {
-  margin-top: 8px;
-  border-radius: 9px;
+.code-box pre {
+  margin: 0;
+
   overflow-x: auto;
-  background: #080d17;
 }
 
-.code-message code {
+.code-box pre code {
   display: block;
+
   padding: 12px;
+
   font-size: 13px;
-  line-height: 1.5;
 }
 
-.copy-code-btn {
-  margin-top: 8px;
-  padding: 7px 11px;
-  border: 1px solid #30415f;
-  border-radius: 7px;
-  background: #111d31;
-  color: #00e5ff;
+.copy-code {
+  display: block;
+
+  width: 100%;
+
+  padding: 8px;
+
+  border: none;
+
+  background: #1b2944;
+  color: #dbe4ff;
+
+  font-size: 11px;
+
   cursor: pointer;
-  font-size: 12px;
 }
 
-.copy-code-btn:hover {
-  background: #17263e;
+.copy-code:hover {
+  background: #24375b;
 }
 
 /* =========================
    MEDIA
 ========================= */
 
-.message-media {
-  max-width: 100%;
-  margin-top: 7px;
-  border-radius: 10px;
+.message img,
+.message video {
   display: block;
+
+  max-width: 100%;
+
+  border-radius: 10px;
 }
 
-.message-image {
-  max-width: min(300px, 100%);
-  max-height: 350px;
-  object-fit: contain;
+.message audio {
+  max-width: 100%;
 }
 
-.message-video {
-  max-width: min(330px, 100%);
-  max-height: 350px;
+.chat-media {
+  max-width: 100%;
+  border-radius: 10px;
 }
 
-.message-audio {
-  width: min(330px, 100%);
-}
-
-.download-media-btn {
+.save-media {
   display: inline-block;
-  margin-top: 8px;
-  padding: 7px 11px;
+
+  margin-top: 7px;
+
+  padding: 6px 9px;
+
   border-radius: 7px;
-  border: 1px solid #30415f;
-  background: #111d31;
-  color: #00e5ff;
+
+  background: #1b2944;
+  color: #55dfff;
+
+  font-size: 11px;
+
   text-decoration: none;
-  font-size: 12px;
+}
+
+.save-media:hover {
+  background: #26375b;
 }
 
 /* =========================
    DELETE MESSAGE
 ========================= */
 
-.delete-message-btn {
-  margin-top: 7px;
-  border: none;
-  background: transparent;
-  color: #ff6b81;
-  cursor: pointer;
-  font-size: 11px;
+.delete-message {
+  display: block !important;
+
+  margin-top: 7px !important;
+  margin-left: auto !important;
+
+  padding: 5px 9px !important;
+
+  border: 1px solid #303a50 !important;
+  border-radius: 7px !important;
+
+  background: #101827 !important;
+
+  color: #8490aa !important;
+
+  font-family: Arial, sans-serif !important;
+
+  font-size: 10px !important;
+  font-weight: 500 !important;
+
+  line-height: 1 !important;
+
+  cursor: pointer !important;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.1s ease;
 }
 
-.delete-message-btn:hover {
-  color: #ff9aaa;
+.delete-message:hover {
+  background: #24151b !important;
+
+  border-color: #713744 !important;
+
+  color: #ff7777 !important;
+}
+
+.delete-message:active {
+  transform: scale(0.96);
+}
+
+.delete-message:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* =========================
@@ -352,96 +499,109 @@ body {
 ========================= */
 
 .composer {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
+
   gap: 8px;
+
   padding: 10px;
-  background: #0b1324;
-  border-top: 1px solid #263452;
+
+  flex-shrink: 0;
+
+  background: #0c1528;
+
+  border-top: 1px solid #1c2942;
 }
 
 #messageInput {
   flex: 1;
   min-width: 0;
-  height: 43px;
-  padding: 0 13px;
-  border: 1px solid #30415f;
-  border-radius: 11px;
-  outline: none;
-  background: #101a2e;
+
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid #273653;
+
+  border-radius: 12px;
+
+  background: #070d1b;
+
   color: white;
+
+  outline: none;
+
   font-size: 14px;
 }
 
 #messageInput:focus {
-  border-color: #00e5ff;
-}
-
-#messageInput::placeholder {
-  color: #667a9e;
+  border-color: #536dfe;
 }
 
 .tool-btn,
 .send-btn {
   flex-shrink: 0;
-  width: 43px;
-  height: 43px;
-  border-radius: 11px;
+
+  width: 44px;
+  height: 44px;
+
+  border: none;
+  border-radius: 12px;
+
   cursor: pointer;
 }
 
 .tool-btn {
-  border: 1px solid #30415f;
-  background: #101a2e;
-  color: #00e5ff;
+  background: #17233a;
+
+  color: #cbd5f5;
+
   font-size: 23px;
 }
 
-.tool-btn:hover {
-  background: #17263e;
-}
-
 .send-btn {
-  border: none;
-  background: linear-gradient(135deg, #00e5ff, #0077ff);
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-}
+  background: #536dfe;
 
-.send-btn:active,
-.tool-btn:active {
-  transform: scale(0.94);
+  color: white;
+
+  font-size: 19px;
 }
 
 /* =========================
-   MEMBERS SIDEBAR
-   DELETE ACCOUNT FIX
+   SIDEBAR
 ========================= */
 
 .members-sidebar {
   position: absolute;
+
   z-index: 20;
+
   top: 0;
   right: 0;
 
   width: min(320px, 88vw);
   height: 100%;
 
-  display: flex;
-  flex-direction: column;
-
   background: #0b1324;
+
   border-left: 1px solid #263452;
 
   transform: translateX(100%);
+
   transition: transform 0.25s ease;
 
   box-shadow: -15px 0 40px rgba(0, 0, 0, 0.35);
 
   overflow: hidden;
+
+  /* DELETE ACCOUNT FIX */
+  display: flex;
+  flex-direction: column;
 }
+
+/* =========================
+   SIDEBAR OPEN
+========================= */
 
 .members-sidebar.open {
   transform: translateX(0);
@@ -452,56 +612,86 @@ body {
 ========================= */
 
 .sidebar-header {
-  flex-shrink: 0;
-
+  height: 64px;
   min-height: 64px;
 
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
-  padding: 12px 14px;
+  padding: 0 15px;
+
+  background: #0c172c;
 
   border-bottom: 1px solid #263452;
+
+  flex-shrink: 0;
+}
+
+.sidebar-header > div {
+  min-width: 0;
 }
 
 .sidebar-header h3 {
+  margin: 0;
+
   color: #ffffff;
+
   font-size: 17px;
-  margin-bottom: 4px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.5px;
 }
 
-#memberCount {
-  color: #7386a8;
-  font-size: 12px;
+.sidebar-header span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #46e58b !important;
+
+  font-size: 11px;
+
+  font-weight: 600;
 }
 
 .close-sidebar {
+  flex-shrink: 0;
+
   width: 38px;
   height: 38px;
 
   border: none;
+
   border-radius: 9px;
 
   background: transparent;
-  color: #b9c7df;
 
-  font-size: 27px;
+  color: #c8d1e5;
+
+  font-size: 28px;
+
+  line-height: 1;
+
   cursor: pointer;
 }
 
 .close-sidebar:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #00e5ff;
+  background: #17233a;
+
+  color: #ffffff;
 }
 
 /* =========================
    MEMBERS LIST
-   DELETE BUTTON FIX
 ========================= */
 
 .members-list {
-  flex: 1;
+  flex: 1 1 auto;
+
   min-height: 0;
 
   height: auto;
@@ -509,16 +699,8 @@ body {
   padding: 10px;
 
   overflow-y: auto;
+
   overflow-x: hidden;
-}
-
-.members-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.members-list::-webkit-scrollbar-thumb {
-  background: #263452;
-  border-radius: 10px;
 }
 
 /* =========================
@@ -527,80 +709,195 @@ body {
 
 .member {
   display: flex;
+
   align-items: center;
 
-  padding: 11px;
-  margin-bottom: 7px;
+  gap: 11px;
 
-  border: 1px solid #202f4b;
-  border-radius: 10px;
+  padding: 10px 11px;
 
-  background: #0e192d;
+  margin-bottom: 4px;
+
+  border-radius: 11px;
+
+  color: #ffffff;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
 }
 
 .member:hover {
-  background: #111f36;
+  background: #121e35;
 }
+
+/* =========================
+   MEMBER AVATAR
+========================= */
+
+.member-avatar {
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #536dfe,
+      #263a8f
+    );
+
+  border: 1px solid #7184ff;
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  text-transform: uppercase;
+
+  box-shadow:
+    0 0 12px rgba(83, 109, 254, 0.22);
+}
+
+/* =========================
+   MEMBER INFO
+========================= */
 
 .member-info {
-  min-width: 0;
   flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: center;
 }
 
+/* =========================
+   MEMBER NAME
+========================= */
+
 .member-name {
-  color: #e7eefc;
+  color: #f0f4ff !important;
+
   font-size: 14px;
-  font-weight: 600;
+
+  font-weight: 700;
+
+  line-height: 1.2;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
+/* =========================
+   MEMBER STATUS
+========================= */
+
 .member-status {
-  margin-top: 4px;
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  margin-top: 3px;
+
+  color: #78859d;
 
   font-size: 11px;
-  color: #7185a7;
+
+  line-height: 1.2;
+
+  opacity: 0.85;
+
+  white-space: nowrap;
 }
 
-.member-status.online {
-  color: #39e58c;
+.status-dot {
+  flex-shrink: 0;
+
+  width: 7px;
+  height: 7px;
+
+  min-width: 7px;
+
+  border-radius: 50%;
+
+  background: #777;
+
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: #00ff88;
+
+  box-shadow:
+    0 0 8px #00ff88;
+}
+
+.status-dot.online + span {
+  color: #46e58b;
+
+  font-weight: 600;
 }
 
 /* =========================
    DELETE ACCOUNT BUTTON
-   FIXED AT SIDEBAR BOTTOM
 ========================= */
 
 .delete-account-btn {
-  flex-shrink: 0;
-
   display: block;
+
+  flex-shrink: 0;
 
   width: calc(100% - 24px);
 
-  margin: 12px 12px 16px;
+  margin: 8px 12px 14px;
 
   padding: 12px 16px;
 
   border: 1px solid #ff4d6d;
+
   border-radius: 10px;
 
   background: transparent;
+
   color: #ff6b81;
 
   font-size: 14px;
+
   font-weight: 700;
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+
+  position: relative;
+
+  z-index: 2;
 }
 
 .delete-account-btn:hover {
-  background: rgba(255, 77, 109, 0.12);
-  color: #ff8093;
+  background:
+    rgba(255, 77, 109, 0.12);
 }
 
 .delete-account-btn:active {
@@ -609,6 +906,7 @@ body {
 
 .delete-account-btn:disabled {
   opacity: 0.6;
+
   cursor: not-allowed;
 }
 
@@ -618,6 +916,7 @@ body {
 
 .sidebar-overlay {
   position: absolute;
+
   z-index: 19;
 
   inset: 0;
@@ -625,29 +924,17 @@ body {
   background: rgba(0, 0, 0, 0.45);
 
   opacity: 0;
+
   pointer-events: none;
 
-  transition: opacity 0.25s ease;
+  transition:
+    opacity 0.25s ease;
 }
 
-.sidebar-overlay.open {
+.sidebar-overlay.show {
   opacity: 1;
+
   pointer-events: auto;
-}
-
-/* =========================
-   LOADING / STATUS
-========================= */
-
-.loading {
-  text-align: center;
-  padding: 20px;
-  color: #7386a8;
-  font-size: 13px;
-}
-
-.error-message {
-  color: #ff7188;
 }
 
 /* =========================
@@ -655,21 +942,29 @@ body {
 ========================= */
 
 @media (max-width: 600px) {
-  .chat-header {
-    height: 60px;
-    padding-left: 13px;
+
+  .login-card {
+    padding: 26px 18px;
   }
 
-  .header-info h2 {
-    font-size: 15px;
+  .login-card h1 {
+    font-size: 22px;
+  }
+
+  .bubble {
+    max-width: 86%;
   }
 
   #messages {
-    padding: 12px 8px;
+    padding: 10px;
   }
 
-  .message {
-    max-width: 92%;
+  .text {
+    font-size: 14px;
+  }
+
+  .message .bubble .time {
+    font-size: 9px !important;
   }
 
   .composer {
@@ -677,34 +972,26 @@ body {
   }
 
   #messageInput {
+    height: 42px;
+  }
+
+  .tool-btn,
+  .send-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .member-avatar {
+    width: 36px;
+    height: 36px;
     font-size: 14px;
   }
 
-  .members-sidebar {
-    width: min(320px, 90vw);
-  }
-}
-
-/* =========================
-   SMALL PHONES
-========================= */
-
-@media (max-width: 380px) {
-  .tool-btn,
-  .send-btn {
-    width: 40px;
-    height: 40px;
+  .member-name {
+    font-size: 13px;
   }
 
-  #messageInput {
-    height: 40px;
-  }
-
-  .login-card {
-    padding: 25px 18px;
-  }
-
-  .login-card h1 {
-    font-size: 23px;
+  .delete-account-btn {
+    margin-bottom: 12px;
   }
 }
