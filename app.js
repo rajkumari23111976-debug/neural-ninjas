@@ -52,7 +52,10 @@ let usernameInput;
 let pinInput;
 let joinBtn;
 let loginStatus;
-
+let membersList;
+let memberCount;
+let onlineStatus;
+let deleteAccountBtn;
 let messages;
 let messageInput;
 let sendBtn;
@@ -66,10 +69,6 @@ let menuBtn;
 let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
-
-let membersList;
-let memberCount;
-let onlineStatus;
 
 
 /* =========================================================
@@ -102,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
   membersList = document.getElementById("membersList");
   memberCount = document.getElementById("memberCount");
   onlineStatus = document.getElementById("onlineStatus");
+   deleteAccountBtn =
+  document.getElementById("deleteAccountBtn");
 
 
   if (!supabaseClient) {
@@ -193,7 +194,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "click",
     openSidebar
   );
-
+deleteAccountBtn?.addEventListener(
+  "click",
+  deleteAccount
+);
 
   closeSidebarBtn?.addEventListener(
     "click",
@@ -647,6 +651,224 @@ async function joinTeam() {
 
     joinBtn.disabled =
       false;
+
+  }
+
+}
+
+/* =========================================================
+   DELETE ACCOUNT
+   ========================================================= */
+
+async function deleteAccount() {
+
+  if (
+    !currentUser ||
+    !currentProfile ||
+    !deleteAccountBtn
+  ) {
+    return;
+  }
+
+
+  const username =
+    currentProfile.username;
+
+
+  const confirmed =
+    confirm(
+      `Delete the account "${username}"?\n\n` +
+      `This will permanently delete your Neural Ninjas account, ` +
+      `profile and uploaded media.\n\n` +
+      `This action cannot be undone.`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  const secondConfirmation =
+    confirm(
+      `Are you absolutely sure?\n\n` +
+      `Account: ${username}\n\n` +
+      `Press OK to permanently delete it.`
+    );
+
+
+  if (!secondConfirmation) {
+    return;
+  }
+
+
+  deleteAccountBtn.disabled =
+    true;
+
+
+  deleteAccountBtn.textContent =
+    "Deleting Account...";
+
+
+  try {
+
+    if (presenceChannel) {
+
+      try {
+        await supabaseClient.removeChannel(
+          presenceChannel
+        );
+      } catch {}
+
+      presenceChannel = null;
+
+    }
+
+
+    if (realtimeChannel) {
+
+      try {
+        await supabaseClient.removeChannel(
+          realtimeChannel
+        );
+      } catch {}
+
+      realtimeChannel = null;
+
+    }
+
+
+    const {
+      data: sessionData,
+      error: sessionError
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (sessionError) {
+      throw sessionError;
+    }
+
+
+    const accessToken =
+      sessionData?.session?.access_token;
+
+
+    if (!accessToken) {
+
+      throw new Error(
+        "Your session has expired. Please login again."
+      );
+
+    }
+
+
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${accessToken}`,
+
+            apikey:
+              SUPABASE_PUBLISHABLE_KEY,
+
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+
+    const result =
+      await response.json()
+        .catch(() => ({}));
+
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+
+      throw new Error(
+        result.error ||
+        "Account deletion failed."
+      );
+
+    }
+
+
+    await supabaseClient.auth.signOut();
+
+
+    currentUser = null;
+    currentProfile = null;
+
+    presenceUsers = {};
+    allMembers = [];
+
+
+    closeSidebar();
+
+    showLogin();
+
+
+    if (usernameInput) {
+      usernameInput.value = "";
+    }
+
+
+    if (pinInput) {
+      pinInput.value = "";
+    }
+
+
+    if (messages) {
+      messages.innerHTML = "";
+    }
+
+
+    if (loginStatus) {
+
+      loginStatus.textContent =
+        "Account deleted successfully.";
+
+    }
+
+
+    alert(
+      "Your Neural Ninjas account has been permanently deleted."
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "ACCOUNT DELETE ERROR:",
+      error
+    );
+
+
+    alert(
+      error?.message ||
+      "Account deletion failed."
+    );
+
+
+  } finally {
+
+    if (deleteAccountBtn) {
+
+      deleteAccountBtn.disabled =
+        false;
+
+      deleteAccountBtn.textContent =
+        "Delete Account";
+
+    }
 
   }
 
