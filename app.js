@@ -689,155 +689,125 @@ async function joinTeam() {
    ========================================================= */
 
 async function deleteAccount() {
-
-  if (
-    !currentUser ||
-    !currentProfile ||
-    !deleteAccountBtn
-  ) {
-    return;
-  }
-
-  const username =
-    currentProfile.username;
-
-  const confirmed =
-    confirm(
-      `Delete the account "${username}"?\n\n` +
-      `This will permanently delete your Neural Ninjas account, ` +
-      `profile and uploaded media.\n\n` +
-      `This action cannot be undone.`
-    );
+  const confirmed = confirm(
+    "Are you sure you want to permanently delete your Neural Ninjas account?\n\nThis cannot be undone."
+  );
 
   if (!confirmed) {
     return;
   }
 
-  const secondConfirmation =
-    confirm(
-      `Are you absolutely sure?\n\n` +
-      `Account: ${username}\n\n` +
-      `Press OK to permanently delete it.`
-    );
-
-  if (!secondConfirmation) {
-    return;
-  }
-
-  deleteAccountBtn.disabled =
-    true;
-
-  deleteAccountBtn.textContent =
-    "Deleting Account...";
-
   try {
+    deleteAccountBtn.disabled = true;
+    deleteAccountBtn.textContent = "Deleting...";
 
-    if (presenceChannel) {
-
-      try {
-
-        await supabaseClient
-          .removeChannel(
-            presenceChannel
-          );
-
-      } catch {}
-
-      presenceChannel =
-        null;
-    }
-
-    if (realtimeChannel) {
-
-      try {
-
-        await supabaseClient
-          .removeChannel(
-            realtimeChannel
-          );
-
-      } catch {}
-
-      realtimeChannel =
-        null;
-    }
-
-    stopLastSeenTimer();
-
+    // Get current session
     const {
-      data: sessionData,
+      data: { session },
       error: sessionError
-    } =
-      await supabaseClient.auth
-        .getSession();
+    } = await supabase.auth.getSession();
 
     if (sessionError) {
-      throw sessionError;
+      throw new Error(sessionError.message);
     }
 
-    const accessToken =
-      sessionData?.session?.access_token;
+    if (!session || !session.access_token) {
+      throw new Error("Your login session has expired. Please login again.");
+    }
 
-    if (!accessToken) {
+    console.log("Delete account: session found");
 
+    const functionUrl =
+      `${SUPABASE_URL}/functions/v1/delete-account`;
+
+    console.log("Delete account URL:", functionUrl);
+
+    const response = await fetch(functionUrl, {
+      method: "POST",
+
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({})
+    });
+
+    console.log(
+      "Delete account response status:",
+      response.status
+    );
+
+    const responseText = await response.text();
+
+    console.log(
+      "Delete account response:",
+      responseText
+    );
+
+    let result = {};
+
+    try {
+      result = responseText
+        ? JSON.parse(responseText)
+        : {};
+    } catch {
+      result = {
+        error: responseText || "Invalid server response"
+      };
+    }
+
+    if (!response.ok) {
       throw new Error(
-        "Your session has expired. Please login again."
+        result.error ||
+        `Delete failed (${response.status})`
       );
-
     }
 
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/delete-account`,
-        {
-
-          method:
-            "POST",
-
-          headers: {
-
-            Authorization:
-              `Bearer ${accessToken}`,
-
-            apikey:
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Content-Type":
-              "application/json"
-
-          }
-
-        }
-      );
-
-    const result =
-      await response.json()
-        .catch(
-          () => ({})
-        );
-
-    if (
-      !response.ok ||
-      !result.success
-    ) {
-
+    if (result.success !== true) {
       throw new Error(
         result.error ||
         "Account deletion failed."
       );
-
     }
 
-    await supabaseClient.auth.signOut();
+    // Remove realtime/presence
+    try {
+      if (presenceChannel) {
+        await supabase.removeChannel(presenceChannel);
+        presenceChannel = null;
+      }
+    } catch (e) {
+      console.warn("Presence cleanup:", e);
+    }
 
+    try {
+      if (realtimeChannel) {
+        await supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
+    } catch (e) {
+      console.warn("Realtime cleanup:", e);
+    }
+
+    // Stop last-seen timer
+    if (lastSeenTimer) {
+      clearInterval(lastSeenTimer);
+      lastSeenTimer = null;
+    }
+
+    // Sign out locally
+    await supabase.auth.signOut();
+
+    // Reset app state
     currentUser = null;
     currentProfile = null;
-
     presenceUsers = {};
     allMembers = [];
 
-    closeSidebar();
-    showLogin();
+    // Clear UI
+    messagesEl.innerHTML = "";
 
     if (usernameInput) {
       usernameInput.value = "";
@@ -847,47 +817,27 @@ async function deleteAccount() {
       pinInput.value = "";
     }
 
-    if (messages) {
-      messages.innerHTML = "";
-    }
+    loginStatus.textContent = "";
 
-    if (loginStatus) {
+    membersSidebar.classList.remove("open");
+    sidebarOverlay.classList.remove("show");
 
-      loginStatus.textContent =
-        "Account deleted successfully.";
+    showLogin();
 
-    }
-
-    alert(
-      "Your Neural Ninjas account has been permanently deleted."
-    );
+    alert("Your Neural Ninjas account has been deleted successfully.");
 
   } catch (error) {
-
-    console.error(
-      "ACCOUNT DELETE ERROR:",
-      error
-    );
+    console.error("DELETE ACCOUNT ERROR:", error);
 
     alert(
-      error?.message ||
-      "Account deletion failed."
+      "Failed to delete account.\n\n" +
+      (error.message || "Network error. Please try again.")
     );
 
   } finally {
-
-    if (deleteAccountBtn) {
-
-      deleteAccountBtn.disabled =
-        false;
-
-      deleteAccountBtn.textContent =
-        "Delete Account";
-
-    }
-
+    deleteAccountBtn.disabled = false;
+    deleteAccountBtn.textContent = "Delete Account";
   }
-
 }
 
 /* =========================================================
