@@ -1268,3 +1268,52 @@ ONLY DELETE ACCOUNT CHANGE
 
 }
                    
+/* =========================================================
+   MESSAGE REPLY PREVIEW
+   ========================================================= */
+
+.message-reply-preview {
+  margin-bottom: 8px;
+  padding: 7px 9px;
+
+  border-left: 3px solid #7dd3fc;
+  border-radius: 6px;
+
+  background: rgba(125, 211, 252, 0.08);
+
+  overflow: hidden;
+}
+
+.message-reply-sender {
+  margin-bottom: 2px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  color: #7dd3fc;
+}
+
+.message-reply-content {
+  overflow: hidden;
+
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+
+@media (max-width: 600px) {
+
+  .message-reply-preview {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+  }
+
+  .message-reply-sender,
+  .message-reply-content {
+    font-size: 10px;
+  }
+
+}
