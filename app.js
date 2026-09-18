@@ -2820,10 +2820,10 @@ replyButton.addEventListener("click", () => {
 
 bubble.appendChild(replyButton);
 
+  if (data.sender_id === currentUser?.id) {
+
   const deleteButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
   deleteButton.className =
     "delete-message";
@@ -2844,6 +2844,7 @@ bubble.appendChild(replyButton);
   bubble.appendChild(
     deleteButton
   );
+}
 
   wrapper.appendChild(
     bubble
