@@ -3939,6 +3939,24 @@ async function toggleReaction(
     }
 
     await loadReactions();
+     const element =
+  document.querySelector(
+    `[data-message-id="${messageId}"]`
+  );
+
+if (element) {
+  element.remove();
+}
+
+const messageData =
+  messageCache.get(messageId);
+
+if (messageData) {
+  renderMessage(
+    messageData,
+    false
+  );
+}
 } catch (error) {
 
   console.error(
