@@ -1360,3 +1360,36 @@ ONLY DELETE ACCOUNT CHANGE
 .reply-message:active {
   transform: scale(0.96);
 }
+
+
+/* =========================================================
+   REPLY JUMP HIGHLIGHT
+   ========================================================= */
+
+.reply-target-highlight {
+  animation: replyTargetHighlight 1.8s ease;
+}
+
+@keyframes replyTargetHighlight {
+
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(125, 211, 252, 0);
+  }
+
+  20% {
+    box-shadow:
+      0 0 0 4px rgba(125, 211, 252, 0.45);
+  }
+
+  60% {
+    box-shadow:
+      0 0 18px 4px rgba(125, 211, 252, 0.25);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(125, 211, 252, 0);
+  }
+
+}
