@@ -1307,7 +1307,54 @@ function setupRealtime() {
 
         }
       );
+  // =======================================================
+  // MESSAGE REACTIONS REALTIME
+  // =======================================================
 
+  const reactionChannel =
+    supabaseClient
+      .channel("neural-ninjas-reactions")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_reactions"
+        },
+        async () => {
+
+          await loadReactions();
+
+          messages?.querySelectorAll(
+            "[data-message-id]"
+          ).forEach(messageElement => {
+
+            const messageId =
+              Number(
+                messageElement.dataset.messageId
+              );
+
+            const messageData =
+              messageCache.get(messageId);
+
+            if (!messageData) {
+              return;
+            }
+
+            messageElement.remove();
+
+            renderMessage(
+              messageData,
+              false
+            );
+
+          });
+
+          scrollToBottom();
+
+        }
+      )
+      .subscribe();
 }
 
 
