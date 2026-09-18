@@ -55,6 +55,7 @@ let typingUsers = {};
 // =========================================================
 
 let replyingToMessage = null;
+let reactionCache = new Map();
 /* =========================================================
    DOM
    ========================================================= */
@@ -1107,7 +1108,7 @@ async function startChat() {
   }
 
   await loadMessages();
-
+  await loadReactions();
   setupRealtime();
    setupTyping();
 
@@ -2859,7 +2860,103 @@ replyButton.addEventListener("click", () => {
 });
 
 bubble.appendChild(replyButton);
+   // =========================================================
+// REACTION BUTTONS
+// =========================================================
 
+const reactionBar =
+  document.createElement("div");
+
+reactionBar.className =
+  "reaction-bar";
+
+const reactions = [
+  "👍",
+  "❤️",
+  "😂",
+  "🔥",
+  "😮",
+  "😢"
+];
+
+reactions.forEach(reaction => {
+
+  const reactionButton =
+    document.createElement("button");
+
+  reactionButton.className =
+    "reaction-button";
+
+  reactionButton.textContent =
+    reaction;
+
+  reactionButton.type =
+    "button";
+
+  reactionButton.addEventListener(
+    "click",
+    () => {
+      toggleReaction(
+        data.id,
+        reaction
+      );
+    }
+  );
+
+  reactionBar.appendChild(
+    reactionButton
+  );
+
+});
+
+bubble.appendChild(
+  reactionBar
+);
+// Show existing reaction counts
+const reactionCounts =
+  document.createElement("div");
+
+reactionCounts.className =
+  "reaction-counts";
+
+const messageReactions =
+  reactionCache.get(data.id) || [];
+
+const counts = {};
+
+messageReactions.forEach(item => {
+
+  counts[item.reaction] =
+    (counts[item.reaction] || 0) + 1;
+
+});
+
+Object.entries(counts).forEach(
+  ([reaction, count]) => {
+
+    const reactionCount =
+      document.createElement("span");
+
+    reactionCount.className =
+      "reaction-count";
+
+    reactionCount.textContent =
+      `${reaction} ${count}`;
+
+    reactionCounts.appendChild(
+      reactionCount
+    );
+
+  }
+);
+
+if (reactionCounts.children.length > 0) {
+
+  bubble.appendChild(
+    reactionCounts
+  );
+
+}
   if (data.sender_id === currentUser?.id) {
 
   const deleteButton =
@@ -3659,4 +3756,150 @@ function startReply(data) {
   }
 
   messageInput?.focus();
+}
+
+/* =========================================================
+   LOAD MESSAGE REACTIONS
+   ========================================================= */
+
+async function loadReactions() {
+
+  if (!supabaseClient) {
+    return;
+  }
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("message_reactions")
+        .select("*");
+
+    if (error) {
+      throw error;
+    }
+
+    reactionCache.clear();
+
+    (data || []).forEach(reaction => {
+
+      if (!reactionCache.has(reaction.message_id)) {
+
+        reactionCache.set(
+          reaction.message_id,
+          []
+        );
+
+      }
+
+      reactionCache
+        .get(reaction.message_id)
+        .push(reaction);
+
+    });
+
+    console.log(
+      "Reactions loaded:",
+      reactionCache
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Reaction load error:",
+      error
+    );
+
+  }
+
+}
+
+/* =========================================================
+   TOGGLE MESSAGE REACTION
+   ========================================================= */
+
+async function toggleReaction(
+  messageId,
+  reaction
+) {
+
+  if (
+    !supabaseClient ||
+    !currentUser
+  ) {
+    return;
+  }
+
+  try {
+
+    const {
+      data: existingReaction,
+      error: fetchError
+    } =
+      await supabaseClient
+        .from("message_reactions")
+        .select("id")
+        .eq("message_id", messageId)
+        .eq("user_id", currentUser.id)
+        .eq("reaction", reaction)
+        .maybeSingle();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    if (existingReaction) {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("message_reactions")
+          .delete()
+          .eq("id", existingReaction.id);
+
+      if (error) {
+        throw error;
+      }
+
+    } else {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from("message_reactions")
+          .insert({
+
+            message_id:
+              messageId,
+
+            user_id:
+              currentUser.id,
+
+            reaction:
+              reaction
+
+          });
+
+      if (error) {
+        throw error;
+      }
+
+    }
+
+    await loadReactions();
+
+  } catch (error) {
+
+    console.error(
+      "Reaction error:",
+      error
+    );
+
+  }
+
 }
