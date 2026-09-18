@@ -32,6 +32,8 @@ try {
 let currentUser = null;
 let currentProfile = null;
 
+let messageCache = new Map();
+
 let realtimeChannel = null;
 let presenceChannel = null;
 
@@ -2278,14 +2280,28 @@ async function sendMessage() {
         .select()
         .single();
 
+   renderMessage(
+      data,
+      true
+    );
+
+   replyingToMessage = null;
+
+replyBar?.classList.add("hidden");
+
+if (replySender) {
+  replySender.textContent = "User";
+}
+
+if (replyPreview) {
+  replyPreview.textContent = "";
+}
+
     if (error) {
       throw error;
     }
 
-    renderMessage(
-      data,
-      true
-    );
+    
 
     messageInput.value =
       "";
@@ -2639,6 +2655,8 @@ function renderMessage(
     return;
   }
 
+   messageCache.set(data.id, data);
+
   const existing =
     document.querySelector(
       `[data-message-id="${data.id}"]`
@@ -2694,6 +2712,25 @@ function renderMessage(
     sender
   );
 
+
+   // Reply preview
+if (data.reply_to_id) {
+  const replyBox = document.createElement("div");
+  replyBox.className = "message-reply-preview";
+
+  const replyTitle = document.createElement("div");
+  replyTitle.className = "message-reply-sender";
+  replyTitle.textContent = "↩ Reply";
+
+  const replyContent = document.createElement("div");
+  replyContent.className = "message-reply-content";
+  replyContent.textContent = "Replying to message";
+
+  replyBox.appendChild(replyTitle);
+  replyBox.appendChild(replyContent);
+
+  bubble.appendChild(replyBox);
+}
   if (
     data.message_type ===
       "image" ||
