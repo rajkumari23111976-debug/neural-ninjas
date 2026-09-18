@@ -2272,7 +2272,7 @@ async function sendMessage() {
               : "text",
 
           message:
-            text
+            text,
 
            reply_to_id: replyingToMessage?.id ?? null
 
@@ -2757,7 +2757,7 @@ if (data.reply_to_id) {
   bubble.appendChild(replyBox);
 }
    
-}
+
   if (
     data.message_type ===
       "image" ||
