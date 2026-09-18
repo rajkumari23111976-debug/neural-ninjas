@@ -3418,29 +3418,61 @@ window.addEventListener(
 
 
 /* =========================================================
-   MESSAGE SEARCH ENGINE
+   MESSAGE SEARCH ENGINE + HIGHLIGHT
    ========================================================= */
+
+function escapeSearchRegex(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 function searchMessages() {
   if (!messages || !messageSearchInput) return;
 
-  const query = messageSearchInput.value.trim().toLowerCase();
+  const query = messageSearchInput.value.trim();
 
   const messageElements =
     messages.querySelectorAll(".message");
 
   messageElements.forEach(message => {
-    const text = message.textContent.toLowerCase();
+
+    // Restore original message content
+    if (message.dataset.originalContent) {
+      message.innerHTML = message.dataset.originalContent;
+    }
+
+    const text = message.textContent;
 
     if (!query) {
       message.style.display = "";
       return;
     }
 
-    if (text.includes(query)) {
-      message.style.display = "";
-    } else {
+    if (!text.toLowerCase().includes(query.toLowerCase())) {
       message.style.display = "none";
+      return;
     }
+
+    message.style.display = "";
+
+    // Save original HTML before highlighting
+    if (!message.dataset.originalContent) {
+      message.dataset.originalContent = message.innerHTML;
+    }
+
+    const regex =
+      new RegExp(`(${escapeSearchRegex(query)})`, "gi");
+
+    message.innerHTML =
+      message.innerHTML.replace(
+        regex,
+        '<span class="search-highlight">$1</span>'
+      );
   });
 }
+
