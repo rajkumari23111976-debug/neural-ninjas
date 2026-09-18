@@ -420,7 +420,7 @@ async function checkSession() {
       await supabaseClient.auth.signOut();
 
       currentUser = null;
-      currentProfile = null;
+       currentProfile = null;
 
       showLogin();
 
@@ -1115,6 +1115,8 @@ async function loadMessages() {
 
 function setupRealtime() {
 
+    
+   
   if (realtimeChannel) {
 
     supabaseClient.removeChannel(
