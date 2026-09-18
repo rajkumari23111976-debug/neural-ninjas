@@ -2726,6 +2726,18 @@ function renderMessage(
     time
   );
 
+   // Reply button
+const replyButton = document.createElement("button");
+
+replyButton.className = "reply-message";
+replyButton.textContent = "Reply";
+
+replyButton.addEventListener("click", () => {
+  startReply(data);
+});
+
+bubble.appendChild(replyButton);
+
   const deleteButton =
     document.createElement(
       "button"
@@ -3491,3 +3503,37 @@ function searchMessages() {
   });
 }
 
+function startReply(data) {
+  if (!data) return;
+
+  replyingToMessage = data;
+
+  if (replySender) {
+    replySender.textContent =
+      data.sender_name || "Unknown";
+  }
+
+  if (replyPreview) {
+    let preview = "";
+
+    if (data.message_type === "image") {
+      preview = "📷 Image";
+    } else if (data.message_type === "video") {
+      preview = "🎥 Video";
+    } else if (data.message_type === "audio") {
+      preview = "🎵 Audio";
+    } else if (data.message_type === "code") {
+      preview = "💻 Code";
+    } else {
+      preview = data.message || "";
+    }
+
+    replyPreview.textContent = preview;
+  }
+
+  if (replyBar) {
+    replyBar.classList.remove("hidden");
+  }
+
+  messageInput?.focus();
+}
