@@ -2272,6 +2272,8 @@ async function sendMessage() {
           message:
             text
 
+           reply_to_id: replyingToMessage?.id ?? null
+
         })
         .select()
         .single();
