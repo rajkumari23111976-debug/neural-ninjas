@@ -78,6 +78,9 @@ let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
 let typingIndicator;
+let searchBar;
+let messageSearchInput;
+let clearSearchBtn;
 /* =========================================================
    INITIALIZE
    ========================================================= */
@@ -140,6 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
    typingIndicator =
   document.getElementById("typingIndicator");
+
+   searchBar = document.getElementById("searchBar");
+messageSearchInput = document.getElementById("messageSearchInput");
+clearSearchBtn = document.getElementById("clearSearchBtn");
 
   deleteAccountBtn =
     document.getElementById("deleteAccountBtn");
@@ -256,6 +263,16 @@ messageInput?.addEventListener(
     "click",
     closeSidebar
   );
+
+   messageSearchInput?.addEventListener("input", searchMessages);
+
+clearSearchBtn?.addEventListener("click", () => {
+  if (messageSearchInput) {
+    messageSearchInput.value = "";
+  }
+
+  searchMessages();
+});
 
   document.addEventListener(
     "visibilitychange",
@@ -3398,3 +3415,32 @@ window.addEventListener(
 
   }
 );
+
+
+/* =========================================================
+   MESSAGE SEARCH ENGINE
+   ========================================================= */
+
+function searchMessages() {
+  if (!messages || !messageSearchInput) return;
+
+  const query = messageSearchInput.value.trim().toLowerCase();
+
+  const messageElements =
+    messages.querySelectorAll(".message");
+
+  messageElements.forEach(message => {
+    const text = message.textContent.toLowerCase();
+
+    if (!query) {
+      message.style.display = "";
+      return;
+    }
+
+    if (text.includes(query)) {
+      message.style.display = "";
+    } else {
+      message.style.display = "none";
+    }
+  });
+}
