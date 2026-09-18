@@ -1317,3 +1317,46 @@ ONLY DELETE ACCOUNT CHANGE
   }
 
 }
+
+
+/* =========================================================
+   REPLY MESSAGE BUTTON
+   ========================================================= */
+
+.reply-message {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: 6px;
+  margin-right: 6px;
+
+  padding: 5px 9px;
+
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 7px;
+
+  background: rgba(125, 211, 252, 0.07);
+  color: #7dd3fc;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reply-message:hover {
+  background: rgba(125, 211, 252, 0.14);
+  border-color: rgba(125, 211, 252, 0.4);
+
+  transform: translateY(-1px);
+}
+
+.reply-message:active {
+  transform: scale(0.96);
+}
