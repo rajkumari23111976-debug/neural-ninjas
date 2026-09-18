@@ -47,6 +47,12 @@ let typingChannel = null;
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 let typingUsers = {};
+
+// =========================================================
+// REPLY STATE
+// =========================================================
+
+let replyingToMessage = null;
 /* =========================================================
    DOM
    ========================================================= */
@@ -81,6 +87,10 @@ let typingIndicator;
 let searchBar;
 let messageSearchInput;
 let clearSearchBtn;
+let replyBar;
+let replySender;
+let replyPreview;
+let cancelReplyBtn;
 /* =========================================================
    INITIALIZE
    ========================================================= */
@@ -147,6 +157,11 @@ document.addEventListener("DOMContentLoaded", () => {
    searchBar = document.getElementById("searchBar");
 messageSearchInput = document.getElementById("messageSearchInput");
 clearSearchBtn = document.getElementById("clearSearchBtn");
+
+   replyBar = document.getElementById("replyBar");
+replySender = document.getElementById("replySender");
+replyPreview = document.getElementById("replyPreview");
+cancelReplyBtn = document.getElementById("cancelReplyBtn");
 
   deleteAccountBtn =
     document.getElementById("deleteAccountBtn");
