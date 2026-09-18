@@ -163,6 +163,22 @@ replySender = document.getElementById("replySender");
 replyPreview = document.getElementById("replyPreview");
 cancelReplyBtn = document.getElementById("cancelReplyBtn");
 
+   cancelReplyBtn?.addEventListener("click", () => {
+  replyingToMessage = null;
+
+  replyBar?.classList.add("hidden");
+
+  if (replySender) {
+    replySender.textContent = "User";
+  }
+
+  if (replyPreview) {
+    replyPreview.textContent = "";
+  }
+
+  messageInput?.focus();
+});
+
   deleteAccountBtn =
     document.getElementById("deleteAccountBtn");
 
