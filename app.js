@@ -2751,8 +2751,48 @@ if (data.reply_to_id) {
 
   }
 
-  replyBox.appendChild(replyTitle);
+    replyBox.appendChild(replyTitle);
   replyBox.appendChild(replyContent);
+
+  // Tap reply preview → jump to original message
+  replyBox.style.cursor = "pointer";
+
+  replyBox.addEventListener("click", () => {
+
+    const targetMessage =
+      document.querySelector(
+        `[data-message-id="${data.reply_to_id}"]`
+      );
+
+    if (!targetMessage) {
+      return;
+    }
+
+    targetMessage.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    targetMessage.classList.remove(
+      "reply-target-highlight"
+    );
+
+    // Restart animation if tapped again
+    void targetMessage.offsetWidth;
+
+    targetMessage.classList.add(
+      "reply-target-highlight"
+    );
+
+    setTimeout(() => {
+
+      targetMessage.classList.remove(
+        "reply-target-highlight"
+      );
+
+    }, 1800);
+
+  });
 
   bubble.appendChild(replyBox);
 }
