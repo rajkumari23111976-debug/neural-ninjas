@@ -2712,24 +2712,51 @@ function renderMessage(
     sender
   );
 
-
-   // Reply preview
+// Reply preview
 if (data.reply_to_id) {
+  const originalMessage =
+    messageCache.get(data.reply_to_id);
+
   const replyBox = document.createElement("div");
   replyBox.className = "message-reply-preview";
 
   const replyTitle = document.createElement("div");
   replyTitle.className = "message-reply-sender";
-  replyTitle.textContent = "↩ Reply";
 
   const replyContent = document.createElement("div");
   replyContent.className = "message-reply-content";
-  replyContent.textContent = "Replying to message";
+
+  if (originalMessage) {
+
+    replyTitle.textContent =
+      `↩ ${originalMessage.sender_name || "Unknown"}`;
+
+    if (originalMessage.message_type === "image") {
+      replyContent.textContent = "📷 Image";
+    } else if (originalMessage.message_type === "video") {
+      replyContent.textContent = "🎥 Video";
+    } else if (originalMessage.message_type === "audio") {
+      replyContent.textContent = "🎵 Audio";
+    } else if (originalMessage.message_type === "code") {
+      replyContent.textContent = "💻 Code";
+    } else {
+      replyContent.textContent =
+        originalMessage.message || "";
+    }
+
+  } else {
+
+    replyTitle.textContent = "↩ Reply";
+    replyContent.textContent = "Original message unavailable";
+
+  }
 
   replyBox.appendChild(replyTitle);
   replyBox.appendChild(replyContent);
 
   bubble.appendChild(replyBox);
+}
+   
 }
   if (
     data.message_type ===
