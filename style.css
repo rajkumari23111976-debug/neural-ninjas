@@ -1156,3 +1156,115 @@ ONLY DELETE ACCOUNT CHANGE
   }
 
 }
+
+
+/* =========================================================
+   REPLY BAR
+   ========================================================= */
+
+.reply-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 8px 12px;
+
+  background: rgba(8, 15, 30, 0.96);
+  border-top: 1px solid rgba(125, 211, 252, 0.15);
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+
+  backdrop-filter: blur(12px);
+}
+
+.reply-bar.hidden {
+  display: none;
+}
+
+.reply-info {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  overflow: hidden;
+}
+
+.reply-label {
+  flex-shrink: 0;
+
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+#replySender {
+  flex-shrink: 0;
+
+  font-size: 12px;
+  color: #7dd3fc;
+}
+
+.reply-preview {
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.cancel-reply-btn {
+  flex-shrink: 0;
+
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.75);
+
+  font-size: 20px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.cancel-reply-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.05);
+}
+
+.cancel-reply-btn:active {
+  transform: scale(0.95);
+}
+
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+  .reply-bar {
+    padding: 7px 10px;
+  }
+
+  .reply-label,
+  #replySender,
+  .reply-preview {
+    font-size: 11px;
+  }
+
+  .cancel-reply-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+}
+                   
