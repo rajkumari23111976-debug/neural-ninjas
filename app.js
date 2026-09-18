@@ -3939,14 +3939,21 @@ async function toggleReaction(
     }
 
     await loadReactions();
+} catch (error) {
 
-  } catch (error) {
+  console.error(
+    "Reaction error:",
+    error
+  );
 
-    console.error(
-      "Reaction error:",
-      error
-    );
+  alert(
+    "Reaction failed:\n\n" +
+    (
+      error?.message ||
+      "Unknown error"
+    )
+  );
 
-  }
+}
 
 }
