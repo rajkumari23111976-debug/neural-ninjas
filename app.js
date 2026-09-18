@@ -43,6 +43,10 @@ let uploading = false;
 
 let lastSeenTimer = null;
 
+let typingChannel = null;
+let typingTimeout = null;
+let isCurrentlyTyping = false;
+let typingUsers = {};
 /* =========================================================
    DOM
    ========================================================= */
@@ -73,7 +77,7 @@ let menuBtn;
 let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
-
+let typingIndicator;
 /* =========================================================
    INITIALIZE
    ========================================================= */
@@ -133,6 +137,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   onlineStatus =
     document.getElementById("onlineStatus");
+
+   typingIndicator =
+  document.getElementById("typingIndicator");
 
   deleteAccountBtn =
     document.getElementById("deleteAccountBtn");
@@ -196,18 +203,24 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   messageInput?.addEventListener(
-    "keydown",
-    event => {
+  "input",
+  handleTyping
+);
 
-      if (event.key === "Enter") {
+messageInput?.addEventListener(
+  "keydown",
+  event => {
 
-        event.preventDefault();
+    if (event.key === "Enter") {
 
-        sendMessage();
-      }
+      event.preventDefault();
+
+      sendMessage();
 
     }
-  );
+
+  }
+);
 
   mediaBtn?.addEventListener(
     "click",
@@ -1228,6 +1241,283 @@ function setupRealtime() {
 
 }
 
+
+/* =========================================================
+   TYPING INDICATOR
+   ========================================================= */
+
+function setupTyping() {
+
+  if (!currentUser || !currentProfile) {
+    return;
+  }
+
+  if (typingChannel) {
+
+    try {
+
+      supabaseClient.removeChannel(
+        typingChannel
+      );
+
+    } catch {}
+
+    typingChannel = null;
+
+  }
+
+  typingUsers = {};
+
+  typingChannel =
+    supabaseClient.channel(
+      "neural-ninjas-typing"
+    );
+
+  typingChannel.on(
+    "broadcast",
+    {
+      event: "typing"
+    },
+    payload => {
+
+      const data =
+        payload?.payload;
+
+      if (!data) {
+        return;
+      }
+
+      const userId =
+        data.user_id;
+
+      if (!userId) {
+        return;
+      }
+
+      if (
+        userId ===
+        currentUser.id
+      ) {
+        return;
+      }
+
+      if (data.is_typing) {
+
+        typingUsers[userId] = {
+          username:
+            data.username ||
+            "Someone"
+        };
+
+        showTypingIndicator();
+
+        clearTimeout(
+          typingUsers[userId].timeout
+        );
+
+        typingUsers[userId].timeout =
+          setTimeout(
+            () => {
+
+              delete typingUsers[userId];
+
+              showTypingIndicator();
+
+            },
+            3000
+          );
+
+      } else {
+
+        if (typingUsers[userId]) {
+
+          clearTimeout(
+            typingUsers[userId].timeout
+          );
+
+        }
+
+        delete typingUsers[userId];
+
+        showTypingIndicator();
+
+      }
+
+    }
+  );
+
+  typingChannel.subscribe(
+    status => {
+
+      console.log(
+        "TYPING CHANNEL STATUS:",
+        status
+      );
+
+    }
+  );
+
+}
+
+function handleTyping() {
+
+  if (
+    !typingChannel ||
+    !currentUser ||
+    !currentProfile ||
+    !messageInput
+  ) {
+    return;
+  }
+
+  const hasText =
+    messageInput.value.trim().length > 0;
+
+  if (hasText) {
+
+    if (!isCurrentlyTyping) {
+
+      isCurrentlyTyping = true;
+
+      broadcastTyping(true);
+
+    }
+
+    clearTimeout(
+      typingTimeout
+    );
+
+    typingTimeout =
+      setTimeout(
+        () => {
+
+          stopTyping();
+
+        },
+        1500
+      );
+
+  } else {
+
+    stopTyping();
+
+  }
+
+}
+
+function broadcastTyping(
+  isTyping
+) {
+
+  if (
+    !typingChannel ||
+    !currentUser ||
+    !currentProfile
+  ) {
+    return;
+  }
+
+  typingChannel.send({
+
+    type:
+      "broadcast",
+
+    event:
+      "typing",
+
+    payload: {
+
+      user_id:
+        currentUser.id,
+
+      username:
+        currentProfile.username,
+
+      is_typing:
+        isTyping
+
+    }
+
+  }).catch(
+    error => {
+
+      console.error(
+        "Typing broadcast error:",
+        error
+      );
+
+    }
+  );
+
+}
+
+function stopTyping() {
+
+  clearTimeout(
+    typingTimeout
+  );
+
+  if (!isCurrentlyTyping) {
+    return;
+  }
+
+  isCurrentlyTyping = false;
+
+  broadcastTyping(false);
+
+}
+
+function showTypingIndicator() {
+
+  if (!typingIndicator) {
+    return;
+  }
+
+  const users =
+    Object.values(
+      typingUsers
+    );
+
+  if (users.length === 0) {
+
+    typingIndicator.textContent =
+      "";
+
+    typingIndicator.classList.remove(
+      "show"
+    );
+
+    return;
+
+  }
+
+  let text = "";
+
+  if (users.length === 1) {
+
+    text =
+      `${users[0].username} is typing...`;
+
+  } else if (users.length === 2) {
+
+    text =
+      `${users[0].username} and ${users[1].username} are typing...`;
+
+  } else {
+
+    text =
+      `${users[0].username}, ${users[1].username} and others are typing...`;
+
+  }
+
+  typingIndicator.textContent =
+    text;
+
+  typingIndicator.classList.add(
+    "show"
+  );
+
+}
 /* =========================================================
    PRESENCE
    ========================================================= */
