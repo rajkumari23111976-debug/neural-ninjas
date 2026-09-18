@@ -895,6 +895,21 @@ async function joinTeam() {
        ========================= */
 
     stopLastSeenTimer();
+     if (typingChannel) {
+
+  try {
+
+    await supabaseClient.removeChannel(
+      typingChannel
+    );
+
+  } catch {}
+
+  typingChannel = null;
+
+}
+
+typingUsers = {};
 
     /* =========================
        RESET LOCAL SESSION
@@ -1044,6 +1059,7 @@ async function startChat() {
   await loadMessages();
 
   setupRealtime();
+   setupTyping();
 
   await setupPresence();
 
@@ -2177,6 +2193,7 @@ async function sendMessage() {
   }
 
   sending = true;
+   stopTyping();
 
   if (sendBtn) {
     sendBtn.disabled =
@@ -3205,7 +3222,23 @@ async function exitChat() {
   closeSidebar();
 
   stopLastSeenTimer();
+stopTyping();
 
+if (typingChannel) {
+
+  try {
+
+    await supabaseClient.removeChannel(
+      typingChannel
+    );
+
+  } catch {}
+
+  typingChannel = null;
+
+}
+
+typingUsers = {};
   await updateLastSeen();
 
   if (presenceChannel) {
