@@ -1481,3 +1481,114 @@ ONLY DELETE ACCOUNT CHANGE
 .reaction-bar.hidden {
   display: none;
 }
+/* =========================================================
+   REACTION USERS POPUP
+   ========================================================= */
+
+.reaction-users-overlay {
+
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  z-index: 99999;
+
+  padding: 20px;
+
+}
+
+.reaction-users-popup {
+
+  width: min(360px, 100%);
+
+  max-height: 70vh;
+
+  overflow-y: auto;
+
+  background: #111827;
+
+  border: 1px solid rgba(125, 211, 252, 0.35);
+
+  border-radius: 18px;
+
+  padding: 16px;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.55);
+
+}
+
+.reaction-users-header {
+
+  font-size: 18px;
+
+  font-weight: 700;
+
+  margin-bottom: 14px;
+
+  padding-bottom: 12px;
+
+  border-bottom:
+    1px solid rgba(255, 255, 255, 0.1);
+
+}
+
+.reaction-user-row {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 10px 4px;
+
+}
+
+.reaction-user-name {
+
+  font-size: 15px;
+
+}
+
+.reaction-user-emoji {
+
+  font-size: 20px;
+
+}
+
+.reaction-users-empty {
+
+  padding: 20px 4px;
+
+  text-align: center;
+
+  opacity: 0.7;
+
+}
+
+.reaction-users-close {
+
+  width: 100%;
+
+  margin-top: 14px;
+
+  padding: 10px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+}
