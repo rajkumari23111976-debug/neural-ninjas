@@ -142,6 +142,12 @@ document.addEventListener("DOMContentLoaded", () => {
  themePanel =
   document.getElementById("themePanel");
 
+   themeBtn?.addEventListener("click", () => {
+
+  themePanel?.classList.toggle("hidden");
+
+});
+
   menuBtn =
     document.getElementById("menuBtn");
 
