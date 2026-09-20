@@ -133,6 +133,12 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn =
     document.getElementById("logoutBtn");
 
+   const themeBtn =
+  document.getElementById("themeBtn");
+
+const themePanel =
+  document.getElementById("themePanel");
+
   menuBtn =
     document.getElementById("menuBtn");
 
@@ -4358,3 +4364,69 @@ async function showReactionUsers(
   }
 
 }
+// =========================================================
+// CHAT THEME PANEL
+// =========================================================
+
+themeBtn?.addEventListener(
+  "click",
+  event => {
+
+    event.stopPropagation();
+
+    themePanel?.classList.toggle(
+      "hidden"
+    );
+
+  }
+);
+
+
+// =========================================================
+// CLOSE THEME PANEL
+// =========================================================
+
+document
+  .getElementById("closeThemeBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      themePanel?.classList.add(
+        "hidden"
+      );
+
+    }
+  );
+
+
+// =========================================================
+// CLOSE THEME PANEL WHEN CLICKING OUTSIDE
+// =========================================================
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      !themePanel ||
+      themePanel.classList.contains(
+        "hidden"
+      )
+    ) {
+      return;
+    }
+
+    if (
+      !themePanel.contains(event.target) &&
+      event.target !== themeBtn
+    ) {
+
+      themePanel.classList.add(
+        "hidden"
+      );
+
+    }
+
+  }
+);
