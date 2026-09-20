@@ -1107,8 +1107,8 @@ async function startChat() {
     return;
   }
 
-  await loadMessages();
   await loadReactions();
+  await loadMessages();
   setupRealtime();
    setupTyping();
 
