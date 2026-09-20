@@ -83,6 +83,9 @@ let fileInput;
 let logoutBtn;
 let menuBtn;
 
+let themeBtn;
+let themePanel;
+
 let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
@@ -133,10 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn =
     document.getElementById("logoutBtn");
 
-   const themeBtn =
+ themeBtn =
   document.getElementById("themeBtn");
 
-const themePanel =
+ themePanel =
   document.getElementById("themePanel");
 
   menuBtn =
