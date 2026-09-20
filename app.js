@@ -148,6 +148,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+   document
+  .getElementById("closeThemeBtn")
+  ?.addEventListener("click", () => {
+
+    themePanel?.classList.add("hidden");
+
+  });
+
+
+document.addEventListener("click", event => {
+
+  if (
+    !themePanel ||
+    themePanel.classList.contains("hidden")
+  ) {
+    return;
+  }
+
+  if (
+    !themePanel.contains(event.target) &&
+    event.target !== themeBtn
+  ) {
+
+    themePanel.classList.add("hidden");
+
+  }
+
+});
+
+
+document
+  .querySelectorAll(".theme-option")
+  .forEach(option => {
+
+    option.addEventListener("click", () => {
+
+      const theme =
+        option.getAttribute("data-theme");
+
+      if (theme === "default") {
+
+        document.body.removeAttribute(
+          "data-theme"
+        );
+
+      } else {
+
+        document.body.setAttribute(
+          "data-theme",
+          theme
+        );
+
+      }
+
+      themePanel?.classList.add("hidden");
+
+    });
+
+  });
+
   menuBtn =
     document.getElementById("menuBtn");
 
@@ -4372,105 +4432,11 @@ async function showReactionUsers(
 
   }
 
-}
-// =========================================================
-// CHAT THEME PANEL
-// =========================================================
 
-themeBtn?.addEventListener(
-  "click",
-  event => {
+    
 
-    event.stopPropagation();
-
-    themePanel?.classList.toggle(
-      "hidden"
-    );
-
-  }
-);
+  
 
 
-// =========================================================
-// CLOSE THEME PANEL
-// =========================================================
 
-document
-  .getElementById("closeThemeBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      themePanel?.classList.add(
-        "hidden"
-      );
-
-    }
-  );
-
-
-// =========================================================
-// CLOSE THEME PANEL WHEN CLICKING OUTSIDE
-// =========================================================
-
-document.addEventListener(
-  "click",
-  event => {
-
-    if (
-      !themePanel ||
-      themePanel.classList.contains(
-        "hidden"
-      )
-    ) {
-      return;
-    }
-
-    if (
-      !themePanel.contains(event.target) &&
-      event.target !== themeBtn
-    ) {
-
-      themePanel.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-   /* =========================================================
-   CHAT THEME SWITCHING
-   ========================================================= */
-
-document.querySelectorAll(".theme-option").forEach(option => {
-
-  option.addEventListener("click", function () {
-
-    const theme = this.getAttribute("data-theme");
-
-    if (theme === "default") {
-
-      document.body.removeAttribute("data-theme");
-
-    } else {
-
-      document.body.setAttribute(
-        "data-theme",
-        theme
-      );
-
-    }
-
-    const themePanel =
-      document.getElementById("themePanel");
-
-    if (themePanel) {
-      themePanel.classList.add("hidden");
-    }
-
-  });
-
-});
+   
