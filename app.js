@@ -3136,7 +3136,7 @@ if (
 
 }
 
-}
+
   if (data.sender_id === currentUser?.id) {
 
   const deleteButton =
