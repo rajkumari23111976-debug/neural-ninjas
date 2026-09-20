@@ -4439,41 +4439,32 @@ document.addEventListener(
    CHAT THEME SWITCHING
    ========================================================= */
 
-document
-  .querySelectorAll(".theme-option")
-  .forEach(option => {
+document.querySelectorAll(".theme-option").forEach(option => {
 
-    option.addEventListener(
-      "click",
-      () => {
+  option.addEventListener("click", function () {
 
-        const theme =
-          option.dataset.theme;
+    const theme = this.getAttribute("data-theme");
 
-        if (!theme) {
-          return;
-        }
+    if (theme === "default") {
 
-        if (theme === "default") {
+      document.body.removeAttribute("data-theme");
 
-          document.body.removeAttribute(
-            "data-theme"
-          );
+    } else {
 
-        } else {
+      document.body.setAttribute(
+        "data-theme",
+        theme
+      );
 
-          document.body.setAttribute(
-            "data-theme",
-            theme
-          );
+    }
 
-        }
+    const themePanel =
+      document.getElementById("themePanel");
 
-        themePanel?.classList.add(
-          "hidden"
-        );
+    if (themePanel) {
+      themePanel.classList.add("hidden");
+    }
 
-      }
-    );
+  });
 
-  });    
+});
