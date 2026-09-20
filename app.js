@@ -2907,15 +2907,17 @@ replyButton.addEventListener("click", () => {
 });
 
 bubble.appendChild(replyButton);
-   // =========================================================
-// REACTION BUTTONS
+
+
+        // =========================================================
+// WHATSAPP-STYLE REACTION BAR
 // =========================================================
 
 const reactionBar =
   document.createElement("div");
 
 reactionBar.className =
-  "reaction-bar";
+  "reaction-bar hidden";
 
 const reactions = [
   "👍",
@@ -2942,11 +2944,19 @@ reactions.forEach(reaction => {
 
   reactionButton.addEventListener(
     "click",
-    () => {
+    event => {
+
+      event.stopPropagation();
+
       toggleReaction(
         data.id,
         reaction
       );
+
+      reactionBar.classList.add(
+        "hidden"
+      );
+
     }
   );
 
@@ -2959,7 +2969,107 @@ reactions.forEach(reaction => {
 bubble.appendChild(
   reactionBar
 );
-// Show existing reaction counts
+
+
+// ---------------------------------------------------------
+// LONG PRESS → SHOW REACTION BAR
+// ---------------------------------------------------------
+
+let longPressTimer = null;
+
+const startLongPress = event => {
+
+  if (
+    event.target.closest(
+      "button, a, input, video, audio"
+    )
+  ) {
+    return;
+  }
+
+  longPressTimer =
+    setTimeout(() => {
+
+      reactionBar.classList.remove(
+        "hidden"
+      );
+
+      if (
+        navigator.vibrate
+      ) {
+        navigator.vibrate(30);
+      }
+
+    }, 500);
+
+};
+
+const cancelLongPress = () => {
+
+  clearTimeout(
+    longPressTimer
+  );
+
+};
+
+bubble.addEventListener(
+  "touchstart",
+  startLongPress,
+  {
+    passive: true
+  }
+);
+
+bubble.addEventListener(
+  "touchend",
+  cancelLongPress
+);
+
+bubble.addEventListener(
+  "touchmove",
+  cancelLongPress
+);
+
+bubble.addEventListener(
+  "touchcancel",
+  cancelLongPress
+);
+
+
+// ---------------------------------------------------------
+// DESKTOP MOUSE HOLD
+// ---------------------------------------------------------
+
+bubble.addEventListener(
+  "mousedown",
+  event => {
+
+    if (
+      event.button !== 0
+    ) {
+      return;
+    }
+
+    startLongPress(event);
+
+  }
+);
+
+bubble.addEventListener(
+  "mouseup",
+  cancelLongPress
+);
+
+bubble.addEventListener(
+  "mouseleave",
+  cancelLongPress
+);
+
+
+// ---------------------------------------------------------
+// REACTION COUNTS
+// ---------------------------------------------------------
+
 const reactionCounts =
   document.createElement("div");
 
@@ -2971,24 +3081,43 @@ const messageReactions =
 
 const counts = {};
 
-messageReactions.forEach(item => {
+messageReactions.forEach(
+  item => {
 
-  counts[item.reaction] =
-    (counts[item.reaction] || 0) + 1;
+    counts[item.reaction] =
+      (counts[item.reaction] || 0) + 1;
 
-});
+  }
+);
 
 Object.entries(counts).forEach(
   ([reaction, count]) => {
 
     const reactionCount =
-      document.createElement("span");
+      document.createElement("button");
 
     reactionCount.className =
       "reaction-count";
 
+    reactionCount.type =
+      "button";
+
     reactionCount.textContent =
       `${reaction} ${count}`;
+
+    reactionCount.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+        showReactionUsers(
+          data.id,
+          reaction
+        );
+
+      }
+    );
 
     reactionCounts.appendChild(
       reactionCount
@@ -2997,11 +3126,15 @@ Object.entries(counts).forEach(
   }
 );
 
-if (reactionCounts.children.length > 0) {
+if (
+  reactionCounts.children.length > 0
+) {
 
   bubble.appendChild(
     reactionCounts
   );
+
+}
 
 }
   if (data.sender_id === currentUser?.id) {
