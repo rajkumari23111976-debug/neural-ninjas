@@ -4001,6 +4001,7 @@ async function loadReactions() {
    TOGGLE MESSAGE REACTION
    ========================================================= */
 
+      
 async function toggleReaction(
   messageId,
   reaction
@@ -4031,6 +4032,10 @@ async function toggleReaction(
       throw fetchError;
     }
 
+    // =========================================
+    // ALREADY REACTED → REMOVE REACTION
+    // =========================================
+
     if (existingReaction) {
 
       const {
@@ -4039,13 +4044,22 @@ async function toggleReaction(
         await supabaseClient
           .from("message_reactions")
           .delete()
-          .eq("id", existingReaction.id);
+          .eq(
+            "id",
+            existingReaction.id
+          );
 
       if (error) {
         throw error;
       }
 
-    } else {
+    }
+
+    // =========================================
+    // NOT REACTED → ADD REACTION
+    // =========================================
+
+    else {
 
       const {
         error
@@ -4071,40 +4085,51 @@ async function toggleReaction(
 
     }
 
+    // =========================================
+    // REFRESH REACTIONS
+    // =========================================
+
     await loadReactions();
-     const element =
-  document.querySelector(
-    `[data-message-id="${messageId}"]`
-  );
 
-if (element) {
-  element.remove();
+    const element =
+      document.querySelector(
+        `[data-message-id="${messageId}"]`
+      );
+
+    if (element) {
+      element.remove();
+    }
+
+    const messageData =
+      messageCache.get(messageId);
+
+    if (messageData) {
+
+      renderMessage(
+        messageData,
+        false
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Reaction error:",
+      error
+    );
+
+    alert(
+      "Reaction failed:\n\n" +
+      (
+        error?.message ||
+        "Unknown error"
+      )
+    );
+
+  }
+
 }
 
-const messageData =
-  messageCache.get(messageId);
 
-if (messageData) {
-  renderMessage(
-    messageData,
-    false
-  );
-}
-} catch (error) {
 
-  console.error(
-    "Reaction error:",
-    error
-  );
-
-  alert(
-    "Reaction failed:\n\n" +
-    (
-      error?.message ||
-      "Unknown error"
-    )
-  );
-
-}
-
-}
