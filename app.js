@@ -4433,3 +4433,47 @@ document.addEventListener(
 
   }
 );
+
+
+   /* =========================================================
+   CHAT THEME SWITCHING
+   ========================================================= */
+
+document
+  .querySelectorAll(".theme-option")
+  .forEach(option => {
+
+    option.addEventListener(
+      "click",
+      () => {
+
+        const theme =
+          option.dataset.theme;
+
+        if (!theme) {
+          return;
+        }
+
+        if (theme === "default") {
+
+          document.body.removeAttribute(
+            "data-theme"
+          );
+
+        } else {
+
+          document.body.setAttribute(
+            "data-theme",
+            theme
+          );
+
+        }
+
+        themePanel?.classList.add(
+          "hidden"
+        );
+
+      }
+    );
+
+  });    
