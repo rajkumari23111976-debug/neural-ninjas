@@ -3,7 +3,7 @@
    Username + 6-Digit PIN Authentication
    Realtime Chat + Online Presence + Last Seen
    ========================================================= */
-
+console.log("NN APP STARTED");
 const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
