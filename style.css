@@ -1478,3 +1478,6 @@ ONLY DELETE ACCOUNT CHANGE
   }
 
 }
+.reaction-bar.hidden {
+  display: none;
+}
