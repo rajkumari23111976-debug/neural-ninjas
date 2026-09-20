@@ -4132,4 +4132,229 @@ async function toggleReaction(
 }
 
 
+async function showReactionUsers(
+  messageId,
+  reaction
+) {
 
+  if (!supabaseClient) {
+    return;
+  }
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("message_reactions")
+        .select(`
+          user_id,
+          reaction,
+          profiles (
+            username
+          )
+        `)
+        .eq(
+          "message_id",
+          messageId
+        )
+        .eq(
+          "reaction",
+          reaction
+        );
+
+    if (error) {
+      throw error;
+    }
+
+    // =========================================
+    // CREATE POPUP
+    // =========================================
+
+    const existingPopup =
+      document.getElementById(
+        "reactionUsersPopup"
+      );
+
+    if (existingPopup) {
+      existingPopup.remove();
+    }
+
+    const overlay =
+      document.createElement("div");
+
+    overlay.id =
+      "reactionUsersPopup";
+
+    overlay.className =
+      "reaction-users-overlay";
+
+    const popup =
+      document.createElement("div");
+
+    popup.className =
+      "reaction-users-popup";
+
+    // =========================================
+    // HEADER
+    // =========================================
+
+    const header =
+      document.createElement("div");
+
+    header.className =
+      "reaction-users-header";
+
+    header.textContent =
+      `${reaction} Reactions`;
+
+    popup.appendChild(
+      header
+    );
+
+    // =========================================
+    // USERS
+    // =========================================
+
+    if (
+      !data ||
+      data.length === 0
+    ) {
+
+      const empty =
+        document.createElement("div");
+
+      empty.className =
+        "reaction-users-empty";
+
+      empty.textContent =
+        "No reactions yet.";
+
+      popup.appendChild(
+        empty
+      );
+
+    } else {
+
+      data.forEach(item => {
+
+        const username =
+          item.profiles?.username ||
+          "Unknown user";
+
+        const userRow =
+          document.createElement("div");
+
+        userRow.className =
+          "reaction-user-row";
+
+        const name =
+          document.createElement("span");
+
+        name.className =
+          "reaction-user-name";
+
+        name.textContent =
+          username;
+
+        const emoji =
+          document.createElement("span");
+
+        emoji.className =
+          "reaction-user-emoji";
+
+        emoji.textContent =
+          reaction;
+
+        userRow.appendChild(
+          name
+        );
+
+        userRow.appendChild(
+          emoji
+        );
+
+        popup.appendChild(
+          userRow
+        );
+
+      });
+
+    }
+
+    // =========================================
+    // CLOSE BUTTON
+    // =========================================
+
+    const closeButton =
+      document.createElement("button");
+
+    closeButton.className =
+      "reaction-users-close";
+
+    closeButton.type =
+      "button";
+
+    closeButton.textContent =
+      "Close";
+
+    closeButton.addEventListener(
+      "click",
+      () => {
+
+        overlay.remove();
+
+      }
+    );
+
+    popup.appendChild(
+      closeButton
+    );
+
+    overlay.appendChild(
+      popup
+    );
+
+    document.body.appendChild(
+      overlay
+    );
+
+    // =========================================
+    // TAP OUTSIDE → CLOSE
+    // =========================================
+
+    overlay.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target === overlay
+        ) {
+
+          overlay.remove();
+
+        }
+
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Reaction users error:",
+      error
+    );
+
+    alert(
+      "Could not load reaction users:\n\n" +
+      (
+        error?.message ||
+        "Unknown error"
+      )
+    );
+
+  }
+
+}
