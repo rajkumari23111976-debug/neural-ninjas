@@ -1817,3 +1817,62 @@ ONLY DELETE ACCOUNT CHANGE
   }
 
 }
+
+
+   /* =========================================================
+   CHAT THEME COLORS
+   ========================================================= */
+
+:root {
+  --theme-bg: #08101f;
+  --theme-header: #0c1528;
+  --theme-sidebar: #0b1324;
+  --theme-bubble: #17233a;
+  --theme-mine: #263a8f;
+  --theme-input: #070d1b;
+  --theme-tool: #17233a;
+  --theme-accent: #536dfe;
+  --theme-border: #1c2942;
+}
+
+/* CYBER NEON */
+
+body[data-theme="cyber"] {
+  --theme-bg: #02070d;
+  --theme-header: #03131c;
+  --theme-sidebar: #021017;
+  --theme-bubble: #073044;
+  --theme-mine: #005b73;
+  --theme-input: #020a10;
+  --theme-tool: #073044;
+  --theme-accent: #00d9ff;
+  --theme-border: #07536a;
+}
+
+/* DEEP SPACE */
+
+body[data-theme="space"] {
+  --theme-bg: #050414;
+  --theme-header: #0c0a22;
+  --theme-sidebar: #08071a;
+  --theme-bubble: #17143a;
+  --theme-mine: #392b73;
+  --theme-input: #080716;
+  --theme-tool: #17143a;
+  --theme-accent: #806cff;
+  --theme-border: #2b2455;
+}
+
+/* NEON AMBER */
+
+body[data-theme="amber"] {
+  --theme-bg: #0b0702;
+  --theme-header: #160d04;
+  --theme-sidebar: #100902;
+  --theme-bubble: #30200d;
+  --theme-mine: #6b3d08;
+  --theme-input: #0b0703;
+  --theme-tool: #30200d;
+  --theme-accent: #ff9d00;
+  --theme-border: #5a360b;
+}     
