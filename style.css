@@ -1876,3 +1876,59 @@ body[data-theme="amber"] {
   --theme-accent: #ff9d00;
   --theme-border: #5a360b;
 }     
+
+
+/* =========================================================
+   APPLY CHAT THEME COLORS
+   ========================================================= */
+
+#chatScreen {
+  background: var(--theme-bg);
+}
+
+.chat-header {
+  background: var(--theme-header);
+  border-bottom-color: var(--theme-border);
+}
+
+.members-sidebar {
+  background: var(--theme-sidebar);
+}
+
+.sidebar-header {
+  background: var(--theme-header);
+}
+
+.bubble {
+  background: var(--theme-bubble);
+}
+
+.mine .bubble {
+  background: var(--theme-mine);
+}
+
+.composer {
+  background: var(--theme-header);
+}
+
+#messageInput {
+  background: var(--theme-input);
+}
+
+.tool-btn {
+  background: var(--theme-tool);
+}
+
+.send-btn {
+  background: var(--theme-accent);
+}
+
+.icon-btn:hover {
+  background: var(--theme-bubble);
+}
+
+.search-bar,
+.reply-bar {
+  background: var(--theme-header);
+  border-color: var(--theme-border);
+}
