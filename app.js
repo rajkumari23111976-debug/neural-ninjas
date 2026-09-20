@@ -224,7 +224,7 @@ cancelReplyBtn = document.getElementById("cancelReplyBtn");
     }
   );
 
-  pinInput.addEventListener(
+  pinInput?.addEventListener(
     "keydown",
     event => {
 
