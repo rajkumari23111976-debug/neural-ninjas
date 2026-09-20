@@ -136,77 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
   logoutBtn =
     document.getElementById("logoutBtn");
 
- themeBtn =
-  document.getElementById("themeBtn");
-
- themePanel =
-  document.getElementById("themePanel");
-
-   themeBtn?.addEventListener("click", () => {
-
-  themePanel?.classList.toggle("hidden");
-
-});
-
-   document
-  .getElementById("closeThemeBtn")
-  ?.addEventListener("click", () => {
-
-    themePanel?.classList.add("hidden");
-
-  });
-
-
-document.addEventListener("click", event => {
-
-  if (
-    !themePanel ||
-    themePanel.classList.contains("hidden")
-  ) {
-    return;
-  }
-
-  if (
-    !themePanel.contains(event.target) &&
-    event.target !== themeBtn
-  ) {
-
-    themePanel.classList.add("hidden");
-
-  }
-
-});
-
-
-document
-  .querySelectorAll(".theme-option")
-  .forEach(option => {
-
-    option.addEventListener("click", () => {
-
-      const theme =
-        option.getAttribute("data-theme");
-
-      if (theme === "default") {
-
-        document.body.removeAttribute(
-          "data-theme"
-        );
-
-      } else {
-
-        document.body.setAttribute(
-          "data-theme",
-          theme
-        );
-
-      }
-
-      themePanel?.classList.add("hidden");
-
-    });
-
-  });
+ 
+      
 
   menuBtn =
     document.getElementById("menuBtn");
@@ -4436,7 +4367,93 @@ async function showReactionUsers(
     
 
   
+// =========================================================
+// NEURAL NINJAS - CHAT THEMES
+// =========================================================
 
+document.addEventListener("DOMContentLoaded", () => {
+
+  const themeBtn =
+    document.getElementById("themeBtn");
+
+  const themePanel =
+    document.getElementById("themePanel");
+
+  const closeThemeBtn =
+    document.getElementById("closeThemeBtn");
+
+  const themeOptions =
+    document.querySelectorAll(".theme-option");
+
+
+  // OPEN THEME PANEL
+  themeBtn?.addEventListener("click", (event) => {
+
+    event.stopPropagation();
+
+    themePanel?.classList.toggle("hidden");
+
+  });
+
+
+  // CLOSE BUTTON
+  closeThemeBtn?.addEventListener("click", () => {
+
+    themePanel?.classList.add("hidden");
+
+  });
+
+
+  // THEME OPTIONS
+  themeOptions.forEach(option => {
+
+    option.addEventListener("click", () => {
+
+      const theme =
+        option.getAttribute("data-theme");
+
+      if (theme === "default") {
+
+        document.body.removeAttribute("data-theme");
+
+      } else {
+
+        document.body.setAttribute(
+          "data-theme",
+          theme
+        );
+
+      }
+
+      themePanel?.classList.add("hidden");
+
+    });
+
+  });
+
+
+  // CLICK OUTSIDE
+  document.addEventListener("click", (event) => {
+
+    if (
+      !themePanel ||
+      themePanel.classList.contains("hidden")
+    ) {
+      return;
+    }
+
+    if (
+      !themePanel.contains(event.target) &&
+      event.target !== themeBtn
+    ) {
+
+      themePanel.classList.add("hidden");
+
+    }
+
+  });
+
+});
 
 
    
