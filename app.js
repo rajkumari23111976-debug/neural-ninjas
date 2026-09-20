@@ -135,9 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   logoutBtn =
     document.getElementById("logoutBtn");
-
  
-      
 
   menuBtn =
     document.getElementById("menuBtn");
@@ -4453,7 +4451,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   });
 
-});
+
 
 
    
