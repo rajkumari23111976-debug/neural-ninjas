@@ -1592,3 +1592,228 @@ ONLY DELETE ACCOUNT CHANGE
   font-weight: 600;
 
 }
+
+
+  /* =========================================================
+   CHAT THEME PANEL
+   ========================================================= */
+
+.theme-panel {
+  position: fixed;
+  top: 70px;
+  right: 18px;
+  width: 300px;
+  max-width: calc(100vw - 36px);
+  padding: 16px;
+  z-index: 2000;
+
+  background: rgba(8, 15, 30, 0.96);
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  border-radius: 16px;
+
+  box-shadow:
+    0 15px 45px rgba(0, 0, 0, 0.55),
+    0 0 25px rgba(125, 211, 252, 0.08);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  animation: themePanelIn 0.2s ease;
+}
+
+.theme-panel.hidden {
+  display: none;
+}
+
+.theme-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+}
+
+.theme-panel-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.theme-panel-header span {
+  display: block;
+  margin-top: 4px;
+
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.close-theme-btn {
+  width: 32px;
+  height: 32px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+
+  font-size: 22px;
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.close-theme-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.close-theme-btn:active {
+  transform: scale(0.9);
+}
+
+
+/* =========================================================
+   THEME OPTIONS
+   ========================================================= */
+
+.theme-options {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.theme-option {
+  width: 100%;
+  min-height: 52px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 8px 10px;
+
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  border-radius: 11px;
+
+  background: rgba(255, 255, 255, 0.035);
+  color: white;
+
+  font-size: 13px;
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.theme-option:hover {
+  background: rgba(125, 211, 252, 0.08);
+  border-color: rgba(125, 211, 252, 0.3);
+  transform: translateX(2px);
+}
+
+.theme-option:active {
+  transform: scale(0.98);
+}
+
+
+/* =========================================================
+   THEME PREVIEW BOXES
+   ========================================================= */
+
+.theme-preview {
+  width: 58px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  border-radius: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+  box-shadow:
+    inset 0 0 12px rgba(255, 255, 255, 0.04);
+}
+
+
+/* Neural Blue */
+
+.default-preview {
+  background:
+    linear-gradient(
+      135deg,
+      #050812,
+      #17233a,
+      #263a8f
+    );
+}
+
+
+/* Cyber Neon */
+
+.cyber-preview {
+  background:
+    linear-gradient(
+      135deg,
+      #02040a,
+      #003b4d,
+      #00d9ff
+    );
+}
+
+
+/* Deep Space */
+
+.space-preview {
+  background:
+    linear-gradient(
+      135deg,
+      #02020a,
+      #11113a,
+      #392b73
+    );
+}
+
+
+/* Neon Amber */
+
+.amber-preview {
+  background:
+    linear-gradient(
+      135deg,
+      #080603,
+      #39230c,
+      #ff9d00
+    );
+}
+
+
+/* =========================================================
+   PANEL ANIMATION
+   ========================================================= */
+
+@keyframes themePanelIn {
+
+  from {
+    opacity: 0;
+    transform:
+      translateY(-8px)
+      scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+
+}
