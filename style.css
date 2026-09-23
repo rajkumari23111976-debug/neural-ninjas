@@ -1901,7 +1901,17 @@ body[data-theme="amber"] {
    ========================================================= */
 
 #chatScreen {
-  background: var(--theme-bg);
+  background:
+    linear-gradient(
+      rgba(0, 0, 0, 0.38),
+      rgba(0, 0, 0, 0.38)
+    ),
+    url("./1790097141588-xuma0rh7gon.jpg");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .chat-header {
