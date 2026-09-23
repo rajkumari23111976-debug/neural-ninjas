@@ -189,6 +189,13 @@ CHAT SCREEN
   overflow: hidden;
 }
 
+@media (max-width: 600px) {
+  #chatScreen {
+    background-position: center center;
+    background-attachment: scroll;
+  }
+}
+
 /* =========================
 CHAT HEADER
 ========================= */
