@@ -173,7 +173,18 @@ CHAT SCREEN
   height: 100dvh;
   min-height: 0;
 
-  background: #08101f;
+  background:
+    linear-gradient(
+      rgba(0, 0, 0, 0.38),
+      rgba(0, 0, 0, 0.38)
+    ),
+    url("./chat-bg.jpg");
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+
 
   overflow: hidden;
 }
