@@ -178,12 +178,12 @@ CHAT SCREEN
       rgba(0, 0, 0, 0.38),
       rgba(0, 0, 0, 0.38)
     ),
-    url("./1790097141588-xuma0rh7gon.jpg");
+    url("./1790097141588-xuma0rh7gon.jpg") !important;
 
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
 
 
   overflow: hidden;
