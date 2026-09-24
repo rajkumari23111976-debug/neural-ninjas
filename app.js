@@ -272,18 +272,26 @@ messageInput?.addEventListener(
 // =========================================================
 
 if (mediaBtn && fileInput) {
-
+if (mediaBtn && fileInput) {
   mediaBtn.addEventListener("click", function (event) {
-
     event.preventDefault();
     event.stopPropagation();
 
-    console.log("📎 MEDIA BUTTON CLICKED");
+    console.log("MEDIA BUTTON CLICKED");
 
     fileInput.value = "";
     fileInput.click();
-
   });
+
+  fileInput.addEventListener("change", function () {
+    console.log(
+      "FILE SELECTED:",
+      fileInput.files?.[0]?.name || "No file"
+    );
+
+    handleFileUpload();
+  });
+}
 
   fileInput.addEventListener("change", function () {
 
