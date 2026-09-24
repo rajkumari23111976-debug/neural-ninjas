@@ -267,15 +267,36 @@ messageInput?.addEventListener(
   }
 );
 
-  mediaBtn?.addEventListener(
-    "click",
-    () => fileInput?.click()
-  );
+  // =========================================================
+// MEDIA BUTTON
+// =========================================================
 
-  fileInput?.addEventListener(
-    "change",
-    handleFileUpload
-  );
+if (mediaBtn && fileInput) {
+
+  mediaBtn.addEventListener("click", function (event) {
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log("📎 MEDIA BUTTON CLICKED");
+
+    fileInput.value = "";
+    fileInput.click();
+
+  });
+
+  fileInput.addEventListener("change", function () {
+
+    console.log(
+      "📁 FILE SELECTED:",
+      fileInput.files?.[0]?.name || "No file"
+    );
+
+    handleFileUpload();
+
+  });
+
+}
 
   logoutBtn?.addEventListener(
     "click",
