@@ -1,0 +1,16 @@
+{
+  "name": "Neural Ninjas",
+  "short_name": "Neural Ninjas",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#050510",
+  "theme_color": "#050510",
+  "icons": [
+    {
+      "src": "neural-ninjas-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
