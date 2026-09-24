@@ -2097,3 +2097,26 @@ body[data-theme="amber"] {
     font-size: 9px;
   }
 }
+
+
+/* =========================================================
+   MEDIA BUTTON FIX
+   ========================================================= */
+
+#mediaBtn {
+  position: relative !important;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+.composer {
+  position: relative !important;
+  z-index: 50 !important;
+}
+
+.composer .tool-btn {
+  position: relative !important;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
