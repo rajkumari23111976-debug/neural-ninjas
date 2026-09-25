@@ -3742,6 +3742,19 @@ function showTyping(
 }
 
 
+function refreshPresenceState() {
+
+  if (!presenceChannel) return;
+
+  presenceUsers =
+    presenceChannel.presenceState() || {};
+
+  renderMembers();
+
+  updateOnlineStatus();
+
+}
+   
 /* =========================================================
    PRESENCE
    ========================================================= */
