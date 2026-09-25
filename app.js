@@ -1,6 +1,8 @@
 /* =========================================================
    NEURAL NINJAS - APP.JS
    =========================================================
+   CSS-COMPATIBLE VERSION
+   =========================================================
    Features:
    • Username + 6-digit PIN authentication
    • Private team chat
@@ -13,7 +15,7 @@
    • Reply to messages
    • Message reactions
    • Reaction users
-   • Message search + safe highlighting
+   • Message search
    • Code-message detection
    • Code copy button
    • Delete own messages
@@ -31,8 +33,7 @@ const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl"; // <-- keep your existing publishable key here
-
+  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
 const supabaseClient =
   window.supabase.createClient(
@@ -123,216 +124,128 @@ let sendBtn;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* -------------------------
-     Get DOM elements
-     ------------------------- */
+  loginScreen = document.getElementById("loginScreen");
+  chatScreen = document.getElementById("chatScreen");
 
-  loginScreen =
-    document.getElementById("loginScreen");
+  usernameInput = document.getElementById("usernameInput");
+  joinBtn = document.getElementById("joinBtn");
+  loginStatus = document.getElementById("loginStatus");
 
-  chatScreen =
-    document.getElementById("chatScreen");
+  onlineStatus = document.getElementById("onlineStatus");
 
-  usernameInput =
-    document.getElementById("usernameInput");
+  menuBtn = document.getElementById("menuBtn");
+  logoutBtn = document.getElementById("logoutBtn");
 
-  joinBtn =
-    document.getElementById("joinBtn");
+  membersSidebar = document.getElementById("membersSidebar");
+  closeSidebarBtn = document.getElementById("closeSidebarBtn");
+  sidebarOverlay = document.getElementById("sidebarOverlay");
+  membersList = document.getElementById("membersList");
+  memberCount = document.getElementById("memberCount");
+  deleteAccountBtn = document.getElementById("deleteAccountBtn");
 
-  loginStatus =
-    document.getElementById("loginStatus");
+  themeBtn = document.getElementById("themeBtn");
+  themePanel = document.getElementById("themePanel");
+  closeThemeBtn = document.getElementById("closeThemeBtn");
 
-  onlineStatus =
-    document.getElementById("onlineStatus");
+  searchBar = document.getElementById("searchBar");
+  messageSearchInput = document.getElementById("messageSearchInput");
+  clearSearchBtn = document.getElementById("clearSearchBtn");
 
-  menuBtn =
-    document.getElementById("menuBtn");
+  messages = document.getElementById("messages");
 
-  logoutBtn =
-    document.getElementById("logoutBtn");
+  typingIndicator = document.getElementById("typingIndicator");
 
-  membersSidebar =
-    document.getElementById("membersSidebar");
+  replyBar = document.getElementById("replyBar");
+  replySender = document.getElementById("replySender");
+  replyPreview = document.getElementById("replyPreview");
+  cancelReplyBtn = document.getElementById("cancelReplyBtn");
 
-  closeSidebarBtn =
-    document.getElementById("closeSidebarBtn");
-
-  sidebarOverlay =
-    document.getElementById("sidebarOverlay");
-
-  membersList =
-    document.getElementById("membersList");
-
-  memberCount =
-    document.getElementById("memberCount");
-
-  deleteAccountBtn =
-    document.getElementById("deleteAccountBtn");
-
-  themeBtn =
-    document.getElementById("themeBtn");
-
-  themePanel =
-    document.getElementById("themePanel");
-
-  closeThemeBtn =
-    document.getElementById("closeThemeBtn");
-
-  searchBar =
-    document.getElementById("searchBar");
-
-  messageSearchInput =
-    document.getElementById("messageSearchInput");
-
-  clearSearchBtn =
-    document.getElementById("clearSearchBtn");
-
-  messages =
-    document.getElementById("messages");
-
-  typingIndicator =
-    document.getElementById("typingIndicator");
-
-  replyBar =
-    document.getElementById("replyBar");
-
-  replySender =
-    document.getElementById("replySender");
-
-  replyPreview =
-    document.getElementById("replyPreview");
-
-  cancelReplyBtn =
-    document.getElementById("cancelReplyBtn");
-
-  mediaBtn =
-    document.getElementById("mediaBtn");
-
-  fileInput =
-    document.getElementById("fileInput");
-
-  messageInput =
-    document.getElementById("messageInput");
-
-  sendBtn =
-    document.getElementById("sendBtn");
+  mediaBtn = document.getElementById("mediaBtn");
+  fileInput = document.getElementById("fileInput");
+  messageInput = document.getElementById("messageInput");
+  sendBtn = document.getElementById("sendBtn");
 
 
-  /* -------------------------
-     Login
-     ------------------------- */
+  /* =======================================================
+     LOGIN
+     ======================================================= */
 
   if (joinBtn) {
-    joinBtn.addEventListener(
-      "click",
-      handleLogin
-    );
+    joinBtn.addEventListener("click", handleLogin);
   }
 
   if (usernameInput) {
-    usernameInput.addEventListener(
-      "keydown",
-      event => {
+    usernameInput.addEventListener("keydown", event => {
 
-        if (event.key === "Enter") {
-          handleLogin();
-        }
-
+      if (event.key === "Enter") {
+        handleLogin();
       }
-    );
+
+    });
   }
 
 
-  /* -------------------------
-     Logout
-     ------------------------- */
+  /* =======================================================
+     LOGOUT
+     ======================================================= */
 
   if (logoutBtn) {
-    logoutBtn.addEventListener(
-      "click",
-      exitChat
-    );
+    logoutBtn.addEventListener("click", exitChat);
   }
 
 
-  /* -------------------------
-     Members sidebar
-     ------------------------- */
+  /* =======================================================
+     SIDEBAR
+     ======================================================= */
 
   if (menuBtn) {
-    menuBtn.addEventListener(
-      "click",
-      openSidebar
-    );
+    menuBtn.addEventListener("click", openSidebar);
   }
 
   if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener(
-      "click",
-      closeSidebar
-    );
+    closeSidebarBtn.addEventListener("click", closeSidebar);
   }
 
   if (sidebarOverlay) {
-    sidebarOverlay.addEventListener(
-      "click",
-      closeSidebar
-    );
+    sidebarOverlay.addEventListener("click", closeSidebar);
   }
 
 
-  /* -------------------------
-     Delete account
-     ------------------------- */
+  /* =======================================================
+     DELETE ACCOUNT
+     ======================================================= */
 
   if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener(
-      "click",
-      deleteAccount
-    );
+    deleteAccountBtn.addEventListener("click", deleteAccount);
   }
 
 
-  /* -------------------------
-     Themes
-     ------------------------- */
+  /* =======================================================
+     THEMES
+     ======================================================= */
 
   if (themeBtn) {
-    themeBtn.addEventListener(
-      "click",
-      openThemePanel
-    );
+    themeBtn.addEventListener("click", openThemePanel);
   }
 
   if (closeThemeBtn) {
-    closeThemeBtn.addEventListener(
-      "click",
-      closeThemePanel
-    );
+    closeThemeBtn.addEventListener("click", closeThemePanel);
   }
 
-  document
-    .querySelectorAll(".theme-option")
-    .forEach(button => {
+  document.querySelectorAll(".theme-option").forEach(button => {
 
-      button.addEventListener(
-        "click",
-        () => {
+    button.addEventListener("click", () => {
 
-          const theme =
-            button.dataset.theme;
-
-          applyTheme(theme);
-
-        }
-      );
+      applyTheme(button.dataset.theme);
 
     });
 
+  });
 
-  /* -------------------------
-     Search
-     ------------------------- */
+
+  /* =======================================================
+     SEARCH
+     ======================================================= */
 
   if (messageSearchInput) {
     messageSearchInput.addEventListener(
@@ -349,37 +262,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------
-     Composer
-     ------------------------- */
+  /* =======================================================
+     COMPOSER
+     ======================================================= */
 
   if (sendBtn) {
-    sendBtn.addEventListener(
-      "click",
-      sendMessage
-    );
+    sendBtn.addEventListener("click", sendMessage);
   }
 
   if (messageInput) {
 
-    messageInput.addEventListener(
-      "keydown",
-      event => {
+    messageInput.addEventListener("keydown", event => {
 
-        if (event.key === "Enter") {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
 
-          if (!event.shiftKey) {
-
-            event.preventDefault();
-
-            sendMessage();
-
-          }
-
-        }
+        event.preventDefault();
+        sendMessage();
 
       }
-    );
+
+    });
 
     messageInput.addEventListener(
       "input",
@@ -389,9 +294,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------
-     Reply
-     ------------------------- */
+  /* =======================================================
+     REPLY
+     ======================================================= */
 
   if (cancelReplyBtn) {
     cancelReplyBtn.addEventListener(
@@ -401,32 +306,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------
+  /* =======================================================
      MEDIA
-     IMPORTANT:
-     Only ONE change listener.
-     ------------------------- */
+     ONLY ONE FILE LISTENER
+     ======================================================= */
 
   if (mediaBtn && fileInput) {
 
-    mediaBtn.addEventListener(
-      "click",
-      () => {
+    mediaBtn.addEventListener("click", () => {
 
-        fileInput.value = "";
+      fileInput.value = "";
+      fileInput.click();
 
-        fileInput.click();
-
-      }
-    );
+    });
 
     fileInput.addEventListener(
       "change",
       async event => {
 
         const file =
-          event.target.files &&
-          event.target.files[0];
+          event.target.files?.[0];
 
         if (!file) return;
 
@@ -438,9 +337,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------
-     Theme from localStorage
-     ------------------------- */
+  /* =======================================================
+     SAVED THEME
+     ======================================================= */
 
   const savedTheme =
     localStorage.getItem(
@@ -452,37 +351,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------
-     Auth session
-     ------------------------- */
+  /* =======================================================
+     RESTORE SESSION
+     ======================================================= */
 
   restoreSession();
 
 
-  /* -------------------------
-     Global keyboard shortcuts
-     ------------------------- */
+  /* =======================================================
+     ESCAPE
+     ======================================================= */
 
-  document.addEventListener(
-    "keydown",
-    event => {
+  document.addEventListener("keydown", event => {
 
-      if (
-        event.key === "Escape"
-      ) {
+    if (event.key === "Escape") {
 
-        closeSidebar();
-        closeThemePanel();
-
-      }
+      closeSidebar();
+      closeThemePanel();
+      removeReactionPicker();
 
     }
-  );
+
+  });
 
 
-  /* -------------------------
-     Visibility / last seen
-     ------------------------- */
+  /* =======================================================
+     VISIBILITY
+     ======================================================= */
 
   document.addEventListener(
     "visibilitychange",
@@ -528,8 +423,7 @@ function makeAuthEmail(username) {
 async function handleLogin() {
 
   const username =
-    usernameInput?.value
-      ?.trim();
+    usernameInput?.value?.trim();
 
   if (!username) {
 
@@ -540,7 +434,6 @@ async function handleLogin() {
     return;
 
   }
-
 
   if (username.length < 2) {
 
@@ -553,18 +446,10 @@ async function handleLogin() {
   }
 
 
-  /*
-     The original interface only has
-     username input. PIN is requested
-     using a prompt so HTML structure
-     remains unchanged.
-  */
-
   const pin =
     window.prompt(
       "Enter your 6-digit PIN:"
     );
-
 
   if (pin === null) return;
 
@@ -580,11 +465,11 @@ async function handleLogin() {
   }
 
 
-  setLoginStatus(
-    "Connecting..."
-  );
+  setLoginStatus("Connecting...");
 
-  joinBtn.disabled = true;
+  if (joinBtn) {
+    joinBtn.disabled = true;
+  }
 
 
   try {
@@ -593,41 +478,32 @@ async function handleLogin() {
       makeAuthEmail(username);
 
 
-    /* -------------------------
-       Try login first
-       ------------------------- */
-
     let { data, error } =
-      await supabaseClient.auth
-        .signInWithPassword({
-          email,
-          password: pin
-        });
+      await supabaseClient.auth.signInWithPassword({
+        email,
+        password: pin
+      });
 
 
-    /* -------------------------
-       If login fails,
-       try creating account
-       ------------------------- */
+    /* =====================================================
+       CREATE ACCOUNT IF LOGIN FAILED
+       ===================================================== */
 
     if (error) {
 
       const signUpResult =
-        await supabaseClient.auth
-          .signUp({
-            email,
-            password: pin,
-            options: {
-              data: {
-                username
-              }
+        await supabaseClient.auth.signUp({
+          email,
+          password: pin,
+          options: {
+            data: {
+              username
             }
-          });
+          }
+        });
 
 
-      if (
-        signUpResult.error
-      ) {
+      if (signUpResult.error) {
 
         throw new Error(
           "Username or PIN is incorrect, or account already exists."
@@ -639,11 +515,6 @@ async function handleLogin() {
       data =
         signUpResult.data;
 
-
-      /*
-         If email confirmation is enabled,
-         Supabase may not return a session.
-      */
 
       if (!data.session) {
 
@@ -669,10 +540,7 @@ async function handleLogin() {
     }
 
 
-    await loadCurrentProfile(
-      username
-    );
-
+    await loadCurrentProfile(username);
 
     await startChat();
 
@@ -691,7 +559,9 @@ async function handleLogin() {
 
   } finally {
 
-    joinBtn.disabled = false;
+    if (joinBtn) {
+      joinBtn.disabled = false;
+    }
 
   }
 
@@ -699,7 +569,7 @@ async function handleLogin() {
 
 
 /* =========================================================
-   LOAD CURRENT PROFILE
+   LOAD PROFILE
    ========================================================= */
 
 async function loadCurrentProfile(
@@ -713,69 +583,52 @@ async function loadCurrentProfile(
     await supabaseClient
       .from("profiles")
       .select("*")
-      .eq(
-        "id",
-        currentUser.id
-      )
+      .eq("id", currentUser.id)
       .maybeSingle();
 
 
   if (error) {
-
-    console.error(
-      "PROFILE LOAD ERROR:",
-      error
-    );
-
     throw error;
-
   }
 
 
   if (data) {
 
     currentProfile = data;
-
-  } else {
-
-    /*
-       Creates profile if auth user
-       exists but profile doesn't.
-    */
-
-    const username =
-      fallbackUsername
-        .trim()
-        .toLowerCase();
-
-
-    const {
-      data: newProfile,
-      error: profileError
-    } =
-      await supabaseClient
-        .from("profiles")
-        .insert({
-          id: currentUser.id,
-          username,
-          last_seen_at:
-            new Date().toISOString()
-        })
-        .select()
-        .single();
-
-
-    if (profileError) {
-
-      throw profileError;
-
-    }
-
-
-    currentProfile =
-      newProfile;
+    return;
 
   }
+
+
+  const username =
+    fallbackUsername
+      .trim()
+      .toLowerCase();
+
+
+  const {
+    data: newProfile,
+    error: profileError
+  } =
+    await supabaseClient
+      .from("profiles")
+      .insert({
+        id: currentUser.id,
+        username,
+        last_seen_at:
+          new Date().toISOString()
+      })
+      .select()
+      .single();
+
+
+  if (profileError) {
+    throw profileError;
+  }
+
+
+  currentProfile =
+    newProfile;
 
 }
 
@@ -792,13 +645,13 @@ async function restoreSession() {
       data,
       error
     } =
-      await supabaseClient.auth
-        .getSession();
+      await supabaseClient.auth.getSession();
 
 
     if (error) {
 
       console.error(
+        "SESSION ERROR:",
         error
       );
 
@@ -819,10 +672,7 @@ async function restoreSession() {
         await supabaseClient
           .from("profiles")
           .select("*")
-          .eq(
-            "id",
-            currentUser.id
-          )
+          .eq("id", currentUser.id)
           .maybeSingle();
 
 
@@ -830,9 +680,7 @@ async function restoreSession() {
         profile;
 
 
-      if (
-        currentProfile
-      ) {
+      if (currentProfile) {
 
         await startChat();
 
@@ -864,33 +712,18 @@ async function startChat() {
   clearOldState();
 
 
-  loginScreen?.classList.add(
-    "hidden"
-  );
-
-  chatScreen?.classList.remove(
-    "hidden"
-  );
+  loginScreen?.classList.add("hidden");
+  chatScreen?.classList.remove("hidden");
 
 
   if (onlineStatus) {
-
     onlineStatus.textContent =
       "● Connecting...";
-
   }
 
 
-  /*
-     Subscribe BEFORE loading messages
-     to reduce chance of missing a
-     realtime message during startup.
-  */
-
   setupRealtime();
-
   setupTyping();
-
   setupPresence();
 
 
@@ -903,15 +736,12 @@ async function startChat() {
 
   await updateLastSeen();
 
-
   startLastSeenTimer();
 
 
   if (onlineStatus) {
-
     onlineStatus.textContent =
       "● Online";
-
   }
 
 
@@ -921,13 +751,12 @@ async function startChat() {
 
 
 /* =========================================================
-   CLEAR OLD STATE
+   CLEAR STATE
    ========================================================= */
 
 function clearOldState() {
 
   messageCache.clear();
-
   reactionCache.clear();
 
   presenceUsers = {};
@@ -978,37 +807,32 @@ async function loadMessages() {
   }
 
 
-  /*
-     Cache everything FIRST.
-     This makes reply rendering
-     more reliable.
-  */
-
-  data.forEach(
-    message => {
-
-      messageCache.set(
-        String(message.id),
-        message
-      );
-
-    }
-  );
+  messageCache.clear();
 
 
-  messages.innerHTML = "";
+  (data || []).forEach(message => {
+
+    messageCache.set(
+      String(message.id),
+      message
+    );
+
+  });
 
 
-  data.forEach(
-    message => {
+  if (messages) {
+    messages.innerHTML = "";
+  }
 
-      renderMessage(
-        message,
-        false
-      );
 
-    }
-  );
+  (data || []).forEach(message => {
+
+    renderMessage(
+      message,
+      false
+    );
+
+  });
 
 
   scrollToBottom();
@@ -1022,16 +846,12 @@ async function loadMessages() {
 
 function setupRealtime() {
 
-  /*
-     Clean previous channels first.
-  */
-
   cleanupRealtimeChannels();
 
 
-  /* -------------------------
-     Messages
-     ------------------------- */
+  /* =======================================================
+     MESSAGE CHANNEL
+     ======================================================= */
 
   messageChannel =
     supabaseClient
@@ -1050,19 +870,30 @@ function setupRealtime() {
           const message =
             payload.new;
 
+          if (!message?.id) return;
+
+
+          const id =
+            String(message.id);
+
+
           messageCache.set(
-            String(message.id),
+            id,
             message
           );
 
 
+          /*
+             Do NOT render here if this
+             is our own message.
+
+             sendMessage() already renders
+             the returned inserted row.
+          */
+
           if (
-            String(
-              message.sender_id
-            ) !==
-            String(
-              currentUser?.id
-            )
+            String(message.sender_id) !==
+            String(currentUser?.id)
           ) {
 
             renderMessage(
@@ -1085,8 +916,11 @@ function setupRealtime() {
 
           const id =
             String(
-              payload.old.id
+              payload.old?.id
             );
+
+          if (!id) return;
+
 
           messageCache.delete(id);
 
@@ -1094,21 +928,19 @@ function setupRealtime() {
 
         }
       )
-      .subscribe(
-        status => {
+      .subscribe(status => {
 
-          console.log(
-            "MESSAGE CHANNEL:",
-            status
-          );
+        console.log(
+          "MESSAGE CHANNEL:",
+          status
+        );
 
-        }
-      );
+      });
 
 
-  /* -------------------------
-     Reactions
-     ------------------------- */
+  /* =======================================================
+     REACTION CHANNEL
+     ======================================================= */
 
   reactionChannel =
     supabaseClient
@@ -1146,32 +978,29 @@ function setupRealtime() {
 
         }
       )
-      .subscribe(
-        status => {
+      .subscribe(status => {
 
-          console.log(
-            "REACTION CHANNEL:",
-            status
-          );
+        console.log(
+          "REACTION CHANNEL:",
+          status
+        );
 
-        }
-      );
+      });
 
 }
 
 
 /* =========================================================
-   REALTIME CLEANUP
+   CLEANUP REALTIME
    ========================================================= */
 
 function cleanupRealtimeChannels() {
 
   if (messageChannel) {
 
-    supabaseClient
-      .removeChannel(
-        messageChannel
-      );
+    supabaseClient.removeChannel(
+      messageChannel
+    );
 
     messageChannel = null;
 
@@ -1180,10 +1009,9 @@ function cleanupRealtimeChannels() {
 
   if (reactionChannel) {
 
-    supabaseClient
-      .removeChannel(
-        reactionChannel
-      );
+    supabaseClient.removeChannel(
+      reactionChannel
+    );
 
     reactionChannel = null;
 
@@ -1192,10 +1020,9 @@ function cleanupRealtimeChannels() {
 
   if (typingChannel) {
 
-    supabaseClient
-      .removeChannel(
-        typingChannel
-      );
+    supabaseClient.removeChannel(
+      typingChannel
+    );
 
     typingChannel = null;
 
@@ -1204,10 +1031,9 @@ function cleanupRealtimeChannels() {
 
   if (presenceChannel) {
 
-    supabaseClient
-      .removeChannel(
-        presenceChannel
-      );
+    supabaseClient.removeChannel(
+      presenceChannel
+    );
 
     presenceChannel = null;
 
@@ -1216,10 +1042,7 @@ function cleanupRealtimeChannels() {
 
   if (typingTimeout) {
 
-    clearTimeout(
-      typingTimeout
-    );
-
+    clearTimeout(typingTimeout);
     typingTimeout = null;
 
   }
@@ -1232,6 +1055,9 @@ function cleanupRealtimeChannels() {
 
 /* =========================================================
    RENDER MESSAGE
+   =========================================================
+   IMPORTANT:
+   THESE CLASS NAMES MATCH YOUR CSS.
    ========================================================= */
 
 function renderMessage(
@@ -1239,78 +1065,77 @@ function renderMessage(
   shouldScroll = true
 ) {
 
-  if (!data || !messages) {
-    return;
-  }
+  if (!data || !messages) return;
 
 
   const messageId =
     String(data.id);
 
 
-  /*
-     Prevent duplicate DOM messages.
-  */
+  /* =======================================================
+     DUPLICATE CHECK
+     ======================================================= */
 
   const existing =
-    Array.from(
-      messages.querySelectorAll(
-        ".message"
-      )
-    ).find(
-      el =>
-        String(
-          el.dataset.messageId
-        ) === messageId
+    messages.querySelector(
+      `.message[data-message-id="${CSS.escape(messageId)}"]`
     );
 
 
-  if (existing) {
-
-    return;
-
-  }
+  if (existing) return;
 
 
   const isMine =
-    String(
-      data.sender_id
-    ) ===
-    String(
-      currentUser?.id
-    );
+    String(data.sender_id) ===
+    String(currentUser?.id);
 
+
+  /* =======================================================
+     MESSAGE WRAPPER
+     ======================================================= */
 
   const wrapper =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
 
   wrapper.className =
-    `message ${
-      isMine
-        ? "mine"
-        : "other"
-    }`;
+    `message ${isMine ? "mine" : ""}`;
 
 
   wrapper.dataset.messageId =
     messageId;
 
 
-  /* -------------------------
-     Sender
-     ------------------------- */
+  /* =======================================================
+     BUBBLE
+     ======================================================= */
+
+  const bubble =
+    document.createElement("div");
+
+
+  bubble.className =
+    "bubble";
+
+
+  /* =======================================================
+     SENDER
+     ======================================================= */
+
+  /*
+     Your latest CSS has .sender-name
+     while your original CSS has .sender.
+
+     We use BOTH classes so both sections
+     of your CSS remain compatible.
+  */
 
   const sender =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
 
   sender.className =
-    "message-sender";
+    "sender sender-name";
 
 
   sender.textContent =
@@ -1323,50 +1148,53 @@ function renderMessage(
         );
 
 
-  /* -------------------------
-     Bubble
-     ------------------------- */
+  if (!isMine) {
 
-  const bubble =
-    document.createElement(
-      "div"
-    );
+    bubble.appendChild(sender);
+
+  } else {
+
+    /*
+       Keep sender on own messages too.
+       This preserves the existing layout.
+    */
+
+    bubble.appendChild(sender);
+
+  }
 
 
-  bubble.className =
-    "message-bubble";
-
-
-  /* -------------------------
-     Reply preview
-     ------------------------- */
+  /* =======================================================
+     REPLY PREVIEW
+     ======================================================= */
 
   if (data.reply_to) {
 
-    const reply =
+    bubble.appendChild(
       createReplyPreview(
         data.reply_to
-      );
-
-    bubble.appendChild(
-      reply
+      )
     );
 
   }
 
 
-  /* -------------------------
-     Message content
-     ------------------------- */
+  /* =======================================================
+     MESSAGE TEXT / MEDIA / CODE
+     ======================================================= */
 
   const content =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
+
+  /*
+     Use both .text and .message-text.
+     This makes the renderer compatible
+     with both your older and newer CSS.
+  */
 
   content.className =
-    "message-content";
+    "text message-text";
 
 
   const messageType =
@@ -1374,20 +1202,14 @@ function renderMessage(
     "text";
 
 
-  if (
-    messageType ===
-    "image"
-  ) {
+  if (messageType === "image") {
 
     createImageContent(
       content,
       data
     );
 
-  } else if (
-    messageType ===
-    "video"
-  ) {
+  } else if (messageType === "video") {
 
     createVideoContent(
       content,
@@ -1395,10 +1217,8 @@ function renderMessage(
     );
 
   } else if (
-    messageType ===
-    "audio" ||
-    messageType ===
-    "voice"
+    messageType === "audio" ||
+    messageType === "voice"
   ) {
 
     createAudioContent(
@@ -1407,11 +1227,8 @@ function renderMessage(
     );
 
   } else if (
-    messageType ===
-    "code" ||
-    looksLikeCode(
-      data.content
-    )
+    messageType === "code" ||
+    looksLikeCode(data.content)
   ) {
 
     createCodeContent(
@@ -1421,35 +1238,31 @@ function renderMessage(
 
   } else {
 
-    content.textContent =
-      data.content || "";
+    appendSafeTextWithLinks(
+      content,
+      data.content || ""
+    );
 
   }
 
 
-  bubble.appendChild(
-    content
-  );
+  bubble.appendChild(content);
 
 
-  /* -------------------------
-     Message time
-     ------------------------- */
-
-  const meta =
-    document.createElement(
-      "div"
-    );
-
-
-  meta.className =
-    "message-meta";
-
+  /* =======================================================
+     TIME
+     ======================================================= */
 
   const time =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
+
+
+  /*
+     Use both .time and .message-time.
+  */
+
+  time.className =
+    "time message-time";
 
 
   time.textContent =
@@ -1458,42 +1271,31 @@ function renderMessage(
     );
 
 
-  meta.appendChild(
-    time
-  );
+  bubble.appendChild(time);
 
 
-  /* -------------------------
-     Actions
-     ------------------------- */
-
-  const actions =
-    document.createElement(
-      "div"
-    );
-
-
-  actions.className =
-    "message-actions";
-
+  /* =======================================================
+     REPLY BUTTON
+     ======================================================= */
 
   const replyButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
 
   replyButton.type =
     "button";
 
+
   replyButton.className =
-    "message-action-btn";
+    "reply-message";
+
 
   replyButton.textContent =
-    "↩";
+    "↩ Reply";
+
 
   replyButton.title =
-    "Reply";
+    "Reply to this message";
 
 
   replyButton.addEventListener(
@@ -1508,27 +1310,37 @@ function renderMessage(
   );
 
 
-  actions.appendChild(
+  bubble.appendChild(
     replyButton
   );
 
 
+  /* =======================================================
+     DELETE BUTTON
+     ======================================================= */
+
   if (isMine) {
 
     const deleteButton =
-      document.createElement(
-        "button"
-      );
+      document.createElement("button");
 
 
     deleteButton.type =
       "button";
 
+
+    /*
+       EXACT CSS CLASS
+       FROM YOUR CSS
+    */
+
     deleteButton.className =
-      "message-action-btn delete";
+      "delete-message";
+
 
     deleteButton.textContent =
-      "🗑";
+      "Delete";
+
 
     deleteButton.title =
       "Delete message";
@@ -1548,31 +1360,19 @@ function renderMessage(
     );
 
 
-    actions.appendChild(
+    bubble.appendChild(
       deleteButton
     );
 
   }
 
 
-  meta.appendChild(
-    actions
-  );
-
-
-  bubble.appendChild(
-    meta
-  );
-
-
-  /* -------------------------
-     Reactions
-     ------------------------- */
+  /* =======================================================
+     REACTIONS
+     ======================================================= */
 
   const reactionContainer =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
 
   reactionContainer.className =
@@ -1589,23 +1389,19 @@ function renderMessage(
   );
 
 
-  wrapper.appendChild(
-    sender
+  bubble.appendChild(
+    reactionContainer
   );
+
+
+  /* =======================================================
+     FINAL DOM
+     ======================================================= */
 
   wrapper.appendChild(
     bubble
   );
 
-  wrapper.appendChild(
-    reactionContainer
-  );
-
-
-  /*
-     Long press / right click
-     reaction picker.
-  */
 
   setupReactionPicker(
     wrapper,
@@ -1619,16 +1415,79 @@ function renderMessage(
 
 
   if (shouldScroll) {
-
     scrollToBottom();
-
   }
 
 }
 
 
 /* =========================================================
-   REPLY PREVIEW INSIDE MESSAGE
+   SAFE TEXT + LINKS
+   ========================================================= */
+
+function appendSafeTextWithLinks(
+  container,
+  text
+) {
+
+  if (!text) return;
+
+
+  const urlRegex =
+    /(https?:\/\/[^\s]+)/g;
+
+
+  const parts =
+    text.split(urlRegex);
+
+
+  parts.forEach(part => {
+
+    if (/^https?:\/\/[^\s]+$/i.test(part)) {
+
+      const link =
+        document.createElement("a");
+
+
+      link.href =
+        part;
+
+      link.target =
+        "_blank";
+
+      link.rel =
+        "noopener noreferrer";
+
+
+      link.className =
+        "message-link";
+
+
+      link.textContent =
+        part;
+
+
+      container.appendChild(
+        link
+      );
+
+    } else {
+
+      container.appendChild(
+        document.createTextNode(
+          part
+        )
+      );
+
+    }
+
+  });
+
+}
+
+
+/* =========================================================
+   REPLY PREVIEW
    ========================================================= */
 
 function createReplyPreview(
@@ -1636,9 +1495,7 @@ function createReplyPreview(
 ) {
 
   const box =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
 
   box.className =
@@ -1651,11 +1508,27 @@ function createReplyPreview(
     );
 
 
+  const sender =
+    document.createElement("div");
+
+
+  sender.className =
+    "message-reply-sender";
+
+
+  const content =
+    document.createElement("div");
+
+
+  content.className =
+    "message-reply-content";
+
+
   if (original) {
 
-    const name =
-      original.sender_id ===
-      currentUser?.id
+    sender.textContent =
+      String(original.sender_id) ===
+      String(currentUser?.id)
         ? "You"
         : (
             original.username ||
@@ -1664,15 +1537,47 @@ function createReplyPreview(
           );
 
 
-    box.textContent =
-      `${name}: ${
-        getPreviewText(original)
-      }`;
+    content.textContent =
+      getPreviewText(original);
 
   } else {
 
-    box.textContent =
+    sender.textContent =
+      "Reply";
+
+    content.textContent =
       "Original message unavailable.";
+
+  }
+
+
+  box.appendChild(sender);
+  box.appendChild(content);
+
+
+  /*
+     Clicking the reply preview
+     jumps to original message.
+  */
+
+  if (original) {
+
+    box.style.cursor =
+      "pointer";
+
+
+    box.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+        jumpToMessage(
+          original.id
+        );
+
+      }
+    );
 
   }
 
@@ -1683,7 +1588,54 @@ function createReplyPreview(
 
 
 /* =========================================================
-   MEDIA RENDERERS
+   JUMP TO MESSAGE
+   ========================================================= */
+
+function jumpToMessage(
+  messageId
+) {
+
+  const target =
+    messages?.querySelector(
+      `.message[data-message-id="${CSS.escape(String(messageId))}"]`
+    );
+
+
+  if (!target) return;
+
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+
+  target.classList.remove(
+    "reply-target-highlight"
+  );
+
+
+  void target.offsetWidth;
+
+
+  target.classList.add(
+    "reply-target-highlight"
+  );
+
+
+  setTimeout(() => {
+
+    target.classList.remove(
+      "reply-target-highlight"
+    );
+
+  }, 2000);
+
+}
+
+
+/* =========================================================
+   MEDIA
    ========================================================= */
 
 function createImageContent(
@@ -1703,9 +1655,7 @@ function createImageContent(
 
 
   const img =
-    document.createElement(
-      "img"
-    );
+    document.createElement("img");
 
 
   img.src =
@@ -1719,8 +1669,12 @@ function createImageContent(
     "lazy";
 
 
+  /*
+     EXACT CSS CLASS
+  */
+
   img.className =
-    "chat-image";
+    "chat-media";
 
 
   img.addEventListener(
@@ -1737,9 +1691,7 @@ function createImageContent(
   );
 
 
-  container.appendChild(
-    img
-  );
+  container.appendChild(img);
 
 }
 
@@ -1760,9 +1712,7 @@ function createVideoContent(
 
 
   const video =
-    document.createElement(
-      "video"
-    );
+    document.createElement("video");
 
 
   video.src =
@@ -1774,13 +1724,16 @@ function createVideoContent(
   video.playsInline =
     true;
 
+
+  /*
+     EXACT CSS CLASS
+  */
+
   video.className =
-    "chat-video";
+    "chat-media";
 
 
-  container.appendChild(
-    video
-  );
+  container.appendChild(video);
 
 }
 
@@ -1801,9 +1754,7 @@ function createAudioContent(
 
 
   const audio =
-    document.createElement(
-      "audio"
-    );
+    document.createElement("audio");
 
 
   audio.src =
@@ -1813,24 +1764,24 @@ function createAudioContent(
     true;
 
 
+  /*
+     EXACT CSS CLASS
+  */
+
   audio.className =
-    "chat-audio";
+    "chat-media";
 
 
-  container.appendChild(
-    audio
-  );
+  container.appendChild(audio);
 
 }
 
 
 /* =========================================================
-   CODE MESSAGE
+   CODE DETECTION
    ========================================================= */
 
-function looksLikeCode(
-  text
-) {
+function looksLikeCode(text) {
 
   if (!text) return false;
 
@@ -1850,17 +1801,29 @@ function looksLikeCode(
 }
 
 
-function cleanCode(
-  text
-) {
+/* =========================================================
+   CLEAN CODE
+   ========================================================= */
+
+function cleanCode(text) {
 
   return text
-    .replace(/^```[\w-]*\n?/i, "")
-    .replace(/\n?```$/i, "")
+    .replace(
+      /^```[\w-]*\n?/i,
+      ""
+    )
+    .replace(
+      /\n?```$/i,
+      ""
+    )
     .trim();
 
 }
 
+
+/* =========================================================
+   CODE CONTENT
+   ========================================================= */
 
 function createCodeContent(
   container,
@@ -1868,25 +1831,23 @@ function createCodeContent(
 ) {
 
   const wrapper =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
+
+  /*
+     EXACT CSS CLASS
+  */
 
   wrapper.className =
-    "code-message";
+    "code-box";
 
 
   const pre =
-    document.createElement(
-      "pre"
-    );
+    document.createElement("pre");
 
 
   const code =
-    document.createElement(
-      "code"
-    );
+    document.createElement("code");
 
 
   const cleaned =
@@ -1897,22 +1858,24 @@ function createCodeContent(
     cleaned;
 
 
-  pre.appendChild(
-    code
-  );
+  pre.appendChild(code);
 
 
   const copyButton =
-    document.createElement(
-      "button"
-    );
+    document.createElement("button");
 
 
   copyButton.type =
     "button";
 
+
+  /*
+     EXACT CSS CLASS
+  */
+
   copyButton.className =
-    "copy-code-btn";
+    "copy-code";
+
 
   copyButton.textContent =
     "Copy";
@@ -1924,25 +1887,52 @@ function createCodeContent(
 
       event.stopPropagation();
 
+
       try {
 
-        await navigator.clipboard.writeText(
-          cleaned
-        );
+        if (
+          navigator.clipboard &&
+          navigator.clipboard.writeText
+        ) {
+
+          await navigator.clipboard.writeText(
+            cleaned
+          );
+
+        } else {
+
+          const textarea =
+            document.createElement("textarea");
+
+          textarea.value =
+            cleaned;
+
+          document.body.appendChild(
+            textarea
+          );
+
+          textarea.select();
+
+          document.execCommand(
+            "copy"
+          );
+
+          textarea.remove();
+
+        }
+
 
         copyButton.textContent =
           "Copied!";
 
 
-        setTimeout(
-          () => {
+        setTimeout(() => {
 
-            copyButton.textContent =
-              "Copy";
+          copyButton.textContent =
+            "Copy";
 
-          },
-          1500
-        );
+        }, 1500);
+
 
       } catch (error) {
 
@@ -1951,11 +1941,27 @@ function createCodeContent(
           error
         );
 
+        copyButton.textContent =
+          "Copy failed";
+
+
+        setTimeout(() => {
+
+          copyButton.textContent =
+            "Copy";
+
+        }, 1500);
+
       }
 
     }
   );
 
+
+  /*
+     CSS expects button first
+     and code area after it.
+  */
 
   wrapper.appendChild(
     copyButton
@@ -1971,9 +1977,9 @@ function createCodeContent(
   );
 
 
-  /*
-     Highlight.js if available.
-  */
+  /* =======================================================
+     HIGHLIGHT.JS
+     ======================================================= */
 
   if (
     window.hljs &&
@@ -2002,7 +2008,7 @@ function createCodeContent(
 
 
 /* =========================================================
-   SEND TEXT MESSAGE
+   SEND MESSAGE
    ========================================================= */
 
 async function sendMessage() {
@@ -2011,14 +2017,15 @@ async function sendMessage() {
 
 
   const content =
-    messageInput?.value
-      ?.trim();
+    messageInput?.value?.trim();
 
 
   if (!content) return;
 
 
-  sendBtn.disabled = true;
+  if (sendBtn) {
+    sendBtn.disabled = true;
+  }
 
 
   try {
@@ -2058,15 +2065,8 @@ async function sendMessage() {
         .single();
 
 
-    /*
-       CHECK ERROR BEFORE
-       touching UI state.
-    */
-
     if (error) {
-
       throw error;
-
     }
 
 
@@ -2090,7 +2090,6 @@ async function sendMessage() {
 
     cancelReply();
 
-
     stopTypingBroadcast();
 
 
@@ -2107,7 +2106,9 @@ async function sendMessage() {
 
   } finally {
 
-    sendBtn.disabled = false;
+    if (sendBtn) {
+      sendBtn.disabled = false;
+    }
 
     messageInput?.focus();
 
@@ -2124,15 +2125,8 @@ async function handleFileUpload(
   file
 ) {
 
-  if (!currentUser) return;
+  if (!currentUser || !file) return;
 
-
-  if (!file) return;
-
-
-  /*
-     50 MB maximum.
-  */
 
   const MAX_SIZE =
     50 * 1024 * 1024;
@@ -2153,33 +2147,20 @@ async function handleFileUpload(
     file.type || "";
 
 
-  let messageType =
-    null;
+  let messageType = null;
 
 
-  if (
-    type.startsWith(
-      "image/"
-    )
-  ) {
+  if (type.startsWith("image/")) {
 
     messageType =
       "image";
 
-  } else if (
-    type.startsWith(
-      "video/"
-    )
-  ) {
+  } else if (type.startsWith("video/")) {
 
     messageType =
       "video";
 
-  } else if (
-    type.startsWith(
-      "audio/"
-    )
-  ) {
+  } else if (type.startsWith("audio/")) {
 
     messageType =
       "audio";
@@ -2198,15 +2179,19 @@ async function handleFileUpload(
   }
 
 
-  mediaBtn.disabled = true;
+  if (mediaBtn) {
+    mediaBtn.disabled = true;
+  }
 
 
   const originalText =
-    mediaBtn.textContent;
+    mediaBtn?.textContent;
 
 
-  mediaBtn.textContent =
-    "…";
+  if (mediaBtn) {
+    mediaBtn.textContent =
+      "…";
+  }
 
 
   try {
@@ -2227,59 +2212,36 @@ async function handleFileUpload(
       `${currentUser.id}/${Date.now()}-${randomPart}${extension}`;
 
 
-    /*
-       IMPORTANT:
-       Bucket name from your existing app.
-    */
-
     const {
-      error:
-        uploadError
+      error: uploadError
     } =
       await supabaseClient
         .storage
-        .from(
-          "neural-ninjas-media"
-        )
+        .from("neural-ninjas-media")
         .upload(
           filePath,
           file,
           {
-            cacheControl:
-              "3600",
-
-            upsert:
-              false,
-
+            cacheControl: "3600",
+            upsert: false,
             contentType:
               file.type || undefined
-
           }
         );
 
 
     if (uploadError) {
-
       throw uploadError;
-
     }
 
 
-    /*
-       Current system uses signed URLs.
-       30 days.
-    */
-
     const {
       data: signedData,
-      error:
-        signedError
+      error: signedError
     } =
       await supabaseClient
         .storage
-        .from(
-          "neural-ninjas-media"
-        )
+        .from("neural-ninjas-media")
         .createSignedUrl(
           filePath,
           60 * 60 * 24 * 30
@@ -2287,9 +2249,7 @@ async function handleFileUpload(
 
 
     if (signedError) {
-
       throw signedError;
-
     }
 
 
@@ -2339,9 +2299,7 @@ async function handleFileUpload(
 
 
     if (error) {
-
       throw error;
-
     }
 
 
@@ -2377,13 +2335,20 @@ async function handleFileUpload(
 
   } finally {
 
-    mediaBtn.disabled =
-      false;
+    if (mediaBtn) {
 
-    mediaBtn.textContent =
-      originalText || "＋";
+      mediaBtn.disabled =
+        false;
 
-    fileInput.value = "";
+      mediaBtn.textContent =
+        originalText || "＋";
+
+    }
+
+
+    if (fileInput) {
+      fileInput.value = "";
+    }
 
   }
 
@@ -2391,12 +2356,7 @@ async function handleFileUpload(
 
 
 /* =========================================================
-   VOICE NOTE SUPPORT
-   =========================================================
-   Existing HTML has no dedicated microphone button,
-   so this is kept as a reusable function.
-   It can be connected to a button later without
-   changing the database/message architecture.
+   VOICE RECORDING
    ========================================================= */
 
 async function startVoiceRecording() {
@@ -2421,10 +2381,9 @@ async function startVoiceRecording() {
   try {
 
     recordingStream =
-      await navigator.mediaDevices
-        .getUserMedia({
-          audio: true
-        });
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
 
 
     recordedChunks = [];
@@ -2458,9 +2417,7 @@ async function startVoiceRecording() {
     mediaRecorder =
       new MediaRecorder(
         recordingStream,
-        {
-          mimeType
-        }
+        { mimeType }
       );
 
 
@@ -2491,8 +2448,7 @@ async function startVoiceRecording() {
           new Blob(
             recordedChunks,
             {
-              type:
-                mimeType
+              type: mimeType
             }
           );
 
@@ -2500,9 +2456,7 @@ async function startVoiceRecording() {
         cleanupRecordingStream();
 
 
-        if (
-          blob.size > 0
-        ) {
+        if (blob.size > 0) {
 
           await uploadVoiceBlob(
             blob
@@ -2559,19 +2513,23 @@ function cleanupRecordingStream() {
 
     recordingStream
       .getTracks()
-      .forEach(
-        track =>
-          track.stop()
-      );
+      .forEach(track => {
+        track.stop();
+      });
 
     recordingStream = null;
 
   }
 
+
   mediaRecorder = null;
 
 }
 
+
+/* =========================================================
+   VOICE UPLOAD
+   ========================================================= */
 
 async function uploadVoiceBlob(
   blob
@@ -2587,14 +2545,11 @@ async function uploadVoiceBlob(
 
 
     const {
-      error:
-        uploadError
+      error: uploadError
     } =
       await supabaseClient
         .storage
-        .from(
-          "neural-ninjas-media"
-        )
+        .from("neural-ninjas-media")
         .upload(
           path,
           blob,
@@ -2613,9 +2568,7 @@ async function uploadVoiceBlob(
 
 
     if (uploadError) {
-
       throw uploadError;
-
     }
 
 
@@ -2625,9 +2578,7 @@ async function uploadVoiceBlob(
     } =
       await supabaseClient
         .storage
-        .from(
-          "neural-ninjas-media"
-        )
+        .from("neural-ninjas-media")
         .createSignedUrl(
           path,
           60 * 60 * 24 * 30
@@ -2635,16 +2586,13 @@ async function uploadVoiceBlob(
 
 
     if (error) {
-
       throw error;
-
     }
 
 
     const {
       data: message,
-      error:
-        messageError
+      error: messageError
     } =
       await supabaseClient
         .from("messages")
@@ -2672,9 +2620,7 @@ async function uploadVoiceBlob(
 
 
     if (messageError) {
-
       throw messageError;
-
     }
 
 
@@ -2684,6 +2630,7 @@ async function uploadVoiceBlob(
         String(message.id),
         message
       );
+
 
       renderMessage(
         message,
@@ -2728,12 +2675,8 @@ function startReply(
 
 
   const sender =
-    String(
-      message.sender_id
-    ) ===
-    String(
-      currentUser?.id
-    )
+    String(message.sender_id) ===
+    String(currentUser?.id)
       ? "You"
       : (
           message.username ||
@@ -2743,20 +2686,14 @@ function startReply(
 
 
   if (replySender) {
-
     replySender.textContent =
       sender;
-
   }
 
 
   if (replyPreview) {
-
     replyPreview.textContent =
-      getPreviewText(
-        message
-      );
-
+      getPreviewText(message);
   }
 
 
@@ -2782,18 +2719,14 @@ function cancelReply() {
 
 
   if (replySender) {
-
     replySender.textContent =
       "User";
-
   }
 
 
   if (replyPreview) {
-
     replyPreview.textContent =
       "";
-
   }
 
 }
@@ -2803,18 +2736,14 @@ function getPreviewText(
   message
 ) {
 
-  if (!message) {
-    return "";
-  }
+  if (!message) return "";
 
 
   if (
     message.message_type ===
     "image"
   ) {
-
     return "📷 Image";
-
   }
 
 
@@ -2822,21 +2751,17 @@ function getPreviewText(
     message.message_type ===
     "video"
   ) {
-
     return "🎥 Video";
-
   }
 
 
   if (
     message.message_type ===
-    "audio" ||
+      "audio" ||
     message.message_type ===
-    "voice"
+      "voice"
   ) {
-
     return "🎵 Audio";
-
   }
 
 
@@ -2885,12 +2810,8 @@ async function deleteMessage(
 
 
   if (
-    String(
-      message.sender_id
-    ) !==
-    String(
-      currentUser.id
-    )
+    String(message.sender_id) !==
+    String(currentUser.id)
   ) {
 
     showChatError(
@@ -2902,13 +2823,13 @@ async function deleteMessage(
   }
 
 
-  const confirmed =
-    window.confirm(
+  if (
+    !window.confirm(
       "Delete this message?"
-    );
-
-
-  if (!confirmed) return;
+    )
+  ) {
+    return;
+  }
 
 
   try {
@@ -2919,20 +2840,12 @@ async function deleteMessage(
       await supabaseClient
         .from("messages")
         .delete()
-        .eq(
-          "id",
-          messageId
-        )
-        .eq(
-          "sender_id",
-          currentUser.id
-        );
+        .eq("id", messageId)
+        .eq("sender_id", currentUser.id);
 
 
     if (error) {
-
       throw error;
-
     }
 
 
@@ -2972,22 +2885,20 @@ function removeMessageFromDOM(
     ) || [];
 
 
-  all.forEach(
-    element => {
+  all.forEach(element => {
 
-      if (
-        String(
-          element.dataset.messageId
-        ) ===
-        String(messageId)
-      ) {
+    if (
+      String(
+        element.dataset.messageId
+      ) ===
+      String(messageId)
+    ) {
 
-        element.remove();
-
-      }
+      element.remove();
 
     }
-  );
+
+  });
 
 }
 
@@ -3034,33 +2945,27 @@ async function loadReactions() {
   reactionCache.clear();
 
 
-  data.forEach(
-    row => {
+  (data || []).forEach(row => {
 
-      const key =
-        String(
-          row.message_id
-        );
+    const key =
+      String(row.message_id);
 
 
-      if (
-        !reactionCache.has(key)
-      ) {
+    if (!reactionCache.has(key)) {
 
-        reactionCache.set(
-          key,
-          []
-        );
-
-      }
-
-
-      reactionCache
-        .get(key)
-        .push(row);
+      reactionCache.set(
+        key,
+        []
+      );
 
     }
-  );
+
+
+    reactionCache
+      .get(key)
+      .push(row);
+
+  });
 
 
   rerenderAllReactions();
@@ -3125,49 +3030,48 @@ function renderReactionArea(
     new Map();
 
 
-  rows.forEach(
-    row => {
+  rows.forEach(row => {
 
-      const reaction =
-        row.reaction;
-
-
-      if (
-        !grouped.has(
-          reaction
-        )
-      ) {
-
-        grouped.set(
-          reaction,
-          []
-        );
-
-      }
+    const reaction =
+      row.reaction;
 
 
-      grouped
-        .get(reaction)
-        .push(row);
+    if (!grouped.has(reaction)) {
+
+      grouped.set(
+        reaction,
+        []
+      );
 
     }
-  );
+
+
+    grouped
+      .get(reaction)
+      .push(row);
+
+  });
 
 
   grouped.forEach(
     (users, reaction) => {
 
       const button =
-        document.createElement(
-          "button"
-        );
+        document.createElement("button");
 
 
       button.type =
         "button";
 
+
+      /*
+         .reaction-count is styled
+         by your CSS.
+      */
+
       button.className =
         "reaction-count";
+
 
       button.textContent =
         `${reaction} ${users.length}`;
@@ -3208,26 +3112,23 @@ function rerenderReactions(
     ) || [];
 
 
-  areas.forEach(
-    area => {
+  areas.forEach(area => {
 
-      if (
-        String(
-          area.dataset
-            .reactionMessageId
-        ) ===
-        String(messageId)
-      ) {
+    if (
+      String(
+        area.dataset.reactionMessageId
+      ) ===
+      String(messageId)
+    ) {
 
-        renderReactionArea(
-          area,
-          messageId
-        );
-
-      }
+      renderReactionArea(
+        area,
+        messageId
+      );
 
     }
-  );
+
+  });
 
 }
 
@@ -3240,20 +3141,21 @@ function rerenderAllReactions() {
     ) || [];
 
 
-  areas.forEach(
-    area => {
+  areas.forEach(area => {
 
-      renderReactionArea(
-        area,
-        area.dataset
-          .reactionMessageId
-      );
+    renderReactionArea(
+      area,
+      area.dataset.reactionMessageId
+    );
 
-    }
-  );
+  });
 
 }
 
+
+/* =========================================================
+   REACTION PICKER
+   ========================================================= */
 
 function setupReactionPicker(
   messageElement,
@@ -3263,68 +3165,67 @@ function setupReactionPicker(
   let pressTimer = null;
 
 
-  const show =
-    () => {
+  const show = () => {
 
-      removeReactionPicker();
-
-
-      const picker =
-        document.createElement(
-          "div"
-        );
+    removeReactionPicker();
 
 
-      picker.className =
-        "reaction-picker";
+    const picker =
+      document.createElement("div");
 
 
-      REACTIONS.forEach(
-        reaction => {
+    /*
+       No CSS was supplied for this class,
+       so it remains isolated and won't
+       affect the normal bubble.
+    */
 
-          const button =
-            document.createElement(
-              "button"
-            );
-
-
-          button.type =
-            "button";
-
-          button.textContent =
-            reaction;
+    picker.className =
+      "reaction-picker";
 
 
-          button.addEventListener(
-            "click",
-            event => {
+    REACTIONS.forEach(reaction => {
 
-              event.stopPropagation();
+      const button =
+        document.createElement("button");
 
-              toggleReaction(
-                messageId,
-                reaction
-              );
 
-              removeReactionPicker();
+      button.type =
+        "button";
 
-            }
+      button.textContent =
+        reaction;
+
+
+      button.addEventListener(
+        "click",
+        event => {
+
+          event.stopPropagation();
+
+          toggleReaction(
+            messageId,
+            reaction
           );
 
-
-          picker.appendChild(
-            button
-          );
+          removeReactionPicker();
 
         }
       );
 
 
-      messageElement.appendChild(
-        picker
+      picker.appendChild(
+        button
       );
 
-    };
+    });
+
+
+    messageElement.appendChild(
+      picker
+    );
+
+  };
 
 
   messageElement.addEventListener(
@@ -3360,31 +3261,29 @@ function setupReactionPicker(
     "touchend",
     "touchmove",
     "touchcancel"
-  ].forEach(
-    eventName => {
+  ].forEach(eventName => {
 
-      messageElement.addEventListener(
-        eventName,
-        () => {
+    messageElement.addEventListener(
+      eventName,
+      () => {
 
-          if (pressTimer) {
+        if (pressTimer) {
 
-            clearTimeout(
-              pressTimer
-            );
+          clearTimeout(
+            pressTimer
+          );
 
-            pressTimer = null;
+          pressTimer = null;
 
-          }
-
-        },
-        {
-          passive: true
         }
-      );
 
-    }
-  );
+      },
+      {
+        passive: true
+      }
+    );
+
+  });
 
 }
 
@@ -3401,13 +3300,10 @@ async function toggleReaction(
 
     const {
       data: existing,
-      error:
-        selectError
+      error: selectError
     } =
       await supabaseClient
-        .from(
-          "message_reactions"
-        )
+        .from("message_reactions")
         .select(
           "user_id, message_id, reaction"
         )
@@ -3427,9 +3323,7 @@ async function toggleReaction(
 
 
     if (selectError) {
-
       throw selectError;
-
     }
 
 
@@ -3439,9 +3333,7 @@ async function toggleReaction(
         error
       } =
         await supabaseClient
-          .from(
-            "message_reactions"
-          )
+          .from("message_reactions")
           .delete()
           .eq(
             "message_id",
@@ -3458,9 +3350,7 @@ async function toggleReaction(
 
 
       if (error) {
-
         throw error;
-
       }
 
     } else {
@@ -3469,9 +3359,7 @@ async function toggleReaction(
         error
       } =
         await supabaseClient
-          .from(
-            "message_reactions"
-          )
+          .from("message_reactions")
           .insert({
             message_id:
               messageId,
@@ -3480,14 +3368,11 @@ async function toggleReaction(
               currentUser.id,
 
             reaction
-
           });
 
 
       if (error) {
-
         throw error;
-
       }
 
     }
@@ -3521,17 +3406,15 @@ function showReactionUsers(
 ) {
 
   const names =
-    users.map(
-      user => {
+    users.map(user => {
 
-        return (
-          user.profiles?.username ||
-          user.username ||
-          "User"
-        );
+      return (
+        user.profiles?.username ||
+        user.username ||
+        "User"
+      );
 
-      }
-    );
+    });
 
 
   window.alert(
@@ -3548,8 +3431,7 @@ function removeReactionPicker() {
       ".reaction-picker"
     )
     .forEach(
-      picker =>
-        picker.remove()
+      picker => picker.remove()
     );
 
 }
@@ -3574,7 +3456,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   TYPING INDICATOR
+   TYPING
    ========================================================= */
 
 function setupTyping() {
@@ -3584,10 +3466,9 @@ function setupTyping() {
 
   if (typingChannel) {
 
-    supabaseClient
-      .removeChannel(
-        typingChannel
-      );
+    supabaseClient.removeChannel(
+      typingChannel
+    );
 
   }
 
@@ -3607,7 +3488,6 @@ function setupTyping() {
           const username =
             payload.payload?.username;
 
-
           const userId =
             payload.payload?.userId;
 
@@ -3617,20 +3497,15 @@ function setupTyping() {
             String(userId) ===
             String(currentUser.id)
           ) {
-
             return;
-
           }
 
 
-          showTyping(
-            username
-          );
+          showTyping(username);
 
         }
       )
       .subscribe();
-
 
 }
 
@@ -3643,7 +3518,6 @@ function handleTyping() {
   if (!messageInput?.value.trim()) {
 
     stopTypingBroadcast();
-
     return;
 
   }
@@ -3654,9 +3528,12 @@ function handleTyping() {
     isCurrentlyTyping =
       true;
 
+
     typingChannel.send({
       type: "broadcast",
+
       event: "typing",
+
       payload: {
         username:
           currentProfile?.username ||
@@ -3729,19 +3606,16 @@ function showTyping(
 
 
   typingIndicator._timer =
-    setTimeout(
-      () => {
+    setTimeout(() => {
 
-        typingIndicator.classList.remove(
-          "show"
-        );
+      typingIndicator.classList.remove(
+        "show"
+      );
 
-        typingIndicator.textContent =
-          "";
+      typingIndicator.textContent =
+        "";
 
-      },
-      1800
-    );
+    }, 1800);
 
 }
 
@@ -3757,29 +3631,27 @@ function setupPresence() {
 
   if (presenceChannel) {
 
-    supabaseClient
-      .removeChannel(
-        presenceChannel
-      );
+    supabaseClient.removeChannel(
+      presenceChannel
+    );
 
   }
 
 
   presenceChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-presence",
-        {
-          config: {
-            presence: {
-              key:
-                String(
-                  currentUser.id
-                )
-            }
+    supabaseClient.channel(
+      "neural-ninjas-presence",
+      {
+        config: {
+          presence: {
+            key:
+              String(
+                currentUser.id
+              )
           }
         }
-      );
+      }
+    );
 
 
   presenceChannel.on(
@@ -3789,13 +3661,9 @@ function setupPresence() {
     },
     () => {
 
-      const state =
-        presenceChannel.presenceState();
-
-
       presenceUsers =
-        state || {};
-
+        presenceChannel.presenceState() ||
+        {};
 
       renderMembers();
 
@@ -3829,34 +3697,35 @@ function setupPresence() {
   );
 
 
-  presenceChannel
-    .subscribe(
-      async status => {
+  presenceChannel.subscribe(
+    async status => {
 
-        if (
-          status ===
-          "SUBSCRIBED"
-        ) {
+      if (
+        status ===
+        "SUBSCRIBED"
+      ) {
 
-          await presenceChannel.track({
-            userId:
-              currentUser.id,
+        await presenceChannel.track({
 
-            username:
-              currentProfile?.username ||
-              "User",
+          userId:
+            currentUser.id,
 
-            online:
-              true,
+          username:
+            currentProfile?.username ||
+            "User",
 
-            joinedAt:
-              Date.now()
-          });
+          online:
+            true,
 
-        }
+          joinedAt:
+            Date.now()
+
+        });
 
       }
-    );
+
+    }
+  );
 
 }
 
@@ -3911,19 +3780,21 @@ function isUserOnline(
 
   return Object.values(
     presenceUsers || {}
-  ).some(
-    entries =>
-      entries.some(
-        entry =>
-          String(
-            entry.userId
-          ) ===
-          String(userId)
-      )
+  ).some(entries =>
+    entries.some(entry =>
+      String(entry.userId) ===
+      String(userId)
+    )
   );
 
 }
 
+
+/* =========================================================
+   RENDER MEMBERS
+   IMPORTANT:
+   MATCHES YOUR CSS EXACTLY
+   ========================================================= */
 
 function renderMembers() {
 
@@ -3935,127 +3806,155 @@ function renderMembers() {
     [];
 
 
-  memberCount.textContent =
-    `${members.length} ${
-      members.length === 1
-        ? "member"
-        : "members"
-    }`;
+  if (memberCount) {
+
+    memberCount.textContent =
+      `${members.length} ${
+        members.length === 1
+          ? "member"
+          : "members"
+      }`;
+
+  }
 
 
   membersList.innerHTML = "";
 
 
-  members.forEach(
-    member => {
+  members.forEach(member => {
 
-      const item =
-        document.createElement(
-          "div"
-        );
+    const item =
+      document.createElement("div");
 
 
-      item.className =
-        "member-item";
+    /*
+       EXACT CSS CLASS
+    */
+
+    item.className =
+      "member";
 
 
-      const avatar =
-        document.createElement(
-          "div"
-        );
+    /* =====================================================
+       AVATAR
+       ===================================================== */
+
+    const avatar =
+      document.createElement("div");
 
 
-      avatar.className =
-        "member-avatar";
+    avatar.className =
+      "member-avatar";
 
 
-      avatar.textContent =
-        (
-          member.username ||
-          "?"
-        )
-          .charAt(0)
-          .toUpperCase();
-
-
-      const info =
-        document.createElement(
-          "div"
-        );
-
-
-      info.className =
-        "member-info";
-
-
-      const name =
-        document.createElement(
-          "strong"
-        );
-
-
-      name.textContent =
+    avatar.textContent =
+      (
         member.username ||
-        "User";
+        "?"
+      )
+        .charAt(0)
+        .toUpperCase();
 
 
-      const status =
-        document.createElement(
-          "span"
+    /* =====================================================
+       INFO
+       ===================================================== */
+
+    const info =
+      document.createElement("div");
+
+
+    info.className =
+      "member-info";
+
+
+    /* =====================================================
+       NAME
+       ===================================================== */
+
+    const name =
+      document.createElement("div");
+
+
+    name.className =
+      "member-name";
+
+
+    name.textContent =
+      member.username ||
+      "User";
+
+
+    /* =====================================================
+       STATUS
+       ===================================================== */
+
+    const status =
+      document.createElement("div");
+
+
+    status.className =
+      "member-status";
+
+
+    const dot =
+      document.createElement("span");
+
+
+    dot.className =
+      "status-dot";
+
+
+    const statusText =
+      document.createElement("span");
+
+
+    const online =
+      isUserOnline(
+        member.id
+      );
+
+
+    if (online) {
+
+      dot.classList.add(
+        "online"
+      );
+
+
+      statusText.textContent =
+        "Online";
+
+    } else {
+
+      statusText.textContent =
+        formatLastSeen(
+          member.last_seen_at
         );
-
-
-      const online =
-        isUserOnline(
-          member.id
-        );
-
-
-      if (online) {
-
-        status.textContent =
-          "● Online";
-
-        status.className =
-          "member-online";
-
-      } else {
-
-        status.textContent =
-          formatLastSeen(
-            member.last_seen_at
-          );
-
-        status.className =
-          "member-last-seen";
-
-      }
-
-
-      info.appendChild(
-        name
-      );
-
-      info.appendChild(
-        status
-      );
-
-
-      item.appendChild(
-        avatar
-      );
-
-      item.appendChild(
-        info
-      );
-
-
-      membersList.appendChild(
-        item
-      );
 
     }
-  );
+
+
+    status.appendChild(dot);
+
+    status.appendChild(
+      statusText
+    );
+
+
+    info.appendChild(name);
+
+    info.appendChild(status);
+
+
+    item.appendChild(avatar);
+
+    item.appendChild(info);
+
+
+    membersList.appendChild(item);
+
+  });
 
 }
 
@@ -4071,14 +3970,17 @@ async function updateLastSeen() {
 
   try {
 
+    const now =
+      new Date().toISOString();
+
+
     const {
       error
     } =
       await supabaseClient
         .from("profiles")
         .update({
-          last_seen_at:
-            new Date().toISOString()
+          last_seen_at: now
         })
         .eq(
           "id",
@@ -4098,18 +4000,17 @@ async function updateLastSeen() {
     }
 
 
-    if (
-      currentProfile
-    ) {
+    if (currentProfile) {
 
       currentProfile.last_seen_at =
-        new Date().toISOString();
+        now;
 
     }
 
   } catch (error) {
 
     console.warn(
+      "LAST SEEN ERROR:",
       error
     );
 
@@ -4156,9 +4057,7 @@ function formatLastSeen(
 ) {
 
   if (!timestamp) {
-
     return "Last seen unknown";
-
   }
 
 
@@ -4172,9 +4071,7 @@ function formatLastSeen(
 
 
   if (diff < 60000) {
-
     return "Last seen just now";
-
   }
 
 
@@ -4217,11 +4114,6 @@ function formatLastSeen(
 
 /* =========================================================
    SEARCH
-   =========================================================
-   IMPORTANT FIX:
-   Never replace message.innerHTML during search.
-   That used to destroy reply/delete/reaction
-   event listeners.
    ========================================================= */
 
 function searchMessages() {
@@ -4239,61 +4131,50 @@ function searchMessages() {
     ) || [];
 
 
-  messageElements.forEach(
-    element => {
+  messageElements.forEach(element => {
 
-      /*
-         Read text safely without
-         modifying the message DOM.
-      */
-
-      const text =
-        element.textContent
-          .toLowerCase();
-
-
-      if (!query) {
-
-        element.style.display =
-          "";
-
-        element.classList.remove(
-          "search-match"
-        );
-
-        return;
-
-      }
-
-
-      const match =
-        text.includes(
-          query
-        );
-
+    if (!query) {
 
       element.style.display =
-        match
-          ? ""
-          : "none";
+        "";
 
-
-      element.classList.toggle(
-        "search-match",
-        match
+      element.classList.remove(
+        "search-match"
       );
 
+      return;
+
     }
-  );
+
+
+    const text =
+      element.textContent
+        .toLowerCase();
+
+
+    const match =
+      text.includes(query);
+
+
+    element.style.display =
+      match
+        ? ""
+        : "none";
+
+
+    element.classList.toggle(
+      "search-match",
+      match
+    );
+
+  });
 
 }
 
 
 function clearSearch() {
 
-  if (
-    messageSearchInput
-  ) {
+  if (messageSearchInput) {
 
     messageSearchInput.value =
       "";
@@ -4307,7 +4188,7 @@ function clearSearch() {
 
 
 /* =========================================================
-   THEME SYSTEM
+   THEME
    ========================================================= */
 
 function openThemePanel() {
@@ -4341,9 +4222,7 @@ function applyTheme(
 
 
   if (
-    !validThemes.includes(
-      theme
-    )
+    !validThemes.includes(theme)
   ) {
 
     theme =
@@ -4366,17 +4245,15 @@ function applyTheme(
     .querySelectorAll(
       ".theme-option"
     )
-    .forEach(
-      option => {
+    .forEach(option => {
 
-        option.classList.toggle(
-          "active",
-          option.dataset.theme ===
-            theme
-        );
+      option.classList.toggle(
+        "active",
+        option.dataset.theme ===
+          theme
+      );
 
-      }
-    );
+    });
 
 }
 
@@ -4438,35 +4315,33 @@ async function deleteAccount() {
   if (!secondConfirm) return;
 
 
-  deleteAccountBtn.disabled =
-    true;
+  if (deleteAccountBtn) {
 
+    deleteAccountBtn.disabled =
+      true;
 
-  deleteAccountBtn.textContent =
-    "Deleting...";
+    deleteAccountBtn.textContent =
+      "Deleting...";
+
+  }
 
 
   try {
 
     const {
       data: sessionData,
-      error:
-        sessionError
+      error: sessionError
     } =
-      await supabaseClient.auth
-        .getSession();
+      await supabaseClient.auth.getSession();
 
 
     if (sessionError) {
-
       throw sessionError;
-
     }
 
 
     const accessToken =
-      sessionData.session
-        ?.access_token;
+      sessionData.session?.access_token;
 
 
     if (!accessToken) {
@@ -4477,13 +4352,6 @@ async function deleteAccount() {
 
     }
 
-
-    /*
-       Account deletion MUST happen
-       through the Edge Function because
-       auth.users cannot safely be deleted
-       from the browser with normal RLS.
-    */
 
     const response =
       await fetch(
@@ -4540,15 +4408,9 @@ async function deleteAccount() {
     }
 
 
-    /*
-       Server already deleted account.
-       Signout is best-effort.
-    */
-
     try {
 
-      await supabaseClient.auth
-        .signOut();
+      await supabaseClient.auth.signOut();
 
     } catch (signOutError) {
 
@@ -4575,6 +4437,7 @@ async function deleteAccount() {
       error
     );
 
+
     alert(
       error.message ||
       "Failed to delete account."
@@ -4582,9 +4445,7 @@ async function deleteAccount() {
 
   } finally {
 
-    if (
-      deleteAccountBtn
-    ) {
+    if (deleteAccountBtn) {
 
       deleteAccountBtn.disabled =
         false;
@@ -4600,7 +4461,7 @@ async function deleteAccount() {
 
 
 /* =========================================================
-   EXIT / LOGOUT
+   LOGOUT
    ========================================================= */
 
 async function exitChat() {
@@ -4619,17 +4480,13 @@ async function exitChat() {
     await updateLastSeen();
 
   } catch {
-
-    /* Ignore last-seen failure
-       while logging out. */
-
+    /* Ignore */
   }
 
 
   try {
 
-    await supabaseClient.auth
-      .signOut();
+    await supabaseClient.auth.signOut();
 
   } catch (error) {
 
@@ -4670,11 +4527,9 @@ function cleanupApplication() {
 
 
   currentUser = null;
-
   currentProfile = null;
 
   messageCache.clear();
-
   reactionCache.clear();
 
   presenceUsers = {};
@@ -4685,27 +4540,19 @@ function cleanupApplication() {
 
 
   if (messages) {
-
-    messages.innerHTML =
-      "";
-
+    messages.innerHTML = "";
   }
 
 
   if (messageInput) {
-
-    messageInput.value =
-      "";
-
+    messageInput.value = "";
   }
 
 
   clearSearch();
-
   cancelReply();
 
   closeSidebar();
-
   closeThemePanel();
 
 
@@ -4739,16 +4586,8 @@ window.addEventListener(
   "beforeunload",
   () => {
 
-    /*
-       Do not await here.
-       Browser may terminate async
-       operations immediately.
-    */
-
     if (currentUser) {
-
       updateLastSeen();
-
     }
 
   }
@@ -4779,12 +4618,6 @@ function showChatError(
     message
   );
 
-
-  /*
-     Use login status if available,
-     otherwise temporary typing area
-     so no extra HTML is required.
-  */
 
   if (
     chatScreen?.classList.contains(
@@ -4817,19 +4650,16 @@ function showChatError(
 
 
     typingIndicator._errorTimer =
-      setTimeout(
-        () => {
+      setTimeout(() => {
 
-          typingIndicator.classList.remove(
-            "show"
-          );
+        typingIndicator.classList.remove(
+          "show"
+        );
 
-          typingIndicator.textContent =
-            "";
+        typingIndicator.textContent =
+          "";
 
-        },
-        2500
-      );
+      }, 2500);
 
   }
 
@@ -4841,14 +4671,12 @@ function scrollToBottom() {
   if (!messages) return;
 
 
-  requestAnimationFrame(
-    () => {
+  requestAnimationFrame(() => {
 
-      messages.scrollTop =
-        messages.scrollHeight;
+    messages.scrollTop =
+      messages.scrollHeight;
 
-    }
-  );
+  });
 
 }
 
@@ -4857,9 +4685,7 @@ function formatMessageTime(
   timestamp
 ) {
 
-  if (!timestamp) {
-    return "";
-  }
+  if (!timestamp) return "";
 
 
   const date =
@@ -4871,20 +4697,15 @@ function formatMessageTime(
       date.getTime()
     )
   ) {
-
     return "";
-
   }
 
 
   return date.toLocaleTimeString(
     [],
     {
-      hour:
-        "2-digit",
-
-      minute:
-        "2-digit"
+      hour: "2-digit",
+      minute: "2-digit"
     }
   );
 
@@ -4896,17 +4717,11 @@ function getFileExtension(
 ) {
 
   const index =
-    filename.lastIndexOf(
-      "."
-    );
+    filename.lastIndexOf(".");
 
 
-  if (
-    index === -1
-  ) {
-
+  if (index === -1) {
     return "";
-
   }
 
 
@@ -4922,7 +4737,7 @@ function getFileExtension(
 
 
 /* =========================================================
-   GLOBAL ERROR HANDLERS
+   GLOBAL ERRORS
    ========================================================= */
 
 window.addEventListener(
@@ -4953,7 +4768,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   DEBUG HELPERS
+   DEBUG / PUBLIC API
    ========================================================= */
 
 window.NeuralNinjas = {
@@ -4976,7 +4791,8 @@ window.NeuralNinjas = {
 
   applyTheme,
 
-  logout: exitChat
+  logout:
+    exitChat
 
 };
 
