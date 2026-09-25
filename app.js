@@ -856,6 +856,8 @@ function clearOldState() {
    ========================================================= */
 
 
+async function loadMessages() {
+
   const {
     data,
     error
@@ -870,7 +872,6 @@ function clearOldState() {
         }
       );
 
-
   if (error) {
 
     console.error(
@@ -883,29 +884,112 @@ function clearOldState() {
     );
 
     return;
+  }
+
+  const rawMessages =
+    data || [];
+
+  /*
+    Get all sender IDs.
+  */
+
+  const senderIds =
+    [
+      ...new Set(
+        rawMessages
+          .map(message =>
+            message.sender_id
+          )
+          .filter(Boolean)
+          .map(String)
+      )
+    ];
+
+  let profilesMap =
+    new Map();
+
+  if (senderIds.length > 0) {
+
+    const {
+      data: profiles,
+      error: profilesError
+    } =
+      await supabaseClient
+        .from("profiles")
+        .select(
+          "id, username, bio, last_seen_at"
+        )
+        .in(
+          "id",
+          senderIds
+        );
+
+    if (profilesError) {
+
+      console.warn(
+        "MESSAGE PROFILE LOAD ERROR:",
+        profilesError
+      );
+
+    } else {
+
+      (profiles || []).forEach(profile => {
+
+        profilesMap.set(
+          String(profile.id),
+          profile
+        );
+
+      });
+
+    }
 
   }
 
+  /*
+    Attach username to every message.
+  */
+
+  const enrichedMessages =
+    rawMessages.map(message => {
+
+      const profile =
+        profilesMap.get(
+          String(message.sender_id)
+        );
+
+      return {
+        ...message,
+
+        username:
+          message.username ||
+          profile?.username ||
+          (
+            String(message.sender_id) ===
+            String(currentUser?.id)
+              ? currentProfile?.username
+              : "User"
+          ),
+
+        profiles:
+          profile || null
+
+      };
+
+    });
 
   messageCache.clear();
-
-
-  (data || []).forEach(message => {
-
-    messageCache.set(
-      String(message.id),
-      message
-    );
-
-  });
-
 
   if (messages) {
     messages.innerHTML = "";
   }
 
+  enrichedMessages.forEach(message => {
 
-  (data || []).forEach(message => {
+    messageCache.set(
+      String(message.id),
+      message
+    );
 
     renderMessage(
       message,
@@ -914,9 +998,7 @@ function clearOldState() {
 
   });
 
-
   scrollToBottom();
-
 }
 
 
@@ -953,6 +1035,46 @@ function setupRealtime() {
 
           if (!message?.id) return;
 
+           let profile = null;
+
+if (message.sender_id) {
+
+  const {
+    data: senderProfile
+  } =
+    await supabaseClient
+      .from("profiles")
+      .select(
+        "id, username, bio, last_seen_at"
+      )
+      .eq(
+        "id",
+        message.sender_id
+      )
+      .maybeSingle();
+
+  profile =
+    senderProfile || null;
+}
+
+const enrichedMessage = {
+
+  ...message,
+
+  username:
+    profile?.username ||
+    (
+      String(message.sender_id) ===
+      String(currentUser?.id)
+        ? currentProfile?.username
+        : "User"
+    ),
+
+  profiles:
+    profile
+
+};
+
 
           const id =
             String(message.id);
@@ -960,7 +1082,7 @@ function setupRealtime() {
 
           messageCache.set(
             id,
-            message
+            enrichedmessage
           );
 
 
