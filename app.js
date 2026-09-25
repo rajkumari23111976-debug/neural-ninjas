@@ -1100,7 +1100,7 @@ const enrichedMessage = {
           ) {
 
             renderMessage(
-              message,
+              enrichedmessage,
               true
             );
 
