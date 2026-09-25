@@ -3912,6 +3912,28 @@ function isUserOnline(
 }
 
 
+   function updateOnlineStatus() {
+
+  const members =
+    window.neuralNinjasMembers || [];
+
+  const onlineMembers =
+    members.filter(member =>
+      isUserOnline(member.id)
+    );
+
+  const count =
+    onlineMembers.length;
+
+  if (onlineStatus) {
+
+    onlineStatus.textContent =
+      `● ${count} member${count === 1 ? "" : "s"} online`;
+
+  }
+
+}
+
 /* =========================================================
    RENDER MEMBERS
    IMPORTANT:
