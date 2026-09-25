@@ -741,10 +741,9 @@ async function startChat() {
   startLastSeenTimer();
 
 
-  if (onlineStatus) {
-    onlineStatus.textContent =
-      "● Online";
-  }
+    updateOnlineStatus();
+
+  messageInput?.focus();
 
 
   messageInput?.focus();
