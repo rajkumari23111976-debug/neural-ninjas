@@ -186,6 +186,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+if (pinInput) {
+
+  pinInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+        handleLogin();
+      }
+
+    }
+  );
+
+}
+
 
   /* =======================================================
      LOGOUT
@@ -840,7 +855,6 @@ function clearOldState() {
    LOAD MESSAGES
    ========================================================= */
 
-async function loadMessages() {
 
   const {
     data,
@@ -904,6 +918,7 @@ async function loadMessages() {
   scrollToBottom();
 
 }
+
 
 
 /* =========================================================
