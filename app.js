@@ -422,50 +422,35 @@ function makeAuthEmail(username) {
    LOGIN
    ========================================================= */
 
-async function handleLogin() {
+
+    async function handleLogin() {
 
   const username =
     usernameInput?.value?.trim();
 
+  const pin =
+    pinInput?.value?.trim();
+
   if (!username) {
-
-    setLoginStatus(
-      "Enter your username."
-    );
-
+    setLoginStatus("Enter your username.");
+    usernameInput?.focus();
     return;
-
   }
 
   if (username.length < 2) {
-
     setLoginStatus(
       "Username must be at least 2 characters."
     );
-
     return;
-
   }
 
-
-  const pin =
-    window.prompt(
-      "Enter your 6-digit PIN:"
-    );
-
-  if (pin === null) return;
-
-
   if (!/^\d{6}$/.test(pin)) {
-
     setLoginStatus(
       "PIN must be exactly 6 digits."
     );
-
+    pinInput?.focus();
     return;
-
   }
-
 
   setLoginStatus("Connecting...");
 
@@ -473,18 +458,97 @@ async function handleLogin() {
     joinBtn.disabled = true;
   }
 
-
   try {
 
     const email =
       makeAuthEmail(username);
-
 
     let { data, error } =
       await supabaseClient.auth.signInWithPassword({
         email,
         password: pin
       });
+
+    /*
+      Existing account login failed.
+      Try creating account.
+    */
+
+    if (error) {
+
+      const signUpResult =
+        await supabaseClient.auth.signUp({
+          email,
+          password: pin,
+          options: {
+            data: {
+              username
+            }
+          }
+        });
+
+      if (signUpResult.error) {
+
+        throw new Error(
+          "Username or PIN is incorrect, or account already exists."
+        );
+
+      }
+
+      data =
+        signUpResult.data;
+
+      if (!data.session) {
+
+        throw new Error(
+          "Account created but Supabase email confirmation is enabled. Disable email confirmation in Supabase."
+        );
+
+      }
+
+    }
+
+    currentUser =
+      data.user;
+
+    if (!currentUser) {
+      throw new Error(
+        "Login succeeded but user session was not returned."
+      );
+    }
+
+    await loadCurrentProfile(username);
+
+    await startChat();
+
+    /*
+      Clear PIN after successful login.
+    */
+
+    if (pinInput) {
+      pinInput.value = "";
+    }
+
+  } catch (error) {
+
+    console.error(
+      "LOGIN ERROR:",
+      error
+    );
+
+    setLoginStatus(
+      error.message ||
+      "Login failed."
+    );
+
+  } finally {
+
+    if (joinBtn) {
+      joinBtn.disabled = false;
+    }
+
+  }
+}
 
 
     /* =====================================================
