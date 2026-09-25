@@ -2120,3 +2120,80 @@ body[data-theme="amber"] {
   z-index: 100 !important;
   pointer-events: auto !important;
 }
+
+
+/* =========================================================
+   NEURAL NINJAS — MOBILE SIDEBAR / TOUCH FIX
+   ========================================================= */
+
+/* Sidebar must stay above chat UI */
+.members-sidebar {
+  z-index: 5000 !important;
+  pointer-events: none;
+}
+
+.members-sidebar.open {
+  pointer-events: auto !important;
+}
+
+/* Sidebar overlay stays below sidebar but above chat */
+.sidebar-overlay {
+  z-index: 4990 !important;
+}
+
+/* Composer must NEVER sit above an opened sidebar */
+.composer {
+  z-index: 50 !important;
+}
+
+/* When sidebar is open, completely hide composer */
+#chatScreen:has(.members-sidebar.open) .composer {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Header buttons must remain clickable */
+.chat-header {
+  position: relative;
+  z-index: 6000 !important;
+}
+
+.header-actions,
+.header-actions .icon-btn {
+  position: relative;
+  z-index: 6001 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+/* Sidebar controls */
+.members-sidebar button {
+  position: relative;
+  z-index: 5100 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+/* Overlay itself must only work when visible */
+.sidebar-overlay {
+  pointer-events: none !important;
+}
+
+.sidebar-overlay.show {
+  pointer-events: auto !important;
+}
+
+/* Prevent invisible sidebar from blocking anything */
+.members-sidebar:not(.open) {
+  pointer-events: none !important;
+}
+
+/* Mobile touch stability */
+button,
+.icon-btn,
+.tool-btn,
+.send-btn,
+.close-sidebar {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
