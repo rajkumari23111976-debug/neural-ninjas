@@ -1,107 +1,131 @@
 /* =========================================================
    NEURAL NINJAS - APP.JS
-   Username + 6-Digit PIN Authentication
-   Realtime Chat + Online Presence + Last Seen
+   =========================================================
+   Features:
+   • Username + 6-digit PIN authentication
+   • Private team chat
+   • Realtime messages
+   • Image / Video / Audio upload
+   • Voice-note recording support
+   • Typing indicator
+   • Online presence
+   • Last seen
+   • Reply to messages
+   • Message reactions
+   • Reaction users
+   • Message search + safe highlighting
+   • Code-message detection
+   • Code copy button
+   • Delete own messages
+   • Chat themes
+   • Account deletion
+   • Realtime cleanup
    ========================================================= */
-console.log("NN APP STARTED");
+
+
+/* =========================================================
+   SUPABASE CONFIG
+   ========================================================= */
+
 const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
+  "sb_publishable_ZevxyTcnHnHn"; // <-- keep your existing publishable key here
 
-let supabaseClient = null;
 
-try {
-  if (typeof supabase === "undefined") {
-    throw new Error("Supabase library did not load.");
-  }
-
-  supabaseClient = supabase.createClient(
+const supabaseClient =
+  window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY
   );
-} catch (error) {
-  console.error("STARTUP ERROR:", error);
-}
+
 
 /* =========================================================
-   STATE
+   GLOBAL STATE
    ========================================================= */
 
 let currentUser = null;
 let currentProfile = null;
 
-let messageCache = new Map();
-
-let realtimeChannel = null;
+let messageChannel = null;
+let reactionChannel = null;
+let typingChannel = null;
 let presenceChannel = null;
 
-let presenceUsers = {};
-let allMembers = [];
-
-let sending = false;
-let uploading = false;
-
-let lastSeenTimer = null;
-
-let typingChannel = null;
 let typingTimeout = null;
-let isCurrentlyTyping = false;
-let typingUsers = {};
+let lastSeenInterval = null;
 
-// =========================================================
-// REPLY STATE
-// =========================================================
+let isCurrentlyTyping = false;
 
 let replyingToMessage = null;
-let reactionCache = new Map();
+
+const messageCache = new Map();
+const reactionCache = new Map();
+
+let presenceUsers = {};
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStream = null;
+let isRecordingVoice = false;
+
+
 /* =========================================================
-   DOM
+   DOM REFERENCES
    ========================================================= */
 
 let loginScreen;
 let chatScreen;
 
 let usernameInput;
-let pinInput;
 let joinBtn;
 let loginStatus;
 
-let membersList;
-let memberCount;
 let onlineStatus;
-let deleteAccountBtn;
 
-let messages;
-let messageInput;
-let sendBtn;
-
-let mediaBtn;
-let fileInput;
-
-let logoutBtn;
 let menuBtn;
-
-let themeBtn;
-let themePanel;
+let logoutBtn;
 
 let membersSidebar;
 let closeSidebarBtn;
 let sidebarOverlay;
-let typingIndicator;
+let membersList;
+let memberCount;
+let deleteAccountBtn;
+
+let themeBtn;
+let themePanel;
+let closeThemeBtn;
+
 let searchBar;
 let messageSearchInput;
 let clearSearchBtn;
+
+let messages;
+
+let typingIndicator;
+
 let replyBar;
 let replySender;
 let replyPreview;
 let cancelReplyBtn;
+
+let mediaBtn;
+let fileInput;
+let messageInput;
+let sendBtn;
+
+
 /* =========================================================
-   INITIALIZE
+   INITIALIZATION
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
+
+  /* -------------------------
+     Get DOM elements
+     ------------------------- */
 
   loginScreen =
     document.getElementById("loginScreen");
@@ -118,27 +142,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loginStatus =
     document.getElementById("loginStatus");
 
-  messages =
-    document.getElementById("messages");
-
-  messageInput =
-    document.getElementById("messageInput");
-
-  sendBtn =
-    document.getElementById("sendBtn");
-
-  mediaBtn =
-    document.getElementById("mediaBtn");
-
-  fileInput =
-    document.getElementById("fileInput");
-
-  logoutBtn =
-    document.getElementById("logoutBtn");
- 
+  onlineStatus =
+    document.getElementById("onlineStatus");
 
   menuBtn =
     document.getElementById("menuBtn");
+
+  logoutBtn =
+    document.getElementById("logoutBtn");
 
   membersSidebar =
     document.getElementById("membersSidebar");
@@ -155,611 +166,516 @@ document.addEventListener("DOMContentLoaded", () => {
   memberCount =
     document.getElementById("memberCount");
 
-  onlineStatus =
-    document.getElementById("onlineStatus");
-
-   typingIndicator =
-  document.getElementById("typingIndicator");
-
-   searchBar = document.getElementById("searchBar");
-messageSearchInput = document.getElementById("messageSearchInput");
-clearSearchBtn = document.getElementById("clearSearchBtn");
-
-   replyBar = document.getElementById("replyBar");
-replySender = document.getElementById("replySender");
-replyPreview = document.getElementById("replyPreview");
-cancelReplyBtn = document.getElementById("cancelReplyBtn");
-
-   cancelReplyBtn?.addEventListener("click", () => {
-  replyingToMessage = null;
-
-  replyBar?.classList.add("hidden");
-
-  if (replySender) {
-    replySender.textContent = "User";
-  }
-
-  if (replyPreview) {
-    replyPreview.textContent = "";
-  }
-
-  messageInput?.focus();
-});
-
   deleteAccountBtn =
     document.getElementById("deleteAccountBtn");
 
-  if (!supabaseClient) {
-    showFatalError(
-      "Supabase failed to initialize."
+  themeBtn =
+    document.getElementById("themeBtn");
+
+  themePanel =
+    document.getElementById("themePanel");
+
+  closeThemeBtn =
+    document.getElementById("closeThemeBtn");
+
+  searchBar =
+    document.getElementById("searchBar");
+
+  messageSearchInput =
+    document.getElementById("messageSearchInput");
+
+  clearSearchBtn =
+    document.getElementById("clearSearchBtn");
+
+  messages =
+    document.getElementById("messages");
+
+  typingIndicator =
+    document.getElementById("typingIndicator");
+
+  replyBar =
+    document.getElementById("replyBar");
+
+  replySender =
+    document.getElementById("replySender");
+
+  replyPreview =
+    document.getElementById("replyPreview");
+
+  cancelReplyBtn =
+    document.getElementById("cancelReplyBtn");
+
+  mediaBtn =
+    document.getElementById("mediaBtn");
+
+  fileInput =
+    document.getElementById("fileInput");
+
+  messageInput =
+    document.getElementById("messageInput");
+
+  sendBtn =
+    document.getElementById("sendBtn");
+
+
+  /* -------------------------
+     Login
+     ------------------------- */
+
+  if (joinBtn) {
+    joinBtn.addEventListener(
+      "click",
+      handleLogin
     );
-    return;
   }
 
-  if (!usernameInput || !joinBtn) {
-    showFatalError(
-      "Login elements not found."
-    );
-    return;
-  }
+  if (usernameInput) {
+    usernameInput.addEventListener(
+      "keydown",
+      event => {
 
-  createPinInput();
+        if (event.key === "Enter") {
+          handleLogin();
+        }
 
-  /* -------------------------------------------------------
-     EVENTS
-     ------------------------------------------------------- */
-
-  joinBtn.addEventListener(
-    "click",
-    joinTeam
-  );
-
-  usernameInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-
-        event.preventDefault();
-
-        pinInput?.focus();
       }
-
-    }
-  );
-
-  pinInput?.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-
-        event.preventDefault();
-
-        joinTeam();
-      }
-
-    }
-  );
-
-  sendBtn?.addEventListener(
-    "click",
-    sendMessage
-  );
-
-  messageInput?.addEventListener(
-  "input",
-  handleTyping
-);
-
-messageInput?.addEventListener(
-  "keydown",
-  event => {
-
-    if (event.key === "Enter") {
-
-      event.preventDefault();
-
-      sendMessage();
-
-    }
-
+    );
   }
-);
 
-  // =========================================================
-// MEDIA BUTTON
-// =========================================================
 
-if (mediaBtn && fileInput) {
-if (mediaBtn && fileInput) {
-  mediaBtn.addEventListener("click", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  /* -------------------------
+     Logout
+     ------------------------- */
 
-    console.log("MEDIA BUTTON CLICKED");
-
-    fileInput.value = "";
-    fileInput.click();
-  });
-
-  fileInput.addEventListener("change", function () {
-    console.log(
-      "FILE SELECTED:",
-      fileInput.files?.[0]?.name || "No file"
+  if (logoutBtn) {
+    logoutBtn.addEventListener(
+      "click",
+      exitChat
     );
+  }
 
-    handleFileUpload();
-  });
-}
 
-  fileInput.addEventListener("change", function () {
+  /* -------------------------
+     Members sidebar
+     ------------------------- */
 
-    console.log(
-      "📁 FILE SELECTED:",
-      fileInput.files?.[0]?.name || "No file"
+  if (menuBtn) {
+    menuBtn.addEventListener(
+      "click",
+      openSidebar
     );
+  }
 
-    handleFileUpload();
+  if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener(
+      "click",
+      closeSidebar
+    );
+  }
 
-  });
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener(
+      "click",
+      closeSidebar
+    );
+  }
 
-}
 
-  logoutBtn?.addEventListener(
-    "click",
-    exitChat
-  );
+  /* -------------------------
+     Delete account
+     ------------------------- */
 
-  menuBtn?.addEventListener(
-    "click",
-    openSidebar
-  );
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener(
+      "click",
+      deleteAccount
+    );
+  }
 
-  deleteAccountBtn?.addEventListener(
-    "click",
-    deleteAccount
-  );
 
-  closeSidebarBtn?.addEventListener(
-    "click",
-    closeSidebar
-  );
+  /* -------------------------
+     Themes
+     ------------------------- */
 
-  sidebarOverlay?.addEventListener(
-    "click",
-    closeSidebar
-  );
+  if (themeBtn) {
+    themeBtn.addEventListener(
+      "click",
+      openThemePanel
+    );
+  }
 
-   messageSearchInput?.addEventListener("input", searchMessages);
+  if (closeThemeBtn) {
+    closeThemeBtn.addEventListener(
+      "click",
+      closeThemePanel
+    );
+  }
 
-clearSearchBtn?.addEventListener("click", () => {
+  document
+    .querySelectorAll(".theme-option")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const theme =
+            button.dataset.theme;
+
+          applyTheme(theme);
+
+        }
+      );
+
+    });
+
+
+  /* -------------------------
+     Search
+     ------------------------- */
+
   if (messageSearchInput) {
-    messageSearchInput.value = "";
+    messageSearchInput.addEventListener(
+      "input",
+      searchMessages
+    );
   }
 
-  searchMessages();
-});
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener(
+      "click",
+      clearSearch
+    );
+  }
+
+
+  /* -------------------------
+     Composer
+     ------------------------- */
+
+  if (sendBtn) {
+    sendBtn.addEventListener(
+      "click",
+      sendMessage
+    );
+  }
+
+  if (messageInput) {
+
+    messageInput.addEventListener(
+      "keydown",
+      event => {
+
+        if (event.key === "Enter") {
+
+          if (!event.shiftKey) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+          }
+
+        }
+
+      }
+    );
+
+    messageInput.addEventListener(
+      "input",
+      handleTyping
+    );
+
+  }
+
+
+  /* -------------------------
+     Reply
+     ------------------------- */
+
+  if (cancelReplyBtn) {
+    cancelReplyBtn.addEventListener(
+      "click",
+      cancelReply
+    );
+  }
+
+
+  /* -------------------------
+     MEDIA
+     IMPORTANT:
+     Only ONE change listener.
+     ------------------------- */
+
+  if (mediaBtn && fileInput) {
+
+    mediaBtn.addEventListener(
+      "click",
+      () => {
+
+        fileInput.value = "";
+
+        fileInput.click();
+
+      }
+    );
+
+    fileInput.addEventListener(
+      "change",
+      async event => {
+
+        const file =
+          event.target.files &&
+          event.target.files[0];
+
+        if (!file) return;
+
+        await handleFileUpload(file);
+
+      }
+    );
+
+  }
+
+
+  /* -------------------------
+     Theme from localStorage
+     ------------------------- */
+
+  const savedTheme =
+    localStorage.getItem(
+      "neuralNinjasTheme"
+    );
+
+  if (savedTheme) {
+    applyTheme(savedTheme);
+  }
+
+
+  /* -------------------------
+     Auth session
+     ------------------------- */
+
+  restoreSession();
+
+
+  /* -------------------------
+     Global keyboard shortcuts
+     ------------------------- */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Escape"
+      ) {
+
+        closeSidebar();
+        closeThemePanel();
+
+      }
+
+    }
+  );
+
+
+  /* -------------------------
+     Visibility / last seen
+     ------------------------- */
 
   document.addEventListener(
     "visibilitychange",
-    () => {
+    async () => {
 
       if (
         document.visibilityState ===
         "hidden"
       ) {
 
-        updateLastSeen();
+        await updateLastSeen();
 
       }
 
     }
   );
 
-  window.addEventListener(
-    "beforeunload",
-    () => {
-
-      updateLastSeen();
-
-    }
-  );
-
-  checkSession();
-
 });
 
-/* =========================================================
-   PIN INPUT
-   ========================================================= */
-
-function createPinInput() {
-
-  if (
-    document.getElementById("pinInput")
-  ) {
-
-    pinInput =
-      document.getElementById(
-        "pinInput"
-      );
-
-    return;
-  }
-
-  pinInput =
-    document.createElement("input");
-
-  pinInput.id =
-    "pinInput";
-
-  pinInput.type =
-    "password";
-
-  pinInput.inputMode =
-    "numeric";
-
-  pinInput.maxLength =
-    6;
-
-  pinInput.placeholder =
-    "Enter 6-digit PIN";
-
-  pinInput.autocomplete =
-    "current-password";
-
-  pinInput.style.marginTop =
-    "10px";
-
-  pinInput.style.width =
-    "100%";
-
-  pinInput.style.boxSizing =
-    "border-box";
-
-  usernameInput.insertAdjacentElement(
-    "afterend",
-    pinInput
-  );
-
-}
 
 /* =========================================================
-   HIDDEN AUTH IDENTIFIER
+   AUTH HELPERS
    ========================================================= */
 
 function makeAuthEmail(username) {
 
-  const clean =
+  return (
     username
       .trim()
       .toLowerCase()
-      .replace(
-        /[^a-z0-9._-]/g,
-        "_"
-      );
-
-  return (
-    clean +
+      .replace(/[^a-z0-9._-]/g, "")
+      .slice(0, 40) +
     "@neuralninjas.local"
   );
-}
-
-/* =========================================================
-   FATAL ERROR
-   ========================================================= */
-
-function showFatalError(message) {
-
-  console.error(message);
-
-  if (loginStatus) {
-
-    loginStatus.textContent =
-      "⚠️ " + message;
-
-  }
 
 }
 
-/* =========================================================
-   SESSION
-   ========================================================= */
-
-async function checkSession() {
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient.auth.getSession();
-
-    if (error) {
-      throw error;
-    }
-
-    const session =
-      data?.session;
-
-    if (!session) {
-
-      showLogin();
-
-      return;
-    }
-
-    currentUser =
-      session.user;
-
-    const profile =
-      await getProfile(
-        currentUser.id
-      );
-
-    if (!profile) {
-
-      await supabaseClient.auth.signOut();
-
-      currentUser = null;
-       currentProfile = null;
-
-      showLogin();
-
-      return;
-    }
-
-    currentProfile =
-      profile;
-
-    showChat();
-
-    await startChat();
-
-  } catch (error) {
-
-    console.error(
-      "Session error:",
-      error
-    );
-
-    currentUser = null;
-    currentProfile = null;
-
-    showLogin();
-
-  }
-
-}
 
 /* =========================================================
-   JOIN / LOGIN
+   LOGIN
    ========================================================= */
 
-async function joinTeam() {
-
-  if (
-    sending ||
-    uploading
-  ) {
-    return;
-  }
+async function handleLogin() {
 
   const username =
-    usernameInput.value.trim();
-
-  const pin =
-    pinInput.value.trim();
+    usernameInput?.value
+      ?.trim();
 
   if (!username) {
 
-    loginStatus.textContent =
-      "Please enter your username.";
-
-    usernameInput.focus();
+    setLoginStatus(
+      "Enter your username."
+    );
 
     return;
+
   }
+
 
   if (username.length < 2) {
 
-    loginStatus.textContent =
-      "Username must be at least 2 characters.";
+    setLoginStatus(
+      "Username must be at least 2 characters."
+    );
 
     return;
+
   }
 
-  if (username.length > 30) {
 
-    loginStatus.textContent =
-      "Username must be 30 characters or less.";
+  /*
+     The original interface only has
+     username input. PIN is requested
+     using a prompt so HTML structure
+     remains unchanged.
+  */
 
-    return;
-  }
+  const pin =
+    window.prompt(
+      "Enter your 6-digit PIN:"
+    );
+
+
+  if (pin === null) return;
+
 
   if (!/^\d{6}$/.test(pin)) {
 
-    loginStatus.textContent =
-      "PIN must contain exactly 6 digits.";
-
-    pinInput.focus();
+    setLoginStatus(
+      "PIN must be exactly 6 digits."
+    );
 
     return;
+
   }
 
-  joinBtn.disabled =
-    true;
 
-  loginStatus.textContent =
-    "Checking account...";
+  setLoginStatus(
+    "Connecting..."
+  );
+
+  joinBtn.disabled = true;
+
 
   try {
 
-    const authEmail =
+    const email =
       makeAuthEmail(username);
 
-    const loginResult =
+
+    /* -------------------------
+       Try login first
+       ------------------------- */
+
+    let { data, error } =
       await supabaseClient.auth
         .signInWithPassword({
-
-          email:
-            authEmail,
-
-          password:
-            pin
-
+          email,
+          password: pin
         });
 
-    if (
-      !loginResult.error &&
-      loginResult.data?.user
-    ) {
 
-      currentUser =
-        loginResult.data.user;
+    /* -------------------------
+       If login fails,
+       try creating account
+       ------------------------- */
 
-      const profile =
-        await getProfile(
-          currentUser.id
-        );
+    if (error) {
 
-      if (!profile) {
-
-        await supabaseClient.auth.signOut();
-
-        throw new Error(
-          "Account profile is missing."
-        );
-
-      }
-
-      currentProfile =
-        profile;
-
-      loginStatus.textContent =
-        "Login successful. Opening Neural Ninjas...";
-
-      showChat();
-
-      await startChat();
-
-      return;
-    }
-
-    loginStatus.textContent =
-      "Creating account...";
-
-    const signupResult =
-      await supabaseClient.auth
-        .signUp({
-
-          email:
-            authEmail,
-
-          password:
-            pin,
-
-          options: {
-
-            data: {
-              neural_ninjas_username:
+      const signUpResult =
+        await supabaseClient.auth
+          .signUp({
+            email,
+            password: pin,
+            options: {
+              data: {
                 username
+              }
             }
+          });
 
-          }
-
-        });
-
-    if (signupResult.error) {
-
-      const errorMessage =
-        signupResult.error.message ||
-        "";
 
       if (
-        errorMessage
-          .toLowerCase()
-          .includes("already")
+        signUpResult.error
       ) {
 
         throw new Error(
-          "Incorrect PIN for this username."
+          "Username or PIN is incorrect, or account already exists."
         );
 
       }
 
-      throw signupResult.error;
+
+      data =
+        signUpResult.data;
+
+
+      /*
+         If email confirmation is enabled,
+         Supabase may not return a session.
+      */
+
+      if (!data.session) {
+
+        throw new Error(
+          "Account created, but email confirmation is enabled in Supabase. Disable email confirmation for this username/PIN login system."
+        );
+
+      }
+
     }
 
-    if (!signupResult.data?.user) {
-
-      throw new Error(
-        "Could not create account."
-      );
-
-    }
-
-    if (!signupResult.data?.session) {
-
-      throw new Error(
-        "Account created, but login session was not created. Check that email confirmation is disabled in Supabase."
-      );
-
-    }
 
     currentUser =
-      signupResult.data.user;
+      data.user;
 
-    const {
-      data: newProfile,
-      error: profileError
-    } =
-      await supabaseClient
-        .from("profiles")
-        .insert({
 
-          id:
-            currentUser.id,
+    if (!currentUser) {
 
-          username:
-            username,
+      throw new Error(
+        "Login succeeded but user session was not returned."
+      );
 
-          last_seen_at:
-            new Date().toISOString()
-
-        })
-        .select()
-        .single();
-
-    if (profileError) {
-
-      await supabaseClient.auth.signOut();
-
-      if (
-        profileError.code ===
-        "23505"
-      ) {
-
-        throw new Error(
-          "That username is already in use."
-        );
-
-      }
-
-      throw profileError;
     }
 
-    currentProfile =
-      newProfile;
 
-    loginStatus.textContent =
-      "Account created. Opening Neural Ninjas...";
+    await loadCurrentProfile(
+      username
+    );
 
-    showChat();
 
     await startChat();
+
 
   } catch (error) {
 
@@ -768,309 +684,27 @@ async function joinTeam() {
       error
     );
 
-    loginStatus.textContent =
-      error?.message ||
-      "Could not login.";
-
-  } finally {
-
-    joinBtn.disabled =
-      false;
-
-  }
-
-}
-
-/* =========================================================
-   DELETE ACCOUNT
-   ========================================================= */
-
- 
-    async function deleteAccount() {
-
-  const confirmed = confirm(
-    "Are you sure you want to permanently delete your Neural Ninjas account?\n\nThis cannot be undone."
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  if (!supabaseClient) {
-    alert("Supabase is not initialized.");
-    return;
-  }
-
-  try {
-
-    deleteAccountBtn.disabled = true;
-    deleteAccountBtn.textContent = "Deleting...";
-
-    /* =========================
-       GET CURRENT SESSION
-       ========================= */
-
-    const {
-      data: sessionData,
-      error: sessionError
-    } =
-      await supabaseClient.auth.getSession();
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-    const session =
-      sessionData?.session;
-
-    if (
-      !session ||
-      !session.access_token
-    ) {
-
-      throw new Error(
-        "Your login session has expired. Please login again."
-      );
-
-    }
-
-    console.log(
-      "Delete account: session found"
-    );
-
-    /* =========================
-       EDGE FUNCTION
-       ========================= */
-
-    const functionUrl =
-      `${SUPABASE_URL}/functions/v1/super-responder`;
-
-    console.log(
-      "Delete account URL:",
-      functionUrl
-    );
-
-    const response =
-      await fetch(
-        functionUrl,
-        {
-          method: "POST",
-
-          headers: {
-            Authorization:
-              `Bearer ${session.access_token}`,
-
-            apikey:
-              SUPABASE_PUBLISHABLE_KEY,
-
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({})
-        }
-      );
-
-    console.log(
-      "Delete account response status:",
-      response.status
-    );
-
-    const responseText =
-      await response.text();
-
-    console.log(
-      "Delete account response:",
-      responseText
-    );
-
-    let result = {};
-
-    try {
-
-      result =
-        responseText
-          ? JSON.parse(responseText)
-          : {};
-
-    } catch {
-
-      result = {
-        error:
-          responseText ||
-          "Invalid server response"
-      };
-
-    }
-
-    if (!response.ok) {
-
-      throw new Error(
-        result.error ||
-        `Delete failed (${response.status})`
-      );
-
-    }
-
-    if (
-      result.success !== true
-    ) {
-
-      throw new Error(
-        result.error ||
-        "Account deletion failed."
-      );
-
-    }
-
-    /* =========================
-       CLEANUP REALTIME
-       ========================= */
-
-    if (presenceChannel) {
-
-      try {
-
-        await supabaseClient
-          .removeChannel(
-            presenceChannel
-          );
-
-      } catch (error) {
-
-        console.warn(
-          "Presence cleanup:",
-          error
-        );
-
-      }
-
-      presenceChannel =
-        null;
-
-    }
-
-    if (realtimeChannel) {
-
-      try {
-
-        await supabaseClient
-          .removeChannel(
-            realtimeChannel
-          );
-
-      } catch (error) {
-
-        console.warn(
-          "Realtime cleanup:",
-          error
-        );
-
-      }
-
-      realtimeChannel =
-        null;
-
-    }
-
-    /* =========================
-       STOP LAST SEEN
-       ========================= */
-
-    stopLastSeenTimer();
-     if (typingChannel) {
-
-  try {
-
-    await supabaseClient.removeChannel(
-      typingChannel
-    );
-
-  } catch {}
-
-  typingChannel = null;
-
-}
-
-typingUsers = {};
-
-    /* =========================
-       RESET LOCAL SESSION
-       ========================= */
-
-    await supabaseClient.auth.signOut();
-
-    currentUser = null;
-    currentProfile = null;
-
-    presenceUsers = {};
-    allMembers = [];
-
-    /* =========================
-       CLEAR UI
-       ========================= */
-
-    if (messages) {
-      messages.innerHTML = "";
-    }
-
-    if (usernameInput) {
-      usernameInput.value = "";
-    }
-
-    if (pinInput) {
-      pinInput.value = "";
-    }
-
-    if (loginStatus) {
-      loginStatus.textContent = "";
-    }
-
-    closeSidebar();
-
-    showLogin();
-
-    alert(
-      "Your Neural Ninjas account has been deleted successfully."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "DELETE ACCOUNT ERROR:",
-      error
-    );
-
-    alert(
-      "Failed to delete account.\n\n" +
-      (
-        error?.message ||
-        "Network error. Please try again."
-      )
+    setLoginStatus(
+      error.message ||
+      "Login failed."
     );
 
   } finally {
 
-    if (deleteAccountBtn) {
-
-      deleteAccountBtn.disabled =
-        false;
-
-      deleteAccountBtn.textContent =
-        "Delete Account";
-
-    }
+    joinBtn.disabled = false;
 
   }
 
 }
 
+
 /* =========================================================
-   PROFILE
+   LOAD CURRENT PROFILE
    ========================================================= */
 
-async function getProfile(userId) {
+async function loadCurrentProfile(
+  fallbackUsername = ""
+) {
 
   const {
     data,
@@ -1081,41 +715,154 @@ async function getProfile(userId) {
       .select("*")
       .eq(
         "id",
-        userId
+        currentUser.id
       )
       .maybeSingle();
+
 
   if (error) {
 
     console.error(
-      "Profile error:",
+      "PROFILE LOAD ERROR:",
       error
     );
 
     throw error;
+
   }
 
-  return data;
+
+  if (data) {
+
+    currentProfile = data;
+
+  } else {
+
+    /*
+       Creates profile if auth user
+       exists but profile doesn't.
+    */
+
+    const username =
+      fallbackUsername
+        .trim()
+        .toLowerCase();
+
+
+    const {
+      data: newProfile,
+      error: profileError
+    } =
+      await supabaseClient
+        .from("profiles")
+        .insert({
+          id: currentUser.id,
+          username,
+          last_seen_at:
+            new Date().toISOString()
+        })
+        .select()
+        .single();
+
+
+    if (profileError) {
+
+      throw profileError;
+
+    }
+
+
+    currentProfile =
+      newProfile;
+
+  }
 
 }
+
 
 /* =========================================================
-   LOGIN / CHAT
+   RESTORE SESSION
    ========================================================= */
 
-function showLogin() {
+async function restoreSession() {
 
-  loginScreen?.classList.remove(
-    "hidden"
-  );
+  try {
 
-  chatScreen?.classList.add(
-    "hidden"
-  );
+    const {
+      data,
+      error
+    } =
+      await supabaseClient.auth
+        .getSession();
+
+
+    if (error) {
+
+      console.error(
+        error
+      );
+
+      return;
+
+    }
+
+
+    if (data.session?.user) {
+
+      currentUser =
+        data.session.user;
+
+
+      const {
+        data: profile
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select("*")
+          .eq(
+            "id",
+            currentUser.id
+          )
+          .maybeSingle();
+
+
+      currentProfile =
+        profile;
+
+
+      if (
+        currentProfile
+      ) {
+
+        await startChat();
+
+      }
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "RESTORE SESSION ERROR:",
+      error
+    );
+
+  }
 
 }
 
-function showChat() {
+
+/* =========================================================
+   START CHAT
+   ========================================================= */
+
+async function startChat() {
+
+  if (!currentUser) return;
+
+
+  clearOldState();
+
 
   loginScreen?.classList.add(
     "hidden"
@@ -1125,49 +872,80 @@ function showChat() {
     "hidden"
   );
 
-}
 
-/* =========================================================
-   CHAT START
-   ========================================================= */
+  if (onlineStatus) {
 
-async function startChat() {
+    onlineStatus.textContent =
+      "● Connecting...";
 
-  if (
-    !currentUser ||
-    !currentProfile
-  ) {
-    return;
   }
 
-  await loadReactions();
-  await loadMessages();
+
+  /*
+     Subscribe BEFORE loading messages
+     to reduce chance of missing a
+     realtime message during startup.
+  */
+
   setupRealtime();
-   setupTyping();
 
-  await setupPresence();
+  setupTyping();
 
-  await loadMembers();
+  setupPresence();
+
+
+  await Promise.all([
+    loadMessages(),
+    loadReactions(),
+    loadMembers()
+  ]);
+
+
+  await updateLastSeen();
+
 
   startLastSeenTimer();
 
-  await updateLastSeen();
+
+  if (onlineStatus) {
+
+    onlineStatus.textContent =
+      "● Online";
+
+  }
+
 
   messageInput?.focus();
 
 }
+
+
+/* =========================================================
+   CLEAR OLD STATE
+   ========================================================= */
+
+function clearOldState() {
+
+  messageCache.clear();
+
+  reactionCache.clear();
+
+  presenceUsers = {};
+
+  if (messages) {
+    messages.innerHTML = "";
+  }
+
+  cancelReply();
+
+}
+
 
 /* =========================================================
    LOAD MESSAGES
    ========================================================= */
 
 async function loadMessages() {
-
-  if (!messages) {
-    return;
-  }
-
-  messages.innerHTML = "";
 
   const {
     data,
@@ -1183,117 +961,136 @@ async function loadMessages() {
         }
       );
 
+
   if (error) {
 
     console.error(
-      "Messages error:",
+      "LOAD MESSAGES ERROR:",
       error
     );
 
-    return;
-  }
-
-  for (
-    const message
-    of data || []
-  ) {
-
-    renderMessage(
-      message,
-      false
+    showChatError(
+      "Failed to fetch messages."
     );
 
+    return;
+
   }
+
+
+  /*
+     Cache everything FIRST.
+     This makes reply rendering
+     more reliable.
+  */
+
+  data.forEach(
+    message => {
+
+      messageCache.set(
+        String(message.id),
+        message
+      );
+
+    }
+  );
+
+
+  messages.innerHTML = "";
+
+
+  data.forEach(
+    message => {
+
+      renderMessage(
+        message,
+        false
+      );
+
+    }
+  );
+
 
   scrollToBottom();
 
 }
 
+
 /* =========================================================
-   REALTIME MESSAGES
+   REALTIME
    ========================================================= */
 
 function setupRealtime() {
 
-    
-   
-  if (realtimeChannel) {
+  /*
+     Clean previous channels first.
+  */
 
-    supabaseClient.removeChannel(
-      realtimeChannel
-    );
+  cleanupRealtimeChannels();
 
-    realtimeChannel = null;
 
-  }
+  /* -------------------------
+     Messages
+     ------------------------- */
 
-  const channelName =
-    "neural-ninjas-messages-" +
-    currentUser.id +
-    "-" +
-    Date.now();
-
-  console.log(
-    "🔌 Creating realtime channel:",
-    channelName
-  );
-
-  realtimeChannel =
+  messageChannel =
     supabaseClient
-      .channel(channelName)
+      .channel(
+        "neural-ninjas-messages"
+      )
       .on(
         "postgres_changes",
         {
-          event:
-            "INSERT",
-
-          schema:
-            "public",
-
-          table:
-            "messages"
+          event: "INSERT",
+          schema: "public",
+          table: "messages"
         },
         payload => {
 
-          console.log(
-            "📨 REALTIME MESSAGE RECEIVED:",
-            payload.new
+          const message =
+            payload.new;
+
+          messageCache.set(
+            String(message.id),
+            message
           );
 
-          renderMessage(
-            payload.new,
-            true
-          );
+
+          if (
+            String(
+              message.sender_id
+            ) !==
+            String(
+              currentUser?.id
+            )
+          ) {
+
+            renderMessage(
+              message,
+              true
+            );
+
+          }
 
         }
       )
       .on(
         "postgres_changes",
         {
-          event:
-            "DELETE",
-
-          schema:
-            "public",
-
-          table:
-            "messages"
+          event: "DELETE",
+          schema: "public",
+          table: "messages"
         },
         payload => {
 
-          console.log(
-            "🗑️ REALTIME DELETE:",
-            payload.old
-          );
-
-          const element =
-            document.querySelector(
-              `[data-message-id="${payload.old.id}"]`
+          const id =
+            String(
+              payload.old.id
             );
 
-          if (element) {
-            element.remove();
-          }
+          messageCache.delete(id);
+
+          removeMessageFromDOM(id);
 
         }
       )
@@ -1301,52 +1098,23 @@ function setupRealtime() {
         status => {
 
           console.log(
-            "📡 REALTIME STATUS:",
+            "MESSAGE CHANNEL:",
             status
           );
 
-          if (
-            status ===
-            "SUBSCRIBED"
-          ) {
-
-            console.log(
-              "✅ NEURAL NINJAS REALTIME CONNECTED"
-            );
-
-          }
-
-          if (
-            status ===
-            "CHANNEL_ERROR"
-          ) {
-
-            console.error(
-              "❌ REALTIME CHANNEL ERROR"
-            );
-
-          }
-
-          if (
-            status ===
-            "TIMED_OUT"
-          ) {
-
-            console.error(
-              "⏱️ REALTIME CONNECTION TIMED OUT"
-            );
-
-          }
-
         }
       );
-  // =======================================================
-  // MESSAGE REACTIONS REALTIME
-  // =======================================================
 
-  const reactionChannel =
+
+  /* -------------------------
+     Reactions
+     ------------------------- */
+
+  reactionChannel =
     supabaseClient
-      .channel("neural-ninjas-reactions")
+      .channel(
+        "neural-ninjas-reactions"
+      )
       .on(
         "postgres_changes",
         {
@@ -1354,41 +1122,2455 @@ function setupRealtime() {
           schema: "public",
           table: "message_reactions"
         },
-        async () => {
+        async payload => {
 
-          await loadReactions();
-
-          messages?.querySelectorAll(
-            "[data-message-id]"
-          ).forEach(messageElement => {
-
-            const messageId =
-              Number(
-                messageElement.dataset.messageId
-              );
-
-            const messageData =
-              messageCache.get(messageId);
-
-            if (!messageData) {
-              return;
-            }
-
-            messageElement.remove();
-
-            renderMessage(
-              messageData,
-              false
+          const messageId =
+            String(
+              payload.new?.message_id ??
+              payload.old?.message_id ??
+              ""
             );
 
-          });
 
-          scrollToBottom();
+          if (!messageId) return;
+
+
+          await loadReactionsForMessage(
+            messageId
+          );
+
+
+          rerenderReactions(
+            messageId
+          );
 
         }
       )
-      .subscribe();
+      .subscribe(
+        status => {
+
+          console.log(
+            "REACTION CHANNEL:",
+            status
+          );
+
+        }
+      );
+
 }
+
+
+/* =========================================================
+   REALTIME CLEANUP
+   ========================================================= */
+
+function cleanupRealtimeChannels() {
+
+  if (messageChannel) {
+
+    supabaseClient
+      .removeChannel(
+        messageChannel
+      );
+
+    messageChannel = null;
+
+  }
+
+
+  if (reactionChannel) {
+
+    supabaseClient
+      .removeChannel(
+        reactionChannel
+      );
+
+    reactionChannel = null;
+
+  }
+
+
+  if (typingChannel) {
+
+    supabaseClient
+      .removeChannel(
+        typingChannel
+      );
+
+    typingChannel = null;
+
+  }
+
+
+  if (presenceChannel) {
+
+    supabaseClient
+      .removeChannel(
+        presenceChannel
+      );
+
+    presenceChannel = null;
+
+  }
+
+
+  if (typingTimeout) {
+
+    clearTimeout(
+      typingTimeout
+    );
+
+    typingTimeout = null;
+
+  }
+
+
+  isCurrentlyTyping = false;
+
+}
+
+
+/* =========================================================
+   RENDER MESSAGE
+   ========================================================= */
+
+function renderMessage(
+  data,
+  shouldScroll = true
+) {
+
+  if (!data || !messages) {
+    return;
+  }
+
+
+  const messageId =
+    String(data.id);
+
+
+  /*
+     Prevent duplicate DOM messages.
+  */
+
+  const existing =
+    Array.from(
+      messages.querySelectorAll(
+        ".message"
+      )
+    ).find(
+      el =>
+        String(
+          el.dataset.messageId
+        ) === messageId
+    );
+
+
+  if (existing) {
+
+    return;
+
+  }
+
+
+  const isMine =
+    String(
+      data.sender_id
+    ) ===
+    String(
+      currentUser?.id
+    );
+
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.className =
+    `message ${
+      isMine
+        ? "mine"
+        : "other"
+    }`;
+
+
+  wrapper.dataset.messageId =
+    messageId;
+
+
+  /* -------------------------
+     Sender
+     ------------------------- */
+
+  const sender =
+    document.createElement(
+      "div"
+    );
+
+
+  sender.className =
+    "message-sender";
+
+
+  sender.textContent =
+    isMine
+      ? "You"
+      : (
+          data.username ||
+          data.profiles?.username ||
+          "User"
+        );
+
+
+  /* -------------------------
+     Bubble
+     ------------------------- */
+
+  const bubble =
+    document.createElement(
+      "div"
+    );
+
+
+  bubble.className =
+    "message-bubble";
+
+
+  /* -------------------------
+     Reply preview
+     ------------------------- */
+
+  if (data.reply_to) {
+
+    const reply =
+      createReplyPreview(
+        data.reply_to
+      );
+
+    bubble.appendChild(
+      reply
+    );
+
+  }
+
+
+  /* -------------------------
+     Message content
+     ------------------------- */
+
+  const content =
+    document.createElement(
+      "div"
+    );
+
+
+  content.className =
+    "message-content";
+
+
+  const messageType =
+    data.message_type ||
+    "text";
+
+
+  if (
+    messageType ===
+    "image"
+  ) {
+
+    createImageContent(
+      content,
+      data
+    );
+
+  } else if (
+    messageType ===
+    "video"
+  ) {
+
+    createVideoContent(
+      content,
+      data
+    );
+
+  } else if (
+    messageType ===
+    "audio" ||
+    messageType ===
+    "voice"
+  ) {
+
+    createAudioContent(
+      content,
+      data
+    );
+
+  } else if (
+    messageType ===
+    "code" ||
+    looksLikeCode(
+      data.content
+    )
+  ) {
+
+    createCodeContent(
+      content,
+      data.content || ""
+    );
+
+  } else {
+
+    content.textContent =
+      data.content || "";
+
+  }
+
+
+  bubble.appendChild(
+    content
+  );
+
+
+  /* -------------------------
+     Message time
+     ------------------------- */
+
+  const meta =
+    document.createElement(
+      "div"
+    );
+
+
+  meta.className =
+    "message-meta";
+
+
+  const time =
+    document.createElement(
+      "span"
+    );
+
+
+  time.textContent =
+    formatMessageTime(
+      data.created_at
+    );
+
+
+  meta.appendChild(
+    time
+  );
+
+
+  /* -------------------------
+     Actions
+     ------------------------- */
+
+  const actions =
+    document.createElement(
+      "div"
+    );
+
+
+  actions.className =
+    "message-actions";
+
+
+  const replyButton =
+    document.createElement(
+      "button"
+    );
+
+
+  replyButton.type =
+    "button";
+
+  replyButton.className =
+    "message-action-btn";
+
+  replyButton.textContent =
+    "↩";
+
+  replyButton.title =
+    "Reply";
+
+
+  replyButton.addEventListener(
+    "click",
+    event => {
+
+      event.stopPropagation();
+
+      startReply(data);
+
+    }
+  );
+
+
+  actions.appendChild(
+    replyButton
+  );
+
+
+  if (isMine) {
+
+    const deleteButton =
+      document.createElement(
+        "button"
+      );
+
+
+    deleteButton.type =
+      "button";
+
+    deleteButton.className =
+      "message-action-btn delete";
+
+    deleteButton.textContent =
+      "🗑";
+
+    deleteButton.title =
+      "Delete message";
+
+
+    deleteButton.addEventListener(
+      "click",
+      event => {
+
+        event.stopPropagation();
+
+        deleteMessage(
+          data.id
+        );
+
+      }
+    );
+
+
+    actions.appendChild(
+      deleteButton
+    );
+
+  }
+
+
+  meta.appendChild(
+    actions
+  );
+
+
+  bubble.appendChild(
+    meta
+  );
+
+
+  /* -------------------------
+     Reactions
+     ------------------------- */
+
+  const reactionContainer =
+    document.createElement(
+      "div"
+    );
+
+
+  reactionContainer.className =
+    "reaction-area";
+
+
+  reactionContainer.dataset.reactionMessageId =
+    messageId;
+
+
+  renderReactionArea(
+    reactionContainer,
+    messageId
+  );
+
+
+  wrapper.appendChild(
+    sender
+  );
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  wrapper.appendChild(
+    reactionContainer
+  );
+
+
+  /*
+     Long press / right click
+     reaction picker.
+  */
+
+  setupReactionPicker(
+    wrapper,
+    messageId
+  );
+
+
+  messages.appendChild(
+    wrapper
+  );
+
+
+  if (shouldScroll) {
+
+    scrollToBottom();
+
+  }
+
+}
+
+
+/* =========================================================
+   REPLY PREVIEW INSIDE MESSAGE
+   ========================================================= */
+
+function createReplyPreview(
+  replyTo
+) {
+
+  const box =
+    document.createElement(
+      "div"
+    );
+
+
+  box.className =
+    "message-reply-preview";
+
+
+  const original =
+    messageCache.get(
+      String(replyTo)
+    );
+
+
+  if (original) {
+
+    const name =
+      original.sender_id ===
+      currentUser?.id
+        ? "You"
+        : (
+            original.username ||
+            original.profiles?.username ||
+            "User"
+          );
+
+
+    box.textContent =
+      `${name}: ${
+        getPreviewText(original)
+      }`;
+
+  } else {
+
+    box.textContent =
+      "Original message unavailable.";
+
+  }
+
+
+  return box;
+
+}
+
+
+/* =========================================================
+   MEDIA RENDERERS
+   ========================================================= */
+
+function createImageContent(
+  container,
+  data
+) {
+
+  if (!data.file_url) {
+
+    container.textContent =
+      data.content ||
+      "Image unavailable.";
+
+    return;
+
+  }
+
+
+  const img =
+    document.createElement(
+      "img"
+    );
+
+
+  img.src =
+    data.file_url;
+
+  img.alt =
+    data.content ||
+    "Image";
+
+  img.loading =
+    "lazy";
+
+
+  img.className =
+    "chat-image";
+
+
+  img.addEventListener(
+    "click",
+    () => {
+
+      window.open(
+        data.file_url,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+    }
+  );
+
+
+  container.appendChild(
+    img
+  );
+
+}
+
+
+function createVideoContent(
+  container,
+  data
+) {
+
+  if (!data.file_url) {
+
+    container.textContent =
+      "Video unavailable.";
+
+    return;
+
+  }
+
+
+  const video =
+    document.createElement(
+      "video"
+    );
+
+
+  video.src =
+    data.file_url;
+
+  video.controls =
+    true;
+
+  video.playsInline =
+    true;
+
+  video.className =
+    "chat-video";
+
+
+  container.appendChild(
+    video
+  );
+
+}
+
+
+function createAudioContent(
+  container,
+  data
+) {
+
+  if (!data.file_url) {
+
+    container.textContent =
+      "Audio unavailable.";
+
+    return;
+
+  }
+
+
+  const audio =
+    document.createElement(
+      "audio"
+    );
+
+
+  audio.src =
+    data.file_url;
+
+  audio.controls =
+    true;
+
+
+  audio.className =
+    "chat-audio";
+
+
+  container.appendChild(
+    audio
+  );
+
+}
+
+
+/* =========================================================
+   CODE MESSAGE
+   ========================================================= */
+
+function looksLikeCode(
+  text
+) {
+
+  if (!text) return false;
+
+
+  return (
+    text.includes("```") ||
+    text.includes("<html") ||
+    text.includes("</html>") ||
+    text.includes("function ") ||
+    text.includes("const ") ||
+    text.includes("let ") ||
+    text.includes("=>") ||
+    text.includes("SELECT ") ||
+    text.includes("console.log")
+  );
+
+}
+
+
+function cleanCode(
+  text
+) {
+
+  return text
+    .replace(/^```[\w-]*\n?/i, "")
+    .replace(/\n?```$/i, "")
+    .trim();
+
+}
+
+
+function createCodeContent(
+  container,
+  text
+) {
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.className =
+    "code-message";
+
+
+  const pre =
+    document.createElement(
+      "pre"
+    );
+
+
+  const code =
+    document.createElement(
+      "code"
+    );
+
+
+  const cleaned =
+    cleanCode(text);
+
+
+  code.textContent =
+    cleaned;
+
+
+  pre.appendChild(
+    code
+  );
+
+
+  const copyButton =
+    document.createElement(
+      "button"
+    );
+
+
+  copyButton.type =
+    "button";
+
+  copyButton.className =
+    "copy-code-btn";
+
+  copyButton.textContent =
+    "Copy";
+
+
+  copyButton.addEventListener(
+    "click",
+    async event => {
+
+      event.stopPropagation();
+
+      try {
+
+        await navigator.clipboard.writeText(
+          cleaned
+        );
+
+        copyButton.textContent =
+          "Copied!";
+
+
+        setTimeout(
+          () => {
+
+            copyButton.textContent =
+              "Copy";
+
+          },
+          1500
+        );
+
+      } catch (error) {
+
+        console.error(
+          "COPY ERROR:",
+          error
+        );
+
+      }
+
+    }
+  );
+
+
+  wrapper.appendChild(
+    copyButton
+  );
+
+  wrapper.appendChild(
+    pre
+  );
+
+
+  container.appendChild(
+    wrapper
+  );
+
+
+  /*
+     Highlight.js if available.
+  */
+
+  if (
+    window.hljs &&
+    typeof window.hljs.highlightElement ===
+      "function"
+  ) {
+
+    try {
+
+      window.hljs.highlightElement(
+        code
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "Highlight error:",
+        error
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   SEND TEXT MESSAGE
+   ========================================================= */
+
+async function sendMessage() {
+
+  if (!currentUser) return;
+
+
+  const content =
+    messageInput?.value
+      ?.trim();
+
+
+  if (!content) return;
+
+
+  sendBtn.disabled = true;
+
+
+  try {
+
+    const replyTo =
+      replyingToMessage
+        ? replyingToMessage.id
+        : null;
+
+
+    const payload = {
+
+      sender_id:
+        currentUser.id,
+
+      content,
+
+      message_type:
+        looksLikeCode(content)
+          ? "code"
+          : "text",
+
+      reply_to:
+        replyTo
+
+    };
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("messages")
+        .insert(payload)
+        .select()
+        .single();
+
+
+    /*
+       CHECK ERROR BEFORE
+       touching UI state.
+    */
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (data) {
+
+      messageCache.set(
+        String(data.id),
+        data
+      );
+
+
+      renderMessage(
+        data,
+        true
+      );
+
+    }
+
+
+    messageInput.value = "";
+
+    cancelReply();
+
+
+    stopTypingBroadcast();
+
+
+  } catch (error) {
+
+    console.error(
+      "SEND MESSAGE ERROR:",
+      error
+    );
+
+    showChatError(
+      "Failed to send message."
+    );
+
+  } finally {
+
+    sendBtn.disabled = false;
+
+    messageInput?.focus();
+
+  }
+
+}
+
+
+/* =========================================================
+   FILE UPLOAD
+   ========================================================= */
+
+async function handleFileUpload(
+  file
+) {
+
+  if (!currentUser) return;
+
+
+  if (!file) return;
+
+
+  /*
+     50 MB maximum.
+  */
+
+  const MAX_SIZE =
+    50 * 1024 * 1024;
+
+
+  if (file.size > MAX_SIZE) {
+
+    showChatError(
+      "File is too large. Maximum size is 50 MB."
+    );
+
+    return;
+
+  }
+
+
+  const type =
+    file.type || "";
+
+
+  let messageType =
+    null;
+
+
+  if (
+    type.startsWith(
+      "image/"
+    )
+  ) {
+
+    messageType =
+      "image";
+
+  } else if (
+    type.startsWith(
+      "video/"
+    )
+  ) {
+
+    messageType =
+      "video";
+
+  } else if (
+    type.startsWith(
+      "audio/"
+    )
+  ) {
+
+    messageType =
+      "audio";
+
+  }
+
+
+  if (!messageType) {
+
+    showChatError(
+      "Only image, video and audio files are supported."
+    );
+
+    return;
+
+  }
+
+
+  mediaBtn.disabled = true;
+
+
+  const originalText =
+    mediaBtn.textContent;
+
+
+  mediaBtn.textContent =
+    "…";
+
+
+  try {
+
+    const extension =
+      getFileExtension(
+        file.name
+      );
+
+
+    const randomPart =
+      Math.random()
+        .toString(36)
+        .slice(2, 10);
+
+
+    const filePath =
+      `${currentUser.id}/${Date.now()}-${randomPart}${extension}`;
+
+
+    /*
+       IMPORTANT:
+       Bucket name from your existing app.
+    */
+
+    const {
+      error:
+        uploadError
+    } =
+      await supabaseClient
+        .storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .upload(
+          filePath,
+          file,
+          {
+            cacheControl:
+              "3600",
+
+            upsert:
+              false,
+
+            contentType:
+              file.type || undefined
+
+          }
+        );
+
+
+    if (uploadError) {
+
+      throw uploadError;
+
+    }
+
+
+    /*
+       Current system uses signed URLs.
+       30 days.
+    */
+
+    const {
+      data: signedData,
+      error:
+        signedError
+    } =
+      await supabaseClient
+        .storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .createSignedUrl(
+          filePath,
+          60 * 60 * 24 * 30
+        );
+
+
+    if (signedError) {
+
+      throw signedError;
+
+    }
+
+
+    const fileUrl =
+      signedData?.signedUrl;
+
+
+    if (!fileUrl) {
+
+      throw new Error(
+        "Could not create file URL."
+      );
+
+    }
+
+
+    const replyTo =
+      replyingToMessage
+        ? replyingToMessage.id
+        : null;
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id:
+            currentUser.id,
+
+          content:
+            file.name,
+
+          message_type:
+            messageType,
+
+          file_url:
+            fileUrl,
+
+          reply_to:
+            replyTo
+        })
+        .select()
+        .single();
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (data) {
+
+      messageCache.set(
+        String(data.id),
+        data
+      );
+
+
+      renderMessage(
+        data,
+        true
+      );
+
+    }
+
+
+    cancelReply();
+
+
+  } catch (error) {
+
+    console.error(
+      "FILE UPLOAD ERROR:",
+      error
+    );
+
+    showChatError(
+      "File upload failed."
+    );
+
+  } finally {
+
+    mediaBtn.disabled =
+      false;
+
+    mediaBtn.textContent =
+      originalText || "＋";
+
+    fileInput.value = "";
+
+  }
+
+}
+
+
+/* =========================================================
+   VOICE NOTE SUPPORT
+   =========================================================
+   Existing HTML has no dedicated microphone button,
+   so this is kept as a reusable function.
+   It can be connected to a button later without
+   changing the database/message architecture.
+   ========================================================= */
+
+async function startVoiceRecording() {
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    showChatError(
+      "Voice recording is not supported on this device/browser."
+    );
+
+    return;
+
+  }
+
+
+  if (isRecordingVoice) return;
+
+
+  try {
+
+    recordingStream =
+      await navigator.mediaDevices
+        .getUserMedia({
+          audio: true
+        });
+
+
+    recordedChunks = [];
+
+
+    let mimeType =
+      "audio/webm";
+
+
+    if (
+      MediaRecorder.isTypeSupported(
+        "audio/webm;codecs=opus"
+      )
+    ) {
+
+      mimeType =
+        "audio/webm;codecs=opus";
+
+    } else if (
+      MediaRecorder.isTypeSupported(
+        "audio/mp4"
+      )
+    ) {
+
+      mimeType =
+        "audio/mp4";
+
+    }
+
+
+    mediaRecorder =
+      new MediaRecorder(
+        recordingStream,
+        {
+          mimeType
+        }
+      );
+
+
+    mediaRecorder.addEventListener(
+      "dataavailable",
+      event => {
+
+        if (
+          event.data &&
+          event.data.size > 0
+        ) {
+
+          recordedChunks.push(
+            event.data
+          );
+
+        }
+
+      }
+    );
+
+
+    mediaRecorder.addEventListener(
+      "stop",
+      async () => {
+
+        const blob =
+          new Blob(
+            recordedChunks,
+            {
+              type:
+                mimeType
+            }
+          );
+
+
+        cleanupRecordingStream();
+
+
+        if (
+          blob.size > 0
+        ) {
+
+          await uploadVoiceBlob(
+            blob
+          );
+
+        }
+
+      }
+    );
+
+
+    mediaRecorder.start();
+
+    isRecordingVoice = true;
+
+
+  } catch (error) {
+
+    console.error(
+      "VOICE RECORDING ERROR:",
+      error
+    );
+
+    cleanupRecordingStream();
+
+    showChatError(
+      "Microphone permission or recording failed."
+    );
+
+  }
+
+}
+
+
+function stopVoiceRecording() {
+
+  if (
+    mediaRecorder &&
+    isRecordingVoice
+  ) {
+
+    mediaRecorder.stop();
+
+    isRecordingVoice = false;
+
+  }
+
+}
+
+
+function cleanupRecordingStream() {
+
+  if (recordingStream) {
+
+    recordingStream
+      .getTracks()
+      .forEach(
+        track =>
+          track.stop()
+      );
+
+    recordingStream = null;
+
+  }
+
+  mediaRecorder = null;
+
+}
+
+
+async function uploadVoiceBlob(
+  blob
+) {
+
+  if (!currentUser) return;
+
+
+  try {
+
+    const path =
+      `${currentUser.id}/voice-${Date.now()}.webm`;
+
+
+    const {
+      error:
+        uploadError
+    } =
+      await supabaseClient
+        .storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .upload(
+          path,
+          blob,
+          {
+            contentType:
+              "audio/webm",
+
+            cacheControl:
+              "3600",
+
+            upsert:
+              false
+
+          }
+        );
+
+
+    if (uploadError) {
+
+      throw uploadError;
+
+    }
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .storage
+        .from(
+          "neural-ninjas-media"
+        )
+        .createSignedUrl(
+          path,
+          60 * 60 * 24 * 30
+        );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    const {
+      data: message,
+      error:
+        messageError
+    } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id:
+            currentUser.id,
+
+          content:
+            "Voice note",
+
+          message_type:
+            "voice",
+
+          file_url:
+            data.signedUrl,
+
+          reply_to:
+            replyingToMessage
+              ? replyingToMessage.id
+              : null
+
+        })
+        .select()
+        .single();
+
+
+    if (messageError) {
+
+      throw messageError;
+
+    }
+
+
+    if (message) {
+
+      messageCache.set(
+        String(message.id),
+        message
+      );
+
+      renderMessage(
+        message,
+        true
+      );
+
+    }
+
+
+    cancelReply();
+
+
+  } catch (error) {
+
+    console.error(
+      "VOICE UPLOAD ERROR:",
+      error
+    );
+
+    showChatError(
+      "Voice note upload failed."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   REPLY SYSTEM
+   ========================================================= */
+
+function startReply(
+  message
+) {
+
+  if (!message) return;
+
+
+  replyingToMessage =
+    message;
+
+
+  const sender =
+    String(
+      message.sender_id
+    ) ===
+    String(
+      currentUser?.id
+    )
+      ? "You"
+      : (
+          message.username ||
+          message.profiles?.username ||
+          "User"
+        );
+
+
+  if (replySender) {
+
+    replySender.textContent =
+      sender;
+
+  }
+
+
+  if (replyPreview) {
+
+    replyPreview.textContent =
+      getPreviewText(
+        message
+      );
+
+  }
+
+
+  replyBar?.classList.remove(
+    "hidden"
+  );
+
+
+  messageInput?.focus();
+
+}
+
+
+function cancelReply() {
+
+  replyingToMessage =
+    null;
+
+
+  replyBar?.classList.add(
+    "hidden"
+  );
+
+
+  if (replySender) {
+
+    replySender.textContent =
+      "User";
+
+  }
+
+
+  if (replyPreview) {
+
+    replyPreview.textContent =
+      "";
+
+  }
+
+}
+
+
+function getPreviewText(
+  message
+) {
+
+  if (!message) {
+    return "";
+  }
+
+
+  if (
+    message.message_type ===
+    "image"
+  ) {
+
+    return "📷 Image";
+
+  }
+
+
+  if (
+    message.message_type ===
+    "video"
+  ) {
+
+    return "🎥 Video";
+
+  }
+
+
+  if (
+    message.message_type ===
+    "audio" ||
+    message.message_type ===
+    "voice"
+  ) {
+
+    return "🎵 Audio";
+
+  }
+
+
+  return (
+    message.content ||
+    "Message"
+  )
+    .replace(
+      /\s+/g,
+      " "
+    )
+    .slice(
+      0,
+      100
+    );
+
+}
+
+
+/* =========================================================
+   DELETE MESSAGE
+   ========================================================= */
+
+async function deleteMessage(
+  messageId
+) {
+
+  if (!currentUser) return;
+
+
+  const message =
+    messageCache.get(
+      String(messageId)
+    );
+
+
+  if (!message) {
+
+    showChatError(
+      "Message not found."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    String(
+      message.sender_id
+    ) !==
+    String(
+      currentUser.id
+    )
+  ) {
+
+    showChatError(
+      "You can only delete your own messages."
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "Delete this message?"
+    );
+
+
+  if (!confirmed) return;
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("messages")
+        .delete()
+        .eq(
+          "id",
+          messageId
+        )
+        .eq(
+          "sender_id",
+          currentUser.id
+        );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    messageCache.delete(
+      String(messageId)
+    );
+
+
+    removeMessageFromDOM(
+      String(messageId)
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "DELETE MESSAGE ERROR:",
+      error
+    );
+
+    showChatError(
+      "Failed to delete message."
+    );
+
+  }
+
+}
+
+
+function removeMessageFromDOM(
+  messageId
+) {
+
+  const all =
+    messages?.querySelectorAll(
+      ".message"
+    ) || [];
+
+
+  all.forEach(
+    element => {
+
+      if (
+        String(
+          element.dataset.messageId
+        ) ===
+        String(messageId)
+      ) {
+
+        element.remove();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   REACTIONS
+   ========================================================= */
+
+const REACTIONS = [
+  "👍",
+  "❤️",
+  "😂",
+  "🔥",
+  "😮",
+  "😢"
+];
+
+
+async function loadReactions() {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("message_reactions")
+      .select(
+        "user_id, message_id, reaction, profiles(username)"
+      );
+
+
+  if (error) {
+
+    console.warn(
+      "REACTIONS LOAD ERROR:",
+      error
+    );
+
+    return;
+
+  }
+
+
+  reactionCache.clear();
+
+
+  data.forEach(
+    row => {
+
+      const key =
+        String(
+          row.message_id
+        );
+
+
+      if (
+        !reactionCache.has(key)
+      ) {
+
+        reactionCache.set(
+          key,
+          []
+        );
+
+      }
+
+
+      reactionCache
+        .get(key)
+        .push(row);
+
+    }
+  );
+
+
+  rerenderAllReactions();
+
+}
+
+
+async function loadReactionsForMessage(
+  messageId
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient
+      .from("message_reactions")
+      .select(
+        "user_id, message_id, reaction, profiles(username)"
+      )
+      .eq(
+        "message_id",
+        messageId
+      );
+
+
+  if (error) {
+
+    console.warn(
+      "REACTION LOAD ERROR:",
+      error
+    );
+
+    return;
+
+  }
+
+
+  reactionCache.set(
+    String(messageId),
+    data || []
+  );
+
+}
+
+
+function renderReactionArea(
+  container,
+  messageId
+) {
+
+  container.innerHTML = "";
+
+
+  const rows =
+    reactionCache.get(
+      String(messageId)
+    ) || [];
+
+
+  const grouped =
+    new Map();
+
+
+  rows.forEach(
+    row => {
+
+      const reaction =
+        row.reaction;
+
+
+      if (
+        !grouped.has(
+          reaction
+        )
+      ) {
+
+        grouped.set(
+          reaction,
+          []
+        );
+
+      }
+
+
+      grouped
+        .get(reaction)
+        .push(row);
+
+    }
+  );
+
+
+  grouped.forEach(
+    (users, reaction) => {
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+
+      button.type =
+        "button";
+
+      button.className =
+        "reaction-count";
+
+      button.textContent =
+        `${reaction} ${users.length}`;
+
+
+      button.addEventListener(
+        "click",
+        event => {
+
+          event.stopPropagation();
+
+          showReactionUsers(
+            reaction,
+            users
+          );
+
+        }
+      );
+
+
+      container.appendChild(
+        button
+      );
+
+    }
+  );
+
+}
+
+
+function rerenderReactions(
+  messageId
+) {
+
+  const areas =
+    messages?.querySelectorAll(
+      ".reaction-area"
+    ) || [];
+
+
+  areas.forEach(
+    area => {
+
+      if (
+        String(
+          area.dataset
+            .reactionMessageId
+        ) ===
+        String(messageId)
+      ) {
+
+        renderReactionArea(
+          area,
+          messageId
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+function rerenderAllReactions() {
+
+  const areas =
+    messages?.querySelectorAll(
+      ".reaction-area"
+    ) || [];
+
+
+  areas.forEach(
+    area => {
+
+      renderReactionArea(
+        area,
+        area.dataset
+          .reactionMessageId
+      );
+
+    }
+  );
+
+}
+
+
+function setupReactionPicker(
+  messageElement,
+  messageId
+) {
+
+  let pressTimer = null;
+
+
+  const show =
+    () => {
+
+      removeReactionPicker();
+
+
+      const picker =
+        document.createElement(
+          "div"
+        );
+
+
+      picker.className =
+        "reaction-picker";
+
+
+      REACTIONS.forEach(
+        reaction => {
+
+          const button =
+            document.createElement(
+              "button"
+            );
+
+
+          button.type =
+            "button";
+
+          button.textContent =
+            reaction;
+
+
+          button.addEventListener(
+            "click",
+            event => {
+
+              event.stopPropagation();
+
+              toggleReaction(
+                messageId,
+                reaction
+              );
+
+              removeReactionPicker();
+
+            }
+          );
+
+
+          picker.appendChild(
+            button
+          );
+
+        }
+      );
+
+
+      messageElement.appendChild(
+        picker
+      );
+
+    };
+
+
+  messageElement.addEventListener(
+    "contextmenu",
+    event => {
+
+      event.preventDefault();
+
+      show();
+
+    }
+  );
+
+
+  messageElement.addEventListener(
+    "touchstart",
+    () => {
+
+      pressTimer =
+        setTimeout(
+          show,
+          600
+        );
+
+    },
+    {
+      passive: true
+    }
+  );
+
+
+  [
+    "touchend",
+    "touchmove",
+    "touchcancel"
+  ].forEach(
+    eventName => {
+
+      messageElement.addEventListener(
+        eventName,
+        () => {
+
+          if (pressTimer) {
+
+            clearTimeout(
+              pressTimer
+            );
+
+            pressTimer = null;
+
+          }
+
+        },
+        {
+          passive: true
+        }
+      );
+
+    }
+  );
+
+}
+
+
+async function toggleReaction(
+  messageId,
+  reaction
+) {
+
+  if (!currentUser) return;
+
+
+  try {
+
+    const {
+      data: existing,
+      error:
+        selectError
+    } =
+      await supabaseClient
+        .from(
+          "message_reactions"
+        )
+        .select(
+          "user_id, message_id, reaction"
+        )
+        .eq(
+          "message_id",
+          messageId
+        )
+        .eq(
+          "user_id",
+          currentUser.id
+        )
+        .eq(
+          "reaction",
+          reaction
+        )
+        .maybeSingle();
+
+
+    if (selectError) {
+
+      throw selectError;
+
+    }
+
+
+    if (existing) {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "message_reactions"
+          )
+          .delete()
+          .eq(
+            "message_id",
+            messageId
+          )
+          .eq(
+            "user_id",
+            currentUser.id
+          )
+          .eq(
+            "reaction",
+            reaction
+          );
+
+
+      if (error) {
+
+        throw error;
+
+      }
+
+    } else {
+
+      const {
+        error
+      } =
+        await supabaseClient
+          .from(
+            "message_reactions"
+          )
+          .insert({
+            message_id:
+              messageId,
+
+            user_id:
+              currentUser.id,
+
+            reaction
+
+          });
+
+
+      if (error) {
+
+        throw error;
+
+      }
+
+    }
+
+
+    await loadReactionsForMessage(
+      messageId
+    );
+
+
+    rerenderReactions(
+      messageId
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "REACTION ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+function showReactionUsers(
+  reaction,
+  users
+) {
+
+  const names =
+    users.map(
+      user => {
+
+        return (
+          user.profiles?.username ||
+          user.username ||
+          "User"
+        );
+
+      }
+    );
+
+
+  window.alert(
+    `${reaction}\n\n${names.join("\n")}`
+  );
+
+}
+
+
+function removeReactionPicker() {
+
+  document
+    .querySelectorAll(
+      ".reaction-picker"
+    )
+    .forEach(
+      picker =>
+        picker.remove()
+    );
+
+}
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      !event.target.closest(
+        ".reaction-picker"
+      )
+    ) {
+
+      removeReactionPicker();
+
+    }
+
+  }
+);
 
 
 /* =========================================================
@@ -1397,435 +3579,287 @@ function setupRealtime() {
 
 function setupTyping() {
 
-  if (!currentUser || !currentProfile) {
-    return;
-  }
+  if (!currentUser) return;
+
 
   if (typingChannel) {
 
-    try {
-
-      supabaseClient.removeChannel(
+    supabaseClient
+      .removeChannel(
         typingChannel
       );
 
-    } catch {}
-
-    typingChannel = null;
-
   }
 
-  typingUsers = {};
 
   typingChannel =
-    supabaseClient.channel(
-      "neural-ninjas-typing"
-    );
+    supabaseClient
+      .channel(
+        "neural-ninjas-typing"
+      )
+      .on(
+        "broadcast",
+        {
+          event: "typing"
+        },
+        payload => {
 
-  typingChannel.on(
-    "broadcast",
-    {
-      event: "typing"
-    },
-    payload => {
+          const username =
+            payload.payload?.username;
 
-      const data =
-        payload?.payload;
 
-      if (!data) {
-        return;
-      }
+          const userId =
+            payload.payload?.userId;
 
-      const userId =
-        data.user_id;
 
-      if (!userId) {
-        return;
-      }
+          if (
+            !username ||
+            String(userId) ===
+            String(currentUser.id)
+          ) {
 
-      if (
-        userId ===
-        currentUser.id
-      ) {
-        return;
-      }
+            return;
 
-      if (data.is_typing) {
+          }
 
-        typingUsers[userId] = {
-          username:
-            data.username ||
-            "Someone"
-        };
 
-        showTypingIndicator();
-
-        clearTimeout(
-          typingUsers[userId].timeout
-        );
-
-        typingUsers[userId].timeout =
-          setTimeout(
-            () => {
-
-              delete typingUsers[userId];
-
-              showTypingIndicator();
-
-            },
-            3000
-          );
-
-      } else {
-
-        if (typingUsers[userId]) {
-
-          clearTimeout(
-            typingUsers[userId].timeout
+          showTyping(
+            username
           );
 
         }
+      )
+      .subscribe();
 
-        delete typingUsers[userId];
-
-        showTypingIndicator();
-
-      }
-
-    }
-  );
-
-  typingChannel.subscribe(
-    status => {
-
-      console.log(
-        "TYPING CHANNEL STATUS:",
-        status
-      );
-
-    }
-  );
 
 }
 
+
 function handleTyping() {
 
-  if (
-    !typingChannel ||
-    !currentUser ||
-    !currentProfile ||
-    !messageInput
-  ) {
+  if (!typingChannel) return;
+
+
+  if (!messageInput?.value.trim()) {
+
+    stopTypingBroadcast();
+
     return;
+
   }
 
-  const hasText =
-    messageInput.value.trim().length > 0;
 
-  if (hasText) {
+  if (!isCurrentlyTyping) {
 
-    if (!isCurrentlyTyping) {
+    isCurrentlyTyping =
+      true;
 
-      isCurrentlyTyping = true;
+    typingChannel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        username:
+          currentProfile?.username ||
+          "Someone",
 
-      broadcastTyping(true);
+        userId:
+          currentUser.id
+      }
+    });
 
-    }
+  }
+
+
+  if (typingTimeout) {
 
     clearTimeout(
       typingTimeout
     );
 
-    typingTimeout =
-      setTimeout(
-        () => {
+  }
 
-          stopTyping();
 
-        },
-        1500
-      );
+  typingTimeout =
+    setTimeout(
+      stopTypingBroadcast,
+      1500
+    );
 
-  } else {
+}
 
-    stopTyping();
+
+function stopTypingBroadcast() {
+
+  isCurrentlyTyping =
+    false;
+
+
+  if (typingTimeout) {
+
+    clearTimeout(
+      typingTimeout
+    );
+
+    typingTimeout = null;
 
   }
 
 }
 
-function broadcastTyping(
-  isTyping
+
+function showTyping(
+  username
 ) {
 
-  if (
-    !typingChannel ||
-    !currentUser ||
-    !currentProfile
-  ) {
-    return;
-  }
+  if (!typingIndicator) return;
 
-  typingChannel.send({
-
-    type:
-      "broadcast",
-
-    event:
-      "typing",
-
-    payload: {
-
-      user_id:
-        currentUser.id,
-
-      username:
-        currentProfile.username,
-
-      is_typing:
-        isTyping
-
-    }
-
-  }).catch(
-    error => {
-
-      console.error(
-        "Typing broadcast error:",
-        error
-      );
-
-    }
-  );
-
-}
-
-function stopTyping() {
-
-  clearTimeout(
-    typingTimeout
-  );
-
-  if (!isCurrentlyTyping) {
-    return;
-  }
-
-  isCurrentlyTyping = false;
-
-  broadcastTyping(false);
-
-}
-
-function showTypingIndicator() {
-
-  if (!typingIndicator) {
-    return;
-  }
-
-  const users =
-    Object.values(
-      typingUsers
-    );
-
-  if (users.length === 0) {
-
-    typingIndicator.textContent =
-      "";
-
-    typingIndicator.classList.remove(
-      "show"
-    );
-
-    return;
-
-  }
-
-  let text = "";
-
-  if (users.length === 1) {
-
-    text =
-      `${users[0].username} is typing...`;
-
-  } else if (users.length === 2) {
-
-    text =
-      `${users[0].username} and ${users[1].username} are typing...`;
-
-  } else {
-
-    text =
-      `${users[0].username}, ${users[1].username} and others are typing...`;
-
-  }
 
   typingIndicator.textContent =
-    text;
+    `${username} is typing...`;
+
 
   typingIndicator.classList.add(
     "show"
   );
 
+
+  clearTimeout(
+    typingIndicator._timer
+  );
+
+
+  typingIndicator._timer =
+    setTimeout(
+      () => {
+
+        typingIndicator.classList.remove(
+          "show"
+        );
+
+        typingIndicator.textContent =
+          "";
+
+      },
+      1800
+    );
+
 }
+
+
 /* =========================================================
    PRESENCE
    ========================================================= */
 
-async function setupPresence() {
+function setupPresence() {
 
-  if (
-    !currentUser ||
-    !currentProfile
-  ) {
-    return;
-  }
+  if (!currentUser) return;
+
 
   if (presenceChannel) {
 
-    try {
-
-      await supabaseClient
-        .removeChannel(
-          presenceChannel
-        );
-
-    } catch {}
+    supabaseClient
+      .removeChannel(
+        presenceChannel
+      );
 
   }
 
-  presenceUsers = {};
 
   presenceChannel =
-    supabaseClient.channel(
-      "neural-ninjas-presence",
-      {
-
-        config: {
-
-          presence: {
-
-            key:
-              currentUser.id
-
+    supabaseClient
+      .channel(
+        "neural-ninjas-presence",
+        {
+          config: {
+            presence: {
+              key:
+                String(
+                  currentUser.id
+                )
+            }
           }
+        }
+      );
+
+
+  presenceChannel.on(
+    "presence",
+    {
+      event: "sync"
+    },
+    () => {
+
+      const state =
+        presenceChannel.presenceState();
+
+
+      presenceUsers =
+        state || {};
+
+
+      renderMembers();
+
+    }
+  );
+
+
+  presenceChannel.on(
+    "presence",
+    {
+      event: "join"
+    },
+    () => {
+
+      renderMembers();
+
+    }
+  );
+
+
+  presenceChannel.on(
+    "presence",
+    {
+      event: "leave"
+    },
+    () => {
+
+      renderMembers();
+
+    }
+  );
+
+
+  presenceChannel
+    .subscribe(
+      async status => {
+
+        if (
+          status ===
+          "SUBSCRIBED"
+        ) {
+
+          await presenceChannel.track({
+            userId:
+              currentUser.id,
+
+            username:
+              currentProfile?.username ||
+              "User",
+
+            online:
+              true,
+
+            joinedAt:
+              Date.now()
+          });
 
         }
 
       }
     );
 
-  presenceChannel.on(
-    "presence",
-    {
-      event:
-        "sync"
-    },
-    rebuildPresence
-  );
-
-  presenceChannel.on(
-    "presence",
-    {
-      event:
-        "join"
-    },
-    rebuildPresence
-  );
-
-  presenceChannel.on(
-    "presence",
-    {
-      event:
-        "leave"
-    },
-    rebuildPresence
-  );
-
-  presenceChannel.subscribe(
-    async status => {
-
-      console.log(
-        "PRESENCE STATUS:",
-        status
-      );
-
-      if (
-        status ===
-        "SUBSCRIBED"
-      ) {
-
-        await presenceChannel.track({
-
-          user_id:
-            currentUser.id,
-
-          username:
-            currentProfile.username
-
-        });
-
-        rebuildPresence();
-
-      }
-
-    }
-  );
-
 }
 
-/* =========================================================
-   PRESENCE REBUILD
-   ========================================================= */
-
-function rebuildPresence() {
-
-  if (!presenceChannel) {
-    return;
-  }
-
-  const state =
-    presenceChannel.presenceState();
-
-  const online = {};
-
-  Object.keys(state)
-    .forEach(key => {
-
-      const entries =
-        state[key];
-
-      if (
-        !entries ||
-        entries.length === 0
-      ) {
-        return;
-      }
-
-      const user =
-        entries[0];
-
-      if (user.user_id) {
-
-        online[user.user_id] = {
-
-          username:
-            user.username ||
-            "Unknown"
-
-        };
-
-      }
-
-    });
-
-  presenceUsers =
-    online;
-
-  updateOnlineStatus();
-
-  renderMembers();
-
-}
 
 /* =========================================================
    MEMBERS
@@ -1840,316 +3874,200 @@ async function loadMembers() {
     await supabaseClient
       .from("profiles")
       .select(
-        "id, username, created_at, last_seen_at"
+        "id, username, bio, last_seen_at"
       )
       .order(
-        "created_at",
+        "username",
         {
           ascending: true
         }
       );
 
+
   if (error) {
 
     console.error(
-      "Members error:",
+      "MEMBERS LOAD ERROR:",
       error
     );
 
     return;
+
   }
 
-  allMembers =
+
+  window.neuralNinjasMembers =
     data || [];
+
 
   renderMembers();
 
 }
 
-/* =========================================================
-   RENDER MEMBERS
-   ========================================================= */
+
+function isUserOnline(
+  userId
+) {
+
+  return Object.values(
+    presenceUsers || {}
+  ).some(
+    entries =>
+      entries.some(
+        entry =>
+          String(
+            entry.userId
+          ) ===
+          String(userId)
+      )
+  );
+
+}
+
 
 function renderMembers() {
 
-  if (!membersList) {
-    return;
-  }
+  if (!membersList) return;
 
-  const count =
-    allMembers.length;
 
-  if (memberCount) {
+  const members =
+    window.neuralNinjasMembers ||
+    [];
 
-    memberCount.textContent =
-      `${count} ${
-        count === 1
-          ? "member"
-          : "members"
-      }`;
 
-  }
+  memberCount.textContent =
+    `${members.length} ${
+      members.length === 1
+        ? "member"
+        : "members"
+    }`;
+
 
   membersList.innerHTML = "";
 
-  for (
-    const member
-    of allMembers
-  ) {
 
-    const online =
-      Boolean(
-        presenceUsers[
-          member.id
-        ]
-      );
+  members.forEach(
+    member => {
 
-    const item =
-      document.createElement(
-        "div"
-      );
-
-    item.className =
-      "member";
-
-    const avatar =
-      document.createElement(
-        "div"
-      );
-
-    avatar.className =
-      "member-avatar";
-
-    avatar.textContent =
-      member.username
-        .charAt(0)
-        .toUpperCase();
-
-    const info =
-      document.createElement(
-        "div"
-      );
-
-    info.className =
-      "member-info";
-
-    const name =
-      document.createElement(
-        "div"
-      );
-
-    name.className =
-      "member-name";
-
-    name.textContent =
-      member.username;
-
-    const status =
-      document.createElement(
-        "div"
-      );
-
-    status.className =
-      "member-status";
-
-    const dot =
-      document.createElement(
-        "span"
-      );
-
-    dot.className =
-      "status-dot" +
-      (
-        online
-          ? " online"
-          : ""
-      );
-
-    const statusText =
-      document.createElement(
-        "span"
-      );
-
-    if (online) {
-
-      statusText.textContent =
-        "Online";
-
-    } else {
-
-      statusText.textContent =
-        formatLastSeen(
-          member.last_seen_at
+      const item =
+        document.createElement(
+          "div"
         );
 
-    }
 
-    status.appendChild(dot);
-    status.appendChild(statusText);
+      item.className =
+        "member-item";
 
-    info.appendChild(name);
-    info.appendChild(status);
 
-    item.appendChild(avatar);
-    item.appendChild(info);
+      const avatar =
+        document.createElement(
+          "div"
+        );
 
-    membersList.appendChild(item);
 
-  }
+      avatar.className =
+        "member-avatar";
 
-  updateOnlineStatus();
 
-}
+      avatar.textContent =
+        (
+          member.username ||
+          "?"
+        )
+          .charAt(0)
+          .toUpperCase();
 
-/* =========================================================
-   LAST SEEN FORMAT
-   ========================================================= */
 
-function formatLastSeen(timestamp) {
+      const info =
+        document.createElement(
+          "div"
+        );
 
-  if (!timestamp) {
 
-    return "Last seen unknown";
+      info.className =
+        "member-info";
 
-  }
 
-  const date =
-    new Date(timestamp);
+      const name =
+        document.createElement(
+          "strong"
+        );
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
 
-    return "Last seen unknown";
+      name.textContent =
+        member.username ||
+        "User";
 
-  }
 
-  const now =
-    new Date();
+      const status =
+        document.createElement(
+          "span"
+        );
 
-  const diff =
-    now.getTime() -
-    date.getTime();
 
-  const minute =
-    60 * 1000;
+      const online =
+        isUserOnline(
+          member.id
+        );
 
-  const hour =
-    60 * minute;
 
-  if (diff < minute) {
+      if (online) {
 
-    return "Last seen just now";
+        status.textContent =
+          "● Online";
 
-  }
+        status.className =
+          "member-online";
 
-  if (diff < hour) {
+      } else {
 
-    const minutes =
-      Math.floor(
-        diff / minute
+        status.textContent =
+          formatLastSeen(
+            member.last_seen_at
+          );
+
+        status.className =
+          "member-last-seen";
+
+      }
+
+
+      info.appendChild(
+        name
       );
 
-    return `Last seen ${minutes} ${
-      minutes === 1
-        ? "minute"
-        : "minutes"
-    } ago`;
+      info.appendChild(
+        status
+      );
 
-  }
 
-  if (
-    date.toDateString() ===
-    now.toDateString()
-  ) {
+      item.appendChild(
+        avatar
+      );
 
-    return (
-      "Last seen today at " +
-      date.toLocaleTimeString(
-        [],
-        {
-          hour:
-            "2-digit",
+      item.appendChild(
+        info
+      );
 
-          minute:
-            "2-digit"
-        }
-      )
-    );
 
-  }
+      membersList.appendChild(
+        item
+      );
 
-  const yesterday =
-    new Date(now);
-
-  yesterday.setDate(
-    now.getDate() - 1
-  );
-
-  if (
-    date.toDateString() ===
-    yesterday.toDateString()
-  ) {
-
-    return (
-      "Last seen yesterday at " +
-      date.toLocaleTimeString(
-        [],
-        {
-          hour:
-            "2-digit",
-
-          minute:
-            "2-digit"
-        }
-      )
-    );
-
-  }
-
-  return (
-    "Last seen " +
-    date.toLocaleDateString(
-      [],
-      {
-        day:
-          "2-digit",
-
-        month:
-          "short"
-      }
-    ) +
-    " at " +
-    date.toLocaleTimeString(
-      [],
-      {
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit"
-      }
-    )
+    }
   );
 
 }
 
+
 /* =========================================================
-   UPDATE LAST SEEN
+   LAST SEEN
    ========================================================= */
 
 async function updateLastSeen() {
 
-  if (
-    !currentUser
-  ) {
-    return;
-  }
+  if (!currentUser) return;
 
-  const now =
-    new Date().toISOString();
 
   try {
 
@@ -2159,53 +4077,39 @@ async function updateLastSeen() {
       await supabaseClient
         .from("profiles")
         .update({
-
           last_seen_at:
-            now
-
+            new Date().toISOString()
         })
         .eq(
           "id",
           currentUser.id
         );
 
+
     if (error) {
 
-      console.error(
-        "Last seen update error:",
+      console.warn(
+        "LAST SEEN ERROR:",
         error
       );
 
       return;
+
     }
 
-    if (currentProfile) {
+
+    if (
+      currentProfile
+    ) {
 
       currentProfile.last_seen_at =
-        now;
+        new Date().toISOString();
 
     }
-
-    const member =
-      allMembers.find(
-        item =>
-          item.id ===
-          currentUser.id
-      );
-
-    if (member) {
-
-      member.last_seen_at =
-        now;
-
-    }
-
-    renderMembers();
 
   } catch (error) {
 
-    console.error(
-      "LAST SEEN ERROR:",
+    console.warn(
       error
     );
 
@@ -2213,19 +4117,32 @@ async function updateLastSeen() {
 
 }
 
-/* =========================================================
-   LAST SEEN TIMER
-   ========================================================= */
 
 function startLastSeenTimer() {
 
-  stopLastSeenTimer();
+  if (lastSeenInterval) {
 
-  lastSeenTimer =
+    clearInterval(
+      lastSeenInterval
+    );
+
+  }
+
+
+  lastSeenInterval =
     setInterval(
-      () => {
+      async () => {
 
-        updateLastSeen();
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          await updateLastSeen();
+
+          renderMembers();
+
+        }
 
       },
       30000
@@ -2233,44 +4150,236 @@ function startLastSeenTimer() {
 
 }
 
-function stopLastSeenTimer() {
 
-  if (lastSeenTimer) {
+function formatLastSeen(
+  timestamp
+) {
 
-    clearInterval(
-      lastSeenTimer
+  if (!timestamp) {
+
+    return "Last seen unknown";
+
+  }
+
+
+  const date =
+    new Date(timestamp);
+
+
+  const diff =
+    Date.now() -
+    date.getTime();
+
+
+  if (diff < 60000) {
+
+    return "Last seen just now";
+
+  }
+
+
+  const minutes =
+    Math.floor(
+      diff / 60000
     );
 
-    lastSeenTimer =
-      null;
+
+  if (minutes < 60) {
+
+    return `Last seen ${minutes}m ago`;
 
   }
 
+
+  const hours =
+    Math.floor(
+      minutes / 60
+    );
+
+
+  if (hours < 24) {
+
+    return `Last seen ${hours}h ago`;
+
+  }
+
+
+  const days =
+    Math.floor(
+      hours / 24
+    );
+
+
+  return `Last seen ${days}d ago`;
+
 }
+
 
 /* =========================================================
-   ONLINE COUNT
+   SEARCH
+   =========================================================
+   IMPORTANT FIX:
+   Never replace message.innerHTML during search.
+   That used to destroy reply/delete/reaction
+   event listeners.
    ========================================================= */
 
-function updateOnlineStatus() {
+function searchMessages() {
 
-  const count =
-    Object.keys(
-      presenceUsers
-    ).length;
+  const query =
+    messageSearchInput?.value
+      ?.trim()
+      .toLowerCase() ||
+    "";
 
-  if (onlineStatus) {
 
-    onlineStatus.textContent =
-      `${count} ${
-        count === 1
-          ? "member"
-          : "members"
-      } online`;
+  const messageElements =
+    messages?.querySelectorAll(
+      ".message"
+    ) || [];
+
+
+  messageElements.forEach(
+    element => {
+
+      /*
+         Read text safely without
+         modifying the message DOM.
+      */
+
+      const text =
+        element.textContent
+          .toLowerCase();
+
+
+      if (!query) {
+
+        element.style.display =
+          "";
+
+        element.classList.remove(
+          "search-match"
+        );
+
+        return;
+
+      }
+
+
+      const match =
+        text.includes(
+          query
+        );
+
+
+      element.style.display =
+        match
+          ? ""
+          : "none";
+
+
+      element.classList.toggle(
+        "search-match",
+        match
+      );
+
+    }
+  );
+
+}
+
+
+function clearSearch() {
+
+  if (
+    messageSearchInput
+  ) {
+
+    messageSearchInput.value =
+      "";
 
   }
 
+
+  searchMessages();
+
 }
+
+
+/* =========================================================
+   THEME SYSTEM
+   ========================================================= */
+
+function openThemePanel() {
+
+  themePanel?.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function closeThemePanel() {
+
+  themePanel?.classList.add(
+    "hidden"
+  );
+
+}
+
+
+function applyTheme(
+  theme
+) {
+
+  const validThemes = [
+    "default",
+    "cyber",
+    "space",
+    "amber"
+  ];
+
+
+  if (
+    !validThemes.includes(
+      theme
+    )
+  ) {
+
+    theme =
+      "default";
+
+  }
+
+
+  document.body.dataset.theme =
+    theme;
+
+
+  localStorage.setItem(
+    "neuralNinjasTheme",
+    theme
+  );
+
+
+  document
+    .querySelectorAll(
+      ".theme-option"
+    )
+    .forEach(
+      option => {
+
+        option.classList.toggle(
+          "active",
+          option.dataset.theme ===
+            theme
+        );
+
+      }
+    );
+
+}
+
 
 /* =========================================================
    SIDEBAR
@@ -2286,9 +4395,8 @@ function openSidebar() {
     "show"
   );
 
-  renderMembers();
-
 }
+
 
 function closeSidebar() {
 
@@ -2302,1393 +4410,194 @@ function closeSidebar() {
 
 }
 
+
 /* =========================================================
-   SEND MESSAGE
+   ACCOUNT DELETION
    ========================================================= */
 
-async function sendMessage() {
+async function deleteAccount() {
 
-  if (
-    sending ||
-    !currentUser ||
-    !currentProfile
-  ) {
-    return;
-  }
+  if (!currentUser) return;
 
-  const text =
-    messageInput?.value.trim();
 
-  if (!text) {
-    return;
-  }
+  const firstConfirm =
+    window.confirm(
+      "Delete your Neural Ninjas account?"
+    );
 
-  sending = true;
-   stopTyping();
 
-  if (sendBtn) {
-    sendBtn.disabled =
-      true;
-  }
+  if (!firstConfirm) return;
+
+
+  const secondConfirm =
+    window.confirm(
+      "This action cannot be easily undone. Delete account permanently?"
+    );
+
+
+  if (!secondConfirm) return;
+
+
+  deleteAccountBtn.disabled =
+    true;
+
+
+  deleteAccountBtn.textContent =
+    "Deleting...";
+
 
   try {
 
     const {
-      data,
-      error
+      data: sessionData,
+      error:
+        sessionError
     } =
-      await supabaseClient
-        .from("messages")
-        .insert({
+      await supabaseClient.auth
+        .getSession();
 
-          sender_id:
-            currentUser.id,
 
-          sender_name:
-            currentProfile.username,
+    if (sessionError) {
 
-          message_type:
-            detectCode(text)
-              ? "code"
-              : "text",
-
-          message:
-            text,
-
-           reply_to_id: replyingToMessage?.id ?? null
-
-        })
-        .select()
-        .single();
-
-   renderMessage(
-      data,
-      true
-    );
-
-   replyingToMessage = null;
-
-replyBar?.classList.add("hidden");
-
-if (replySender) {
-  replySender.textContent = "User";
-}
-
-if (replyPreview) {
-  replyPreview.textContent = "";
-}
-
-    if (error) {
-      throw error;
-    }
-
-    
-
-    messageInput.value =
-      "";
-
-    playSendSound();
-
-  } catch (error) {
-
-    console.error(
-      "Send error:",
-      error
-    );
-
-    alert(
-      error?.message ||
-      "Message could not be sent."
-    );
-
-  } finally {
-
-    sending = false;
-
-    if (sendBtn) {
-
-      sendBtn.disabled =
-        false;
+      throw sessionError;
 
     }
 
-    messageInput?.focus();
 
-  }
+    const accessToken =
+      sessionData.session
+        ?.access_token;
 
-}
 
-/* =========================================================
-   SOUND
-   ========================================================= */
+    if (!accessToken) {
 
-function playSendSound() {
-
-  try {
-
-    const AudioContext =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    if (!AudioContext) {
-      return;
-    }
-
-    const ctx =
-      new AudioContext();
-
-    const oscillator =
-      ctx.createOscillator();
-
-    const gain =
-      ctx.createGain();
-
-    oscillator.type =
-      "sine";
-
-    oscillator.frequency.setValueAtTime(
-      850,
-      ctx.currentTime
-    );
-
-    oscillator.frequency.exponentialRampToValueAtTime(
-      1200,
-      ctx.currentTime + 0.06
-    );
-
-    gain.gain.setValueAtTime(
-      0.0001,
-      ctx.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.08,
-      ctx.currentTime + 0.01
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      ctx.currentTime + 0.09
-    );
-
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-
-    oscillator.start();
-
-    oscillator.stop(
-      ctx.currentTime + 0.1
-    );
-
-  } catch {
-
-    console.log(
-      "Sound unavailable"
-    );
-
-  }
-
-}
-
-/* =========================================================
-   FILE UPLOAD
-   ========================================================= */
-
-async function handleFileUpload() {
-
-  const file =
-    fileInput?.files?.[0];
-
-  if (!file) {
-    return;
-  }
-
-  if (
-    uploading ||
-    !currentUser ||
-    !currentProfile
-  ) {
-    return;
-  }
-
-  if (
-    file.size >
-    50 * 1024 * 1024
-  ) {
-
-    alert(
-      "File is larger than 50 MB."
-    );
-
-    fileInput.value =
-      "";
-
-    return;
-  }
-
-  const allowed =
-    file.type.startsWith(
-      "image/"
-    ) ||
-    file.type.startsWith(
-      "video/"
-    ) ||
-    file.type.startsWith(
-      "audio/"
-    );
-
-  if (!allowed) {
-
-    alert(
-      "Only images, videos and audio files are allowed."
-    );
-
-    fileInput.value =
-      "";
-
-    return;
-  }
-
-  uploading = true;
-
-  if (mediaBtn) {
-
-    mediaBtn.disabled =
-      true;
-
-  }
-
-  try {
-
-    const extension =
-      file.name.includes(".")
-        ? "." +
-          file.name
-            .split(".")
-            .pop()
-            .replace(
-              /[^a-zA-Z0-9]/g,
-              ""
-            )
-        : "";
-
-    const random =
-      Math.random()
-        .toString(36)
-        .substring(2);
-
-    const path =
-      `${currentUser.id}/${Date.now()}-${random}${extension}`;
-
-    const {
-      error: uploadError
-    } =
-      await supabaseClient.storage
-        .from(
-          "neural-ninjas-media"
-        )
-        .upload(
-          path,
-          file,
-          {
-            contentType:
-              file.type,
-
-            upsert:
-              false
-          }
-        );
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const {
-      data: signedData,
-      error: signedError
-    } =
-      await supabaseClient.storage
-        .from(
-          "neural-ninjas-media"
-        )
-        .createSignedUrl(
-          path,
-          60 * 60 * 24 * 30
-        );
-
-    if (signedError) {
-      throw signedError;
-    }
-
-    const {
-      data: message,
-      error: messageError
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert({
-
-          sender_id:
-            currentUser.id,
-
-          sender_name:
-            currentProfile.username,
-
-          message_type:
-            getMediaType(
-              file.type
-            ),
-
-          message:
-            file.name,
-
-          file_url:
-            signedData.signedUrl
-
-        })
-        .select()
-        .single();
-
-    if (messageError) {
-      throw messageError;
-    }
-
-    renderMessage(
-      message,
-      true
-    );
-
-    playSendSound();
-
-  } catch (error) {
-
-    console.error(
-      "Upload error:",
-      error
-    );
-
-    alert(
-      error?.message ||
-      "File upload failed."
-    );
-
-  } finally {
-
-    uploading = false;
-
-    if (mediaBtn) {
-
-      mediaBtn.disabled =
-        false;
-
-    }
-
-    fileInput.value =
-      "";
-
-  }
-
-}
-
-function getMediaType(type) {
-
-  if (
-    type.startsWith(
-      "image/"
-    )
-  ) {
-    return "image";
-  }
-
-  if (
-    type.startsWith(
-      "video/"
-    )
-  ) {
-    return "video";
-  }
-
-  if (
-    type.startsWith(
-      "audio/"
-    )
-  ) {
-    return "audio";
-  }
-
-  return "file";
-
-}
-
-/* =========================================================
-   RENDER MESSAGE
-   ========================================================= */
-
-function renderMessage(
-  data,
-  shouldScroll = true
-) {
-
-  if (
-    !messages ||
-    !data
-  ) {
-    return;
-  }
-
-   messageCache.set(data.id, data);
-
-  const existing =
-    document.querySelector(
-      `[data-message-id="${data.id}"]`
-    );
-
-  if (existing) {
-    return;
-  }
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message";
-
-  if (
-    data.sender_id ===
-    currentUser?.id
-  ) {
-
-    wrapper.classList.add(
-      "mine"
-    );
-
-  }
-
-  wrapper.dataset.messageId =
-    data.id;
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "bubble";
-
-  const sender =
-    document.createElement(
-      "div"
-    );
-
-  sender.className =
-    "sender";
-
-  sender.textContent =
-    data.sender_name ||
-    "Unknown";
-
-  bubble.appendChild(
-    sender
-  );
-
-// Reply preview
-if (data.reply_to_id) {
-  const originalMessage =
-    messageCache.get(data.reply_to_id);
-
-  const replyBox = document.createElement("div");
-  replyBox.className = "message-reply-preview";
-
-  const replyTitle = document.createElement("div");
-  replyTitle.className = "message-reply-sender";
-
-  const replyContent = document.createElement("div");
-  replyContent.className = "message-reply-content";
-
-  if (originalMessage) {
-
-    replyTitle.textContent =
-      `↩ ${originalMessage.sender_name || "Unknown"}`;
-
-    if (originalMessage.message_type === "image") {
-      replyContent.textContent = "📷 Image";
-    } else if (originalMessage.message_type === "video") {
-      replyContent.textContent = "🎥 Video";
-    } else if (originalMessage.message_type === "audio") {
-      replyContent.textContent = "🎵 Audio";
-    } else if (originalMessage.message_type === "code") {
-      replyContent.textContent = "💻 Code";
-    } else {
-      replyContent.textContent =
-        originalMessage.message || "";
-    }
-
-  } else {
-
-    replyTitle.textContent = "↩ Reply";
-    replyContent.textContent = "Original message unavailable";
-
-  }
-
-    replyBox.appendChild(replyTitle);
-  replyBox.appendChild(replyContent);
-
-  // Tap reply preview → jump to original message
-  replyBox.style.cursor = "pointer";
-
-  replyBox.addEventListener("click", () => {
-
-    const targetMessage =
-      document.querySelector(
-        `[data-message-id="${data.reply_to_id}"]`
-      );
-
-    if (!targetMessage) {
-      return;
-    }
-
-    targetMessage.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-
-    targetMessage.classList.remove(
-      "reply-target-highlight"
-    );
-
-    // Restart animation if tapped again
-    void targetMessage.offsetWidth;
-
-    targetMessage.classList.add(
-      "reply-target-highlight"
-    );
-
-    setTimeout(() => {
-
-      targetMessage.classList.remove(
-        "reply-target-highlight"
-      );
-
-    }, 1800);
-
-  });
-
-  bubble.appendChild(replyBox);
-}
-   
-
-  if (
-    data.message_type ===
-      "image" ||
-    data.message_type ===
-      "video" ||
-    data.message_type ===
-      "audio"
-  ) {
-
-    renderMedia(
-      bubble,
-      data
-    );
-
-  } else if (
-    data.message_type ===
-    "code"
-  ) {
-
-    renderCode(
-      bubble,
-      data.message || ""
-    );
-
-  } else {
-
-    renderText(
-      bubble,
-      data.message || ""
-    );
-
-  }
-
-  const time =
-    document.createElement(
-      "div"
-    );
-
-  time.className =
-    "time";
-
-  time.textContent =
-    formatTime(
-      data.created_at
-    );
-
-  bubble.appendChild(
-    time
-  );
-
-   // Reply button
-const replyButton = document.createElement("button");
-
-replyButton.className = "reply-message";
-replyButton.textContent = "Reply";
-
-replyButton.addEventListener("click", () => {
-  startReply(data);
-});
-
-bubble.appendChild(replyButton);
-
-
-        // =========================================================
-// WHATSAPP-STYLE REACTION BAR
-// =========================================================
-
-const reactionBar =
-  document.createElement("div");
-
-reactionBar.className =
-  "reaction-bar hidden";
-
-const reactions = [
-  "👍",
-  "❤️",
-  "😂",
-  "🔥",
-  "😮",
-  "😢"
-];
-
-reactions.forEach(reaction => {
-
-  const reactionButton =
-    document.createElement("button");
-
-  reactionButton.className =
-    "reaction-button";
-
-  reactionButton.textContent =
-    reaction;
-
-  reactionButton.type =
-    "button";
-
-  reactionButton.addEventListener(
-    "click",
-    event => {
-
-      event.stopPropagation();
-
-      toggleReaction(
-        data.id,
-        reaction
-      );
-
-      reactionBar.classList.add(
-        "hidden"
-      );
-
-    }
-  );
-
-  reactionBar.appendChild(
-    reactionButton
-  );
-
-});
-
-bubble.appendChild(
-  reactionBar
-);
-
-
-// ---------------------------------------------------------
-// LONG PRESS → SHOW REACTION BAR
-// ---------------------------------------------------------
-
-let longPressTimer = null;
-
-const startLongPress = event => {
-
-  if (
-    event.target.closest(
-      "button, a, input, video, audio"
-    )
-  ) {
-    return;
-  }
-
-  longPressTimer =
-    setTimeout(() => {
-
-      reactionBar.classList.remove(
-        "hidden"
-      );
-
-      if (
-        navigator.vibrate
-      ) {
-        navigator.vibrate(30);
-      }
-
-    }, 500);
-
-};
-
-const cancelLongPress = () => {
-
-  clearTimeout(
-    longPressTimer
-  );
-
-};
-
-bubble.addEventListener(
-  "touchstart",
-  startLongPress,
-  {
-    passive: true
-  }
-);
-
-bubble.addEventListener(
-  "touchend",
-  cancelLongPress
-);
-
-bubble.addEventListener(
-  "touchmove",
-  cancelLongPress
-);
-
-bubble.addEventListener(
-  "touchcancel",
-  cancelLongPress
-);
-
-
-// ---------------------------------------------------------
-// DESKTOP MOUSE HOLD
-// ---------------------------------------------------------
-
-bubble.addEventListener(
-  "mousedown",
-  event => {
-
-    if (
-      event.button !== 0
-    ) {
-      return;
-    }
-
-    startLongPress(event);
-
-  }
-);
-
-bubble.addEventListener(
-  "mouseup",
-  cancelLongPress
-);
-
-bubble.addEventListener(
-  "mouseleave",
-  cancelLongPress
-);
-
-
-// ---------------------------------------------------------
-// REACTION COUNTS
-// ---------------------------------------------------------
-
-const reactionCounts =
-  document.createElement("div");
-
-reactionCounts.className =
-  "reaction-counts";
-
-const messageReactions =
-  reactionCache.get(data.id) || [];
-
-const counts = {};
-
-messageReactions.forEach(
-  item => {
-
-    counts[item.reaction] =
-      (counts[item.reaction] || 0) + 1;
-
-  }
-);
-
-Object.entries(counts).forEach(
-  ([reaction, count]) => {
-
-    const reactionCount =
-      document.createElement("button");
-
-    reactionCount.className =
-      "reaction-count";
-
-    reactionCount.type =
-      "button";
-
-    reactionCount.textContent =
-      `${reaction} ${count}`;
-
-    reactionCount.addEventListener(
-      "click",
-      event => {
-
-        event.stopPropagation();
-
-        showReactionUsers(
-          data.id,
-          reaction
-        );
-
-      }
-    );
-
-    reactionCounts.appendChild(
-      reactionCount
-    );
-
-  }
-);
-
-if (
-  reactionCounts.children.length > 0
-) {
-
-  bubble.appendChild(
-    reactionCounts
-  );
-
-}
-
-
-  if (data.sender_id === currentUser?.id) {
-
-  const deleteButton =
-    document.createElement("button");
-
-  deleteButton.className =
-    "delete-message";
-
-  deleteButton.textContent =
-    "Delete";
-
-  deleteButton.addEventListener(
-    "click",
-    () =>
-      deleteMessage(
-        data.id,
-        deleteButton,
-        wrapper
-      )
-  );
-
-  bubble.appendChild(
-    deleteButton
-  );
-}
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  messages.appendChild(
-    wrapper
-  );
-
-  if (shouldScroll) {
-    scrollToBottom();
-  }
-
-}
-
-/* =========================================================
-   TEXT
-   ========================================================= */
-
-function renderText(
-  container,
-  text
-) {
-
-  const urlRegex =
-    /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
-
-  let lastIndex = 0;
-  let match;
-
-  while (
-    (match =
-      urlRegex.exec(text)) !== null
-  ) {
-
-    const before =
-      text.slice(
-        lastIndex,
-        match.index
-      );
-
-    if (before) {
-
-      container.appendChild(
-        document.createTextNode(
-          before
-        )
+      throw new Error(
+        "Your session has expired. Please login again."
       );
 
     }
 
-    let url =
-      match[0];
 
-    let trailing = "";
+    /*
+       Account deletion MUST happen
+       through the Edge Function because
+       auth.users cannot safely be deleted
+       from the browser with normal RLS.
+    */
 
-    while (
-      /[.,!?;:]$/.test(url)
-    ) {
+    const response =
+      await fetch(
+        `${SUPABASE_URL}/functions/v1/super-responder`,
+        {
+          method: "POST",
 
-      trailing =
-        url.slice(-1) +
-        trailing;
+          headers: {
+            "Content-Type":
+              "application/json",
 
-      url =
-        url.slice(
-          0,
-          -1
-        );
+            Authorization:
+              `Bearer ${accessToken}`,
 
-    }
-
-    const link =
-      document.createElement(
-        "a"
-      );
-
-    link.className =
-      "message-link";
-
-    link.href =
-      url.startsWith("www.")
-        ? "https://" + url
-        : url;
-
-    link.target =
-      "_blank";
-
-    link.rel =
-      "noopener noreferrer";
-
-    link.textContent =
-      url;
-
-    container.appendChild(
-      link
-    );
-
-    if (trailing) {
-
-      container.appendChild(
-        document.createTextNode(
-          trailing
-        )
-      );
-
-    }
-
-    lastIndex =
-      match.index +
-      match[0].length;
-
-  }
-
-  const remaining =
-    text.slice(
-      lastIndex
-    );
-
-  if (remaining) {
-
-    container.appendChild(
-      document.createTextNode(
-        remaining
-      )
-    );
-
-  }
-
-}
-
-/* =========================================================
-   CODE
-   ========================================================= */
-
-function detectCode(text) {
-
-  const indicators = [
-
-    "```",
-    "function ",
-    "const ",
-    "let ",
-    "var ",
-    "=>",
-    "<html",
-    "<div",
-    "<script",
-    "SELECT ",
-    "INSERT ",
-    "UPDATE ",
-    "CREATE TABLE",
-    "def ",
-    "import ",
-    "from ",
-    "public class ",
-    "console.log",
-    "#include",
-    "System.out",
-    "print("
-
-  ];
-
-  return indicators.some(
-    indicator =>
-      text.includes(
-        indicator
-      )
-  );
-
-}
-
-function cleanCode(text) {
-
-  let code =
-    String(
-      text || ""
-    ).trim();
-
-  code =
-    code.replace(
-      /^```[a-zA-Z0-9_-]*\s*/,
-      ""
-    );
-
-  code =
-    code.replace(
-      /\s*```$/,
-      ""
-    );
-
-  return code.trim();
-
-}
-
-function renderCode(
-  container,
-  text
-) {
-
-  const box =
-    document.createElement(
-      "div"
-    );
-
-  box.className =
-    "code-box";
-
-  const pre =
-    document.createElement(
-      "pre"
-    );
-
-  const codeElement =
-    document.createElement(
-      "code"
-    );
-
-  codeElement.textContent =
-    cleanCode(text);
-
-  pre.appendChild(
-    codeElement
-  );
-
-  box.appendChild(
-    pre
-  );
-
-  const copyButton =
-    document.createElement(
-      "button"
-    );
-
-  copyButton.className =
-    "copy-code";
-
-  copyButton.textContent =
-    "Copy Code";
-
-  copyButton.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        await navigator.clipboard.writeText(
-          codeElement.textContent
-        );
-
-        copyButton.textContent =
-          "Copied!";
-
-        setTimeout(
-          () => {
-
-            copyButton.textContent =
-              "Copy Code";
-
+            apikey:
+              SUPABASE_PUBLISHABLE_KEY
           },
-          1200
-        );
 
-      } catch {
+          body: JSON.stringify({
+            action:
+              "delete_account"
+          })
 
-        alert(
-          "Copy failed."
-        );
+        }
+      );
 
-      }
 
-    }
-  );
+    let result = null;
 
-  box.appendChild(
-    copyButton
-  );
-
-  container.appendChild(
-    box
-  );
-
-  if (
-    window.hljs &&
-    typeof hljs.highlightElement ===
-      "function"
-  ) {
 
     try {
 
-      hljs.highlightElement(
-        codeElement
-      );
+      result =
+        await response.json();
 
-    } catch {}
+    } catch {
 
-  }
+      result = null;
 
-}
-
-/* =========================================================
-   MEDIA
-   ========================================================= */
-
-function renderMedia(
-  container,
-  data
-) {
-
-  if (!data.file_url) {
-    return;
-  }
-
-  const url =
-    data.file_url;
-
-  if (
-    data.message_type ===
-    "image"
-  ) {
-
-    const image =
-      document.createElement(
-        "img"
-      );
-
-    image.className =
-      "chat-media";
-
-    image.src =
-      url;
-
-    image.alt =
-      data.message ||
-      "Image";
-
-    image.loading =
-      "lazy";
-
-    container.appendChild(
-      image
-    );
-
-  }
-
-  if (
-    data.message_type ===
-    "video"
-  ) {
-
-    const video =
-      document.createElement(
-        "video"
-      );
-
-    video.className =
-      "chat-media";
-
-    video.controls =
-      true;
-
-    video.playsInline =
-      true;
-
-    video.preload =
-      "metadata";
-
-    video.src =
-      url;
-
-    container.appendChild(
-      video
-    );
-
-  }
-
-  if (
-    data.message_type ===
-    "audio"
-  ) {
-
-    const audio =
-      document.createElement(
-        "audio"
-      );
-
-    audio.controls =
-      true;
-
-    audio.preload =
-      "metadata";
-
-    audio.src =
-      url;
-
-    container.appendChild(
-      audio
-    );
-
-  }
-
-  const save =
-    document.createElement(
-      "a"
-    );
-
-  save.className =
-    "save-media";
-
-  save.href =
-    url;
-
-  save.target =
-    "_blank";
-
-  save.rel =
-    "noopener noreferrer";
-
-  save.download =
-    data.message ||
-    "media";
-
-  save.textContent =
-    "Save Media";
-
-  container.appendChild(
-    save
-  );
-
-}
-
-/* =========================================================
-   DELETE MESSAGE
-   ========================================================= */
-
-async function deleteMessage(
-  id,
-  button,
-  wrapper
-) {
-
-  if (
-    !button ||
-    button.disabled
-  ) {
-    return;
-  }
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    "Deleting...";
-
-  try {
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .delete()
-        .eq(
-          "id",
-          id
-        );
-
-    if (error) {
-      throw error;
     }
 
-    wrapper?.remove();
+
+    if (
+      !response.ok ||
+      result?.success === false
+    ) {
+
+      throw new Error(
+        result?.error ||
+        result?.message ||
+        `Account deletion failed (${response.status}).`
+      );
+
+    }
+
+
+    /*
+       Server already deleted account.
+       Signout is best-effort.
+    */
+
+    try {
+
+      await supabaseClient.auth
+        .signOut();
+
+    } catch (signOutError) {
+
+      console.warn(
+        "SIGNOUT AFTER DELETE:",
+        signOutError
+      );
+
+    }
+
+
+    cleanupApplication();
+
+
+    alert(
+      "Your account has been deleted."
+    );
+
 
   } catch (error) {
 
     console.error(
-      "Delete error:",
+      "ACCOUNT DELETE ERROR:",
       error
     );
 
-    button.disabled =
-      false;
-
-    button.textContent =
-      "Delete";
-
     alert(
-      error?.message ||
-      "Delete failed."
+      error.message ||
+      "Failed to delete account."
     );
+
+  } finally {
+
+    if (
+      deleteAccountBtn
+    ) {
+
+      deleteAccountBtn.disabled =
+        false;
+
+      deleteAccountBtn.textContent =
+        "Delete Account";
+
+    }
 
   }
 
 }
+
 
 /* =========================================================
    EXIT / LOGOUT
@@ -3696,120 +4605,241 @@ async function deleteMessage(
 
 async function exitChat() {
 
-  closeSidebar();
+  const confirmed =
+    window.confirm(
+      "Exit Neural Ninjas?"
+    );
 
-  stopLastSeenTimer();
-stopTyping();
 
-if (typingChannel) {
+  if (!confirmed) return;
+
 
   try {
 
-    await supabaseClient.removeChannel(
-      typingChannel
+    await updateLastSeen();
+
+  } catch {
+
+    /* Ignore last-seen failure
+       while logging out. */
+
+  }
+
+
+  try {
+
+    await supabaseClient.auth
+      .signOut();
+
+  } catch (error) {
+
+    console.warn(
+      "SIGNOUT ERROR:",
+      error
     );
 
-  } catch {}
+  }
 
-  typingChannel = null;
+
+  cleanupApplication();
 
 }
 
-typingUsers = {};
-  await updateLastSeen();
 
-  if (presenceChannel) {
+/* =========================================================
+   APPLICATION CLEANUP
+   ========================================================= */
 
-    try {
+function cleanupApplication() {
 
-      await supabaseClient
-        .removeChannel(
-          presenceChannel
-        );
+  cleanupRealtimeChannels();
 
-    } catch {}
 
-    presenceChannel =
-      null;
+  if (lastSeenInterval) {
 
-  }
+    clearInterval(
+      lastSeenInterval
+    );
 
-  if (realtimeChannel) {
-
-    try {
-
-      await supabaseClient
-        .removeChannel(
-          realtimeChannel
-        );
-
-    } catch {}
-
-    realtimeChannel =
-      null;
+    lastSeenInterval = null;
 
   }
 
-  await supabaseClient.auth.signOut();
+
+  cleanupRecordingStream();
+
 
   currentUser = null;
+
   currentProfile = null;
+
+  messageCache.clear();
+
+  reactionCache.clear();
 
   presenceUsers = {};
 
-  showLogin();
+  replyingToMessage = null;
 
-  if (usernameInput) {
-    usernameInput.value = "";
-  }
+  isCurrentlyTyping = false;
 
-  if (pinInput) {
-    pinInput.value = "";
-  }
 
-  if (loginStatus) {
+  if (messages) {
 
-    loginStatus.textContent =
-      "Enter your username and PIN to login.";
+    messages.innerHTML =
+      "";
 
   }
 
-}
 
-/* =========================================================
-   TIME
-   ========================================================= */
+  if (messageInput) {
 
-function formatTime(timestamp) {
+    messageInput.value =
+      "";
 
-  if (!timestamp) {
-    return "";
   }
 
-  return new Date(
-    timestamp
-  ).toLocaleTimeString(
-    [],
-    {
-      hour:
-        "2-digit",
 
-      minute:
-        "2-digit"
-    }
+  clearSearch();
+
+  cancelReply();
+
+  closeSidebar();
+
+  closeThemePanel();
+
+
+  chatScreen?.classList.add(
+    "hidden"
   );
 
+  loginScreen?.classList.remove(
+    "hidden"
+  );
+
+
+  if (onlineStatus) {
+
+    onlineStatus.textContent =
+      "Connecting...";
+
+  }
+
+
+  setLoginStatus("");
+
 }
 
+
 /* =========================================================
-   SCROLL
+   BEFORE UNLOAD
    ========================================================= */
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    /*
+       Do not await here.
+       Browser may terminate async
+       operations immediately.
+    */
+
+    if (currentUser) {
+
+      updateLastSeen();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   UI HELPERS
+   ========================================================= */
+
+function setLoginStatus(
+  message
+) {
+
+  if (!loginStatus) return;
+
+  loginStatus.textContent =
+    message;
+
+}
+
+
+function showChatError(
+  message
+) {
+
+  console.error(
+    message
+  );
+
+
+  /*
+     Use login status if available,
+     otherwise temporary typing area
+     so no extra HTML is required.
+  */
+
+  if (
+    chatScreen?.classList.contains(
+      "hidden"
+    )
+  ) {
+
+    setLoginStatus(
+      message
+    );
+
+    return;
+
+  }
+
+
+  if (typingIndicator) {
+
+    typingIndicator.textContent =
+      message;
+
+    typingIndicator.classList.add(
+      "show"
+    );
+
+
+    clearTimeout(
+      typingIndicator._errorTimer
+    );
+
+
+    typingIndicator._errorTimer =
+      setTimeout(
+        () => {
+
+          typingIndicator.classList.remove(
+            "show"
+          );
+
+          typingIndicator.textContent =
+            "";
+
+        },
+        2500
+      );
+
+  }
+
+}
+
 
 function scrollToBottom() {
 
-  if (!messages) {
-    return;
-  }
+  if (!messages) return;
+
 
   requestAnimationFrame(
     () => {
@@ -3822,9 +4852,91 @@ function scrollToBottom() {
 
 }
 
+
+function formatMessageTime(
+  timestamp
+) {
+
+  if (!timestamp) {
+    return "";
+  }
+
+
+  const date =
+    new Date(timestamp);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
+
+
+  return date.toLocaleTimeString(
+    [],
+    {
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit"
+    }
+  );
+
+}
+
+
+function getFileExtension(
+  filename
+) {
+
+  const index =
+    filename.lastIndexOf(
+      "."
+    );
+
+
+  if (
+    index === -1
+  ) {
+
+    return "";
+
+  }
+
+
+  return filename
+    .slice(index)
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9.]/g,
+      ""
+    );
+
+}
+
+
 /* =========================================================
-   GLOBAL ERROR DISPLAY
+   GLOBAL ERROR HANDLERS
    ========================================================= */
+
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+
+    console.error(
+      "UNHANDLED PROMISE:",
+      event.reason
+    );
+
+  }
+);
+
 
 window.addEventListener(
   "error",
@@ -3836,648 +4948,39 @@ window.addEventListener(
       event.message
     );
 
-    if (
-      loginStatus &&
-      !currentProfile
-    ) {
-
-      loginStatus.textContent =
-        "⚠️ JavaScript error: " +
-        event.message;
-
-    }
-
-  }
-);
-
-window.addEventListener(
-  "unhandledrejection",
-  event => {
-
-    console.error(
-      "PROMISE ERROR:",
-      event.reason
-    );
-
-    if (
-      loginStatus &&
-      !currentProfile
-    ) {
-
-      loginStatus.textContent =
-        "⚠️ " +
-        (
-          event.reason?.message ||
-          "Something went wrong."
-        );
-
-    }
-
   }
 );
 
 
 /* =========================================================
-   MESSAGE SEARCH ENGINE + HIGHLIGHT
+   DEBUG HELPERS
    ========================================================= */
 
-function escapeSearchRegex(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+window.NeuralNinjas = {
 
-function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
+  getCurrentUser() {
+    return currentUser;
+  },
 
-function searchMessages() {
-  if (!messages || !messageSearchInput) return;
+  getCurrentProfile() {
+    return currentProfile;
+  },
 
-  const query = messageSearchInput.value.trim();
+  startVoiceRecording,
 
-  const messageElements =
-    messages.querySelectorAll(".message");
+  stopVoiceRecording,
 
-  messageElements.forEach(message => {
+  sendMessage,
 
-    // Restore original message content
-    if (message.dataset.originalContent) {
-      message.innerHTML = message.dataset.originalContent;
-    }
+  clearSearch,
 
-    const text = message.textContent;
+  applyTheme,
 
-    if (!query) {
-      message.style.display = "";
-      return;
-    }
+  logout: exitChat
 
-    if (!text.toLowerCase().includes(query.toLowerCase())) {
-      message.style.display = "none";
-      return;
-    }
+};
 
-    message.style.display = "";
 
-    // Save original HTML before highlighting
-    if (!message.dataset.originalContent) {
-      message.dataset.originalContent = message.innerHTML;
-    }
-
-    const regex =
-      new RegExp(`(${escapeSearchRegex(query)})`, "gi");
-
-    message.innerHTML =
-      message.innerHTML.replace(
-        regex,
-        '<span class="search-highlight">$1</span>'
-      );
-  });
-}
-
-function startReply(data) {
-  if (!data) return;
-
-  replyingToMessage = data;
-
-  if (replySender) {
-    replySender.textContent =
-      data.sender_name || "Unknown";
-  }
-
-  if (replyPreview) {
-    let preview = "";
-
-    if (data.message_type === "image") {
-      preview = "📷 Image";
-    } else if (data.message_type === "video") {
-      preview = "🎥 Video";
-    } else if (data.message_type === "audio") {
-      preview = "🎵 Audio";
-    } else if (data.message_type === "code") {
-      preview = "💻 Code";
-    } else {
-      preview = data.message || "";
-    }
-
-    replyPreview.textContent = preview;
-  }
-
-  if (replyBar) {
-    replyBar.classList.remove("hidden");
-  }
-
-  messageInput?.focus();
-}
-
-/* =========================================================
-   LOAD MESSAGE REACTIONS
-   ========================================================= */
-
-async function loadReactions() {
-
-  if (!supabaseClient) {
-    return;
-  }
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("message_reactions")
-        .select("*");
-
-    if (error) {
-      throw error;
-    }
-
-    reactionCache.clear();
-
-    (data || []).forEach(reaction => {
-
-      if (!reactionCache.has(reaction.message_id)) {
-
-        reactionCache.set(
-          reaction.message_id,
-          []
-        );
-
-      }
-
-      reactionCache
-        .get(reaction.message_id)
-        .push(reaction);
-
-    });
-
-    console.log(
-      "Reactions loaded:",
-      reactionCache
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Reaction load error:",
-      error
-    );
-
-  }
-
-}
-
-/* =========================================================
-   TOGGLE MESSAGE REACTION
-   ========================================================= */
-
-      
-async function toggleReaction(
-  messageId,
-  reaction
-) {
-
-  if (
-    !supabaseClient ||
-    !currentUser
-  ) {
-    return;
-  }
-
-  try {
-
-    const {
-      data: existingReaction,
-      error: fetchError
-    } =
-      await supabaseClient
-        .from("message_reactions")
-        .select("id")
-        .eq("message_id", messageId)
-        .eq("user_id", currentUser.id)
-        .eq("reaction", reaction)
-        .maybeSingle();
-
-    if (fetchError) {
-      throw fetchError;
-    }
-
-    // =========================================
-    // ALREADY REACTED → REMOVE REACTION
-    // =========================================
-
-    if (existingReaction) {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from("message_reactions")
-          .delete()
-          .eq(
-            "id",
-            existingReaction.id
-          );
-
-      if (error) {
-        throw error;
-      }
-
-    }
-
-    // =========================================
-    // NOT REACTED → ADD REACTION
-    // =========================================
-
-    else {
-
-      const {
-        error
-      } =
-        await supabaseClient
-          .from("message_reactions")
-          .insert({
-
-            message_id:
-              messageId,
-
-            user_id:
-              currentUser.id,
-
-            reaction:
-              reaction
-
-          });
-
-      if (error) {
-        throw error;
-      }
-
-    }
-
-    // =========================================
-    // REFRESH REACTIONS
-    // =========================================
-
-    await loadReactions();
-
-    const element =
-      document.querySelector(
-        `[data-message-id="${messageId}"]`
-      );
-
-    if (element) {
-      element.remove();
-    }
-
-    const messageData =
-      messageCache.get(messageId);
-
-    if (messageData) {
-
-      renderMessage(
-        messageData,
-        false
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Reaction error:",
-      error
-    );
-
-    alert(
-      "Reaction failed:\n\n" +
-      (
-        error?.message ||
-        "Unknown error"
-      )
-    );
-
-  }
-
-}
-
-
-async function showReactionUsers(
-  messageId,
-  reaction
-) {
-
-  if (!supabaseClient) {
-    return;
-  }
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("message_reactions")
-        .select(`
-          user_id,
-          reaction,
-          profiles (
-            username
-          )
-        `)
-        .eq(
-          "message_id",
-          messageId
-        )
-        .eq(
-          "reaction",
-          reaction
-        );
-
-    if (error) {
-      throw error;
-    }
-
-    // =========================================
-    // CREATE POPUP
-    // =========================================
-
-    const existingPopup =
-      document.getElementById(
-        "reactionUsersPopup"
-      );
-
-    if (existingPopup) {
-      existingPopup.remove();
-    }
-
-    const overlay =
-      document.createElement("div");
-
-    overlay.id =
-      "reactionUsersPopup";
-
-    overlay.className =
-      "reaction-users-overlay";
-
-    const popup =
-      document.createElement("div");
-
-    popup.className =
-      "reaction-users-popup";
-
-    // =========================================
-    // HEADER
-    // =========================================
-
-    const header =
-      document.createElement("div");
-
-    header.className =
-      "reaction-users-header";
-
-    header.textContent =
-      `${reaction} Reactions`;
-
-    popup.appendChild(
-      header
-    );
-
-    // =========================================
-    // USERS
-    // =========================================
-
-    if (
-      !data ||
-      data.length === 0
-    ) {
-
-      const empty =
-        document.createElement("div");
-
-      empty.className =
-        "reaction-users-empty";
-
-      empty.textContent =
-        "No reactions yet.";
-
-      popup.appendChild(
-        empty
-      );
-
-    } else {
-
-      data.forEach(item => {
-
-        const username =
-          item.profiles?.username ||
-          "Unknown user";
-
-        const userRow =
-          document.createElement("div");
-
-        userRow.className =
-          "reaction-user-row";
-
-        const name =
-          document.createElement("span");
-
-        name.className =
-          "reaction-user-name";
-
-        name.textContent =
-          username;
-
-        const emoji =
-          document.createElement("span");
-
-        emoji.className =
-          "reaction-user-emoji";
-
-        emoji.textContent =
-          reaction;
-
-        userRow.appendChild(
-          name
-        );
-
-        userRow.appendChild(
-          emoji
-        );
-
-        popup.appendChild(
-          userRow
-        );
-
-      });
-
-    }
-
-    // =========================================
-    // CLOSE BUTTON
-    // =========================================
-
-    const closeButton =
-      document.createElement("button");
-
-    closeButton.className =
-      "reaction-users-close";
-
-    closeButton.type =
-      "button";
-
-    closeButton.textContent =
-      "Close";
-
-    closeButton.addEventListener(
-      "click",
-      () => {
-
-        overlay.remove();
-
-      }
-    );
-
-    popup.appendChild(
-      closeButton
-    );
-
-    overlay.appendChild(
-      popup
-    );
-
-    document.body.appendChild(
-      overlay
-    );
-
-    // =========================================
-    // TAP OUTSIDE → CLOSE
-    // =========================================
-
-    overlay.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target === overlay
-        ) {
-
-          overlay.remove();
-
-        }
-
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Reaction users error:",
-      error
-    );
-
-    alert(
-      "Could not load reaction users:\n\n" +
-      (
-        error?.message ||
-        "Unknown error"
-      )
-    );
-
-  }
-
-}
-    
-
-  
-// =========================================================
-// NEURAL NINJAS - CHAT THEMES
-// =========================================================
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  const themeBtn =
-    document.getElementById("themeBtn");
-
-  const themePanel =
-    document.getElementById("themePanel");
-
-  const closeThemeBtn =
-    document.getElementById("closeThemeBtn");
-
-  const themeOptions =
-    document.querySelectorAll(".theme-option");
-
-
-  // OPEN THEME PANEL
-  themeBtn?.addEventListener("click", (event) => {
-
-    event.stopPropagation();
-
-    themePanel?.classList.toggle("hidden");
-
-  });
-
-
-  // CLOSE BUTTON
-  closeThemeBtn?.addEventListener("click", () => {
-
-    themePanel?.classList.add("hidden");
-
-  });
-
-
-  // THEME OPTIONS
-  themeOptions.forEach(option => {
-
-    option.addEventListener("click", () => {
-
-      const theme =
-        option.getAttribute("data-theme");
-
-      if (theme === "default") {
-
-        document.body.removeAttribute("data-theme");
-
-      } else {
-
-        document.body.setAttribute(
-          "data-theme",
-          theme
-        );
-
-      }
-
-      themePanel?.classList.add("hidden");
-
-    });
-
-  });
-
-
-  // CLICK OUTSIDE
-  document.addEventListener("click", (event) => {
-
-    if (
-      !themePanel ||
-      themePanel.classList.contains("hidden")
-    ) {
-      return;
-    }
-
-    if (
-      !themePanel.contains(event.target) &&
-      event.target !== themeBtn
-    ) {
-
-      themePanel.classList.add("hidden");
-
-    }
-
-  });
-
-});
+console.log(
+  "🥷 Neural Ninjas loaded successfully."
+);
