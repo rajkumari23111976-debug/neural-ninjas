@@ -80,6 +80,7 @@ let loginScreen;
 let chatScreen;
 
 let usernameInput;
+let pinInput;
 let joinBtn;
 let loginStatus;
 
@@ -128,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
   chatScreen = document.getElementById("chatScreen");
 
   usernameInput = document.getElementById("usernameInput");
+  pinInput = document.getElementById("pinInput");
   joinBtn = document.getElementById("joinBtn");
   loginStatus = document.getElementById("loginStatus");
 
