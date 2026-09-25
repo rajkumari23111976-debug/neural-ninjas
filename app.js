@@ -31,7 +31,7 @@ const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_ZevxyTcnHnHn"; // <-- keep your existing publishable key here
+  "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl"; // <-- keep your existing publishable key here
 
 
 const supabaseClient =
