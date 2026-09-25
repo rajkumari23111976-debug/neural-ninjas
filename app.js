@@ -566,87 +566,8 @@ function makeAuthEmail(username) {
 }
 
 
-    /* =====================================================
-       CREATE ACCOUNT IF LOGIN FAILED
-       ===================================================== */
-
-    if (error) {
-
-      const signUpResult =
-        await supabaseClient.auth.signUp({
-          email,
-          password: pin,
-          options: {
-            data: {
-              username
-            }
-          }
-        });
-
-
-      if (signUpResult.error) {
-
-        throw new Error(
-          "Username or PIN is incorrect, or account already exists."
-        );
-
-      }
-
-
-      data =
-        signUpResult.data;
-
-
-      if (!data.session) {
-
-        throw new Error(
-          "Account created, but email confirmation is enabled in Supabase. Disable email confirmation for this username/PIN login system."
-        );
-
-      }
-
-    }
-
-
-    currentUser =
-      data.user;
-
-
-    if (!currentUser) {
-
-      throw new Error(
-        "Login succeeded but user session was not returned."
-      );
-
-    }
-
-
-    await loadCurrentProfile(username);
-
-    await startChat();
-
-
-  } catch (error) {
-
-    console.error(
-      "LOGIN ERROR:",
-      error
-    );
-
-    setLoginStatus(
-      error.message ||
-      "Login failed."
-    );
-
-  } finally {
-
-    if (joinBtn) {
-      joinBtn.disabled = false;
-    }
-
-  }
-
-}
+    succeeded but user session was not returned."
+    
 
 
 /* =========================================================
