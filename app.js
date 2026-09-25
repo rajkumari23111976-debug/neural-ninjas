@@ -566,7 +566,6 @@ function makeAuthEmail(username) {
 }
 
 
-    succeeded but user session was not returned."
     
 
 
