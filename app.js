@@ -3807,16 +3807,14 @@ function setupPresence() {
 
 
   presenceChannel.on(
-    "presence",
-    {
-      event: "join"
-    },
-    () => {
-
-      renderMembers();
-
-    }
-  );
+  "presence",
+  {
+    event: "sync"
+  },
+  () => {
+    refreshPresenceState();
+  }
+);
 
 
   presenceChannel.on(
