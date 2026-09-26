@@ -3772,5 +3772,188 @@ window.addEventListener(
 
 
 /* =========================================================
+   PHONE ERROR PANEL - TEMPORARY DEBUGGER
+   ========================================================= */
+
+(function () {
+
+  const panel = document.createElement("div");
+
+  panel.id = "phoneErrorPanel";
+
+  panel.style.cssText = `
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    max-height: 45vh;
+    overflow-y: auto;
+    background: #111;
+    color: #ff4444;
+    border: 2px solid #ff3333;
+    border-radius: 12px;
+    padding: 12px;
+    z-index: 999999;
+    font-family: monospace;
+    font-size: 12px;
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  `;
+
+  panel.innerHTML =
+    "<b>🔴 NEURAL NINJAS ERROR LOG</b><br><br>";
+
+  document.body.appendChild(panel);
+
+
+  function showError(title, error) {
+
+    panel.style.display = "block";
+
+    const box =
+      document.createElement("div");
+
+    box.style.cssText = `
+      margin-top: 10px;
+      padding: 8px;
+      border-top: 1px solid #555;
+    `;
+
+    box.textContent =
+      title +
+      "\n" +
+      (
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        String(error)
+      );
+
+    panel.appendChild(box);
+  }
+
+
+  window.addEventListener(
+    "error",
+    function (event) {
+
+      showError(
+        "JAVASCRIPT ERROR:",
+        event.error ||
+        event.message
+      );
+
+    }
+  );
+
+
+  window.addEventListener(
+    "unhandledrejection",
+    function (event) {
+
+      showError(
+        "PROMISE ERROR:",
+        event.reason
+      );
+
+    }
+  );
+
+
+  const originalAlert =
+    window.alert;
+
+  window.alert =
+    function (message) {
+
+      showError(
+        "APP ALERT:",
+        message
+      );
+
+      originalAlert(message);
+    };
+
+
+  console.log =
+    function (...args) {
+
+      const text =
+        args
+          .map(
+            item => {
+
+              if (
+                typeof item === "object"
+              ) {
+
+                try {
+                  return JSON.stringify(
+                    item,
+                    null,
+                    2
+                  );
+                } catch (_) {
+                  return String(item);
+                }
+
+              }
+
+              return String(item);
+
+            }
+          )
+          .join(" ");
+
+      showError(
+        "LOG:",
+        text
+      );
+
+    };
+
+
+  console.error =
+    function (...args) {
+
+      const text =
+        args
+          .map(
+            item => {
+
+              if (
+                typeof item === "object"
+              ) {
+
+                try {
+                  return JSON.stringify(
+                    item,
+                    null,
+                    2
+                  );
+                } catch (_) {
+                  return String(item);
+                }
+
+              }
+
+              return String(item);
+
+            }
+          )
+          .join(" ");
+
+      showError(
+        "❌ CONSOLE ERROR:",
+        text
+      );
+
+    };
+
+
+})();
+
+/* =========================================================
    END OF APP.JS
    ========================================================= */
