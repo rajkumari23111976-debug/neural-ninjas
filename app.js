@@ -3824,7 +3824,7 @@ function setupPresence() {
     },
     () => {
 
-      renderMembers();
+      refreshPresenceState();
 
     }
   );
