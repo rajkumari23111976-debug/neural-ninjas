@@ -1,31 +1,24 @@
 /* =========================================================
-   NEURAL NINJAS — FUTURISTIC CYBER SPACE UI
-   UI ONLY — JS / DATABASE FUNCTIONALITY UNTOUCHED
+   NEURAL NINJAS — SHARP CYBER SPACE UI
+   NO BLUR • NO JS CHANGES • MOBILE FIRST
    ========================================================= */
 
 :root {
-  --bg: #050711;
-  --bg-2: #080b18;
-  --panel: rgba(10, 15, 30, 0.82);
-  --panel-strong: rgba(12, 18, 38, 0.96);
+  --bg: #03050b;
+  --bg2: #070b14;
+  --panel: #0a101c;
+  --panel2: #0d1524;
 
   --blue: #00d9ff;
-  --blue-soft: #008cff;
-  --amber: #ffae2b;
+  --blue2: #008cff;
+  --amber: #ffad32;
 
-  --text: #f4f8ff;
-  --muted: #8995ad;
+  --white: #f4f8ff;
+  --text: #dbe7f5;
+  --muted: #718099;
 
-  --border: rgba(0, 217, 255, 0.16);
-  --border-hover: rgba(0, 217, 255, 0.42);
-
-  --shadow:
-    0 10px 40px rgba(0, 0, 0, 0.45);
-
-  --glow:
-    0 0 18px rgba(0, 217, 255, 0.22);
-
-  --radius: 18px;
+  --line: rgba(0, 217, 255, 0.16);
+  --line2: rgba(255, 255, 255, 0.07);
 }
 
 /* =========================================================
@@ -53,94 +46,50 @@ body {
     "Segoe UI",
     sans-serif;
 
+  color: var(--text);
+
   background:
     radial-gradient(
-      circle at 15% 15%,
-      rgba(0, 153, 255, 0.12),
-      transparent 28%
+      circle at 15% 10%,
+      rgba(0, 150, 255, 0.10),
+      transparent 30%
     ),
     radial-gradient(
-      circle at 85% 80%,
-      rgba(255, 166, 0, 0.08),
+      circle at 90% 90%,
+      rgba(255, 166, 0, 0.055),
       transparent 25%
     ),
-    linear-gradient(
-      135deg,
-      #03050c,
-      #070a16 50%,
-      #04050b
-    );
+    #03050b;
 
-  color: var(--text);
   overflow: hidden;
 }
 
 /* =========================================================
-   FUTURISTIC BACKGROUND GRID
+   SPACE GRID
    ========================================================= */
 
 body::before {
   content: "";
+
   position: fixed;
   inset: 0;
 
   background-image:
     linear-gradient(
-      rgba(0, 217, 255, 0.035) 1px,
+      rgba(0, 217, 255, 0.025) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      rgba(0, 217, 255, 0.035) 1px,
+      rgba(0, 217, 255, 0.025) 1px,
       transparent 1px
     );
 
-  background-size: 42px 42px;
+  background-size: 45px 45px;
 
   pointer-events: none;
-  z-index: -2;
 
-  mask-image: linear-gradient(
-    to bottom,
-    black,
-    transparent 90%
-  );
-}
-
-/* =========================================================
-   AMBIENT GLOW
-   ========================================================= */
-
-body::after {
-  content: "";
-
-  position: fixed;
-  width: 420px;
-  height: 420px;
-
-  left: -180px;
-  top: -180px;
-
-  border-radius: 50%;
-
-  background: rgba(0, 174, 255, 0.08);
-
-  filter: blur(90px);
-
-  pointer-events: none;
   z-index: -1;
-
-  animation: ambientMove 9s ease-in-out infinite alternate;
-}
-
-@keyframes ambientMove {
-  from {
-    transform: translate(0, 0);
-  }
-
-  to {
-    transform: translate(120px, 90px);
-  }
 }
 
 /* =========================================================
@@ -155,6 +104,7 @@ textarea {
 
 button {
   cursor: pointer;
+  border: 0;
 }
 
 .hidden {
@@ -162,7 +112,7 @@ button {
 }
 
 /* =========================================================
-   LOGIN SCREEN
+   LOGIN
    ========================================================= */
 
 #loginScreen {
@@ -178,8 +128,8 @@ button {
   background:
     radial-gradient(
       circle at center,
-      rgba(0, 145, 255, 0.08),
-      transparent 45%
+      rgba(0, 217, 255, 0.06),
+      transparent 42%
     );
 }
 
@@ -187,65 +137,58 @@ button {
    LOGIN CARD
    ========================================================= */
 
-#loginScreen > * {
-  max-width: 430px;
-}
-
 .login-card,
 .login-container,
 #loginScreen .card {
-  width: 100%;
+  width: min(420px, 100%);
 
   padding: 32px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(15, 24, 48, 0.92),
-      rgba(5, 9, 20, 0.92)
+      #0d1627,
+      #070c16
     );
 
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
 
-  border-radius: 26px;
+  border-radius: 22px;
 
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.02),
-    0 25px 80px rgba(0, 0, 0, 0.55),
-    0 0 40px rgba(0, 174, 255, 0.08);
+    0 25px 70px rgba(0, 0, 0, 0.6),
+    0 0 35px rgba(0, 217, 255, 0.07);
 
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-
-  animation: loginAppear 0.7s ease;
+  animation: loginIn 0.45s ease;
 }
 
-@keyframes loginAppear {
+@keyframes loginIn {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.97);
+    transform: translateY(15px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 /* =========================================================
-   LOGO / BRAND
+   BRAND
    ========================================================= */
 
 .logo,
 .brand,
 .app-logo {
-  color: white;
+  color: #ffffff;
 
   letter-spacing: 4px;
 
   text-shadow:
-    0 0 10px rgba(0, 217, 255, 0.65),
-    0 0 30px rgba(0, 217, 255, 0.25);
+    0 0 8px rgba(0, 217, 255, 0.65);
+
+  font-weight: 800;
 }
 
 .logo span,
@@ -262,84 +205,75 @@ input,
 textarea {
   width: 100%;
 
-  color: var(--text);
+  color: var(--white);
 
-  background:
-    rgba(2, 7, 18, 0.8);
+  background: #050a13;
 
-  border: 1px solid rgba(0, 217, 255, 0.15);
+  border: 1px solid rgba(0, 217, 255, 0.14);
 
-  border-radius: 13px;
+  border-radius: 12px;
 
   outline: none;
 
   transition:
-    border 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 input {
-  height: 50px;
-  padding: 0 15px;
+  height: 49px;
+
+  padding: 0 14px;
 }
 
 textarea {
-  padding: 13px 15px;
+  padding: 11px 13px;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #69758e;
+  color: #66748c;
 }
 
 input:focus,
 textarea:focus {
   border-color: var(--blue);
 
-  background:
-    rgba(2, 10, 24, 0.95);
-
   box-shadow:
-    0 0 0 3px rgba(0, 217, 255, 0.08),
-    0 0 20px rgba(0, 217, 255, 0.1);
+    0 0 0 2px rgba(0, 217, 255, 0.07),
+    0 0 15px rgba(0, 217, 255, 0.08);
 }
 
 /* =========================================================
-   PRIMARY BUTTONS
+   JOIN BUTTON
    ========================================================= */
-
-button {
-  border: 0;
-}
 
 #joinBtn,
 .join-btn,
 .primary-btn {
   width: 100%;
 
-  min-height: 50px;
+  min-height: 49px;
 
-  border-radius: 13px;
-
-  color: #021018;
+  color: #021016;
 
   font-weight: 800;
+
+  border-radius: 12px;
 
   background:
     linear-gradient(
       110deg,
       var(--blue),
-      #51e8ff
+      #66eaff
     );
 
   box-shadow:
-    0 0 20px rgba(0, 217, 255, 0.18);
+    0 0 18px rgba(0, 217, 255, 0.16);
 
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 #joinBtn:hover,
@@ -348,9 +282,7 @@ button {
   transform: translateY(-2px);
 
   box-shadow:
-    0 0 30px rgba(0, 217, 255, 0.38);
-
-  filter: brightness(1.08);
+    0 0 28px rgba(0, 217, 255, 0.3);
 }
 
 #joinBtn:active,
@@ -360,7 +292,7 @@ button {
 }
 
 /* =========================================================
-   CHAT SCREEN
+   CHAT
    ========================================================= */
 
 #chatScreen {
@@ -373,7 +305,7 @@ button {
   background:
     radial-gradient(
       circle at 50% 0%,
-      rgba(0, 217, 255, 0.055),
+      rgba(0, 217, 255, 0.035),
       transparent 35%
     );
 }
@@ -386,25 +318,21 @@ button {
 header {
   position: relative;
 
-  min-height: 66px;
+  min-height: 64px;
 
   display: flex;
   align-items: center;
 
-  padding: 10px 15px;
+  padding: 9px 13px;
 
-  background:
-    rgba(5, 9, 20, 0.82);
+  background: #070c16;
 
-  border-bottom: 1px solid var(--border);
-
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
 
   z-index: 6000;
 
   box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.2);
+    0 5px 20px rgba(0, 0, 0, 0.25);
 }
 
 .chat-header::after,
@@ -413,8 +341,8 @@ header::after {
 
   position: absolute;
 
-  left: 0;
-  right: 0;
+  left: 8%;
+  right: 8%;
   bottom: -1px;
 
   height: 1px;
@@ -423,10 +351,12 @@ header::after {
     linear-gradient(
       90deg,
       transparent,
-      rgba(0, 217, 255, 0.5),
-      rgba(255, 174, 43, 0.4),
+      var(--blue),
+      var(--amber),
       transparent
     );
+
+  opacity: 0.55;
 }
 
 /* =========================================================
@@ -439,7 +369,9 @@ header h1,
 header h2 {
   font-size: 17px;
 
-  letter-spacing: 1.5px;
+  font-weight: 750;
+
+  letter-spacing: 1.2px;
 
   white-space: nowrap;
 }
@@ -449,46 +381,45 @@ header h2 {
    ========================================================= */
 
 #onlineStatus {
-  font-size: 11px;
+  margin-left: 7px;
 
-  color: #63ffb0;
+  color: #58ff9d;
 
-  margin-left: 8px;
+  font-size: 10px;
 
   text-shadow:
-    0 0 10px rgba(99, 255, 176, 0.5);
+    0 0 7px rgba(88, 255, 157, 0.4);
 }
 
 /* =========================================================
-   HEADER ICON BUTTONS
+   HEADER BUTTONS
    ========================================================= */
 
 #menuBtn,
 #logoutBtn,
 #themeBtn,
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 39px;
+  height: 39px;
 
   display: inline-flex;
 
   align-items: center;
   justify-content: center;
 
-  color: #b9c7df;
+  color: #aab8cd;
 
-  background:
-    rgba(255, 255, 255, 0.035);
+  background: #0b1320;
 
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line2);
 
-  border-radius: 12px;
+  border-radius: 11px;
 
   transition:
-    color 0.2s ease,
-    border 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s ease;
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
 }
 
 #menuBtn:hover,
@@ -497,17 +428,16 @@ header h2 {
 .icon-btn:hover {
   color: var(--blue);
 
+  background: #0d1a2a;
+
   border-color:
     rgba(0, 217, 255, 0.35);
-
-  background:
-    rgba(0, 217, 255, 0.08);
 
   transform: translateY(-1px);
 }
 
 /* =========================================================
-   MESSAGES AREA
+   MESSAGES
    ========================================================= */
 
 #messages {
@@ -519,9 +449,9 @@ header h2 {
   overflow-x: hidden;
 
   padding:
-    20px
+    18px
     max(12px, 4vw)
-    110px;
+    105px;
 
   scroll-behavior: smooth;
 }
@@ -531,8 +461,8 @@ header h2 {
    ========================================================= */
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -541,14 +471,14 @@ header h2 {
 
 ::-webkit-scrollbar-thumb {
   background:
-    rgba(0, 217, 255, 0.18);
+    rgba(0, 217, 255, 0.2);
 
   border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background:
-    rgba(0, 217, 255, 0.38);
+    rgba(0, 217, 255, 0.4);
 }
 
 /* =========================================================
@@ -557,21 +487,28 @@ header h2 {
 
 .message {
   display: flex;
+
   flex-direction: column;
 
   width: fit-content;
 
   max-width: min(78%, 680px);
 
-  margin-bottom: 14px;
+  margin-bottom: 13px;
 
-  animation: messageIn 0.25s ease;
+  animation: messageIn 0.2s ease;
+}
+
+.message.mine {
+  margin-left: auto;
+
+  align-items: flex-end;
 }
 
 @keyframes messageIn {
   from {
     opacity: 0;
-    transform: translateY(7px);
+    transform: translateY(5px);
   }
 
   to {
@@ -580,24 +517,21 @@ header h2 {
   }
 }
 
-.message.mine {
-  margin-left: auto;
-  align-items: flex-end;
-}
-
 /* =========================================================
-   SENDER NAME
+   SENDER
    ========================================================= */
 
 .sender,
 .sender-name {
-  margin: 0 8px 5px;
-
-  font-size: 11px;
-
-  font-weight: 700;
+  margin:
+    0 8px
+    4px;
 
   color: var(--blue);
+
+  font-size: 10px;
+
+  font-weight: 750;
 
   letter-spacing: 0.5px;
 }
@@ -608,65 +542,55 @@ header h2 {
 }
 
 /* =========================================================
-   MESSAGE BUBBLE
+   BUBBLE
    ========================================================= */
 
 .bubble {
   position: relative;
 
-  padding: 11px 14px;
+  padding: 10px 13px;
 
-  border-radius: 17px;
-
-  color: #eef6ff !important;
+  color: #f1f6ff !important;
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(18, 29, 54, 0.9),
-      rgba(8, 15, 31, 0.9)
-    ) !important;
+    #0c1524 !important;
 
-  border: 1px solid rgba(0, 217, 255, 0.12);
+  border:
+    1px solid rgba(0, 217, 255, 0.12);
+
+  border-radius: 15px;
 
   box-shadow:
-    0 7px 25px rgba(0, 0, 0, 0.2);
+    0 5px 18px rgba(0, 0, 0, 0.22);
+
+  line-height: 1.5;
 
   white-space: pre-wrap;
 
   overflow-wrap: anywhere;
-
-  line-height: 1.5;
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .message.mine .bubble {
   background:
-    linear-gradient(
-      145deg,
-      rgba(0, 82, 117, 0.52),
-      rgba(7, 26, 47, 0.88)
-    ) !important;
+    #062237 !important;
 
   border-color:
     rgba(0, 217, 255, 0.25);
 
   box-shadow:
-    0 0 22px rgba(0, 174, 255, 0.08);
+    0 0 18px rgba(0, 174, 255, 0.07);
 }
 
 /* =========================================================
-   MESSAGE TEXT
+   TEXT
    ========================================================= */
 
 .message-text {
-  color: #f2f7ff !important;
+  color: #f1f6ff !important;
 
   font-size: 14px;
 
-  line-height: 1.55;
+  line-height: 1.5;
 
   white-space: pre-wrap;
 
@@ -674,28 +598,24 @@ header h2 {
 }
 
 /* =========================================================
-   CODE MESSAGE
+   CODE
    ========================================================= */
 
 .code-block {
   width: 100%;
 
-  margin-top: 3px;
+  margin-top: 2px;
 
-  padding: 14px;
+  padding: 13px;
 
-  overflow-x: auto;
-
-  border-radius: 13px;
-
-  background:
-    #03060d !important;
+  background: #02050a !important;
 
   border:
-    1px solid rgba(0, 217, 255, 0.14);
+    1px solid rgba(0, 217, 255, 0.13);
 
-  box-shadow:
-    inset 0 0 25px rgba(0, 217, 255, 0.025);
+  border-radius: 11px;
+
+  overflow-x: auto;
 }
 
 .code-block code {
@@ -711,47 +631,43 @@ header h2 {
 }
 
 /* =========================================================
-   COPY CODE BUTTON
+   COPY BUTTON
    ========================================================= */
 
 .copy-code-btn {
-  margin-top: 8px;
+  margin-top: 7px;
 
-  padding: 7px 11px;
+  padding: 6px 10px;
 
   color: var(--blue);
 
-  background:
-    rgba(0, 217, 255, 0.06);
+  background: #071522;
 
   border:
     1px solid rgba(0, 217, 255, 0.16);
 
-  border-radius: 9px;
+  border-radius: 8px;
 
-  font-size: 11px;
-
-  transition: 0.2s ease;
+  font-size: 10px;
 }
 
 .copy-code-btn:hover {
-  background:
-    rgba(0, 217, 255, 0.13);
+  background: #0a1d2e;
 
   border-color:
-    rgba(0, 217, 255, 0.4);
+    rgba(0, 217, 255, 0.38);
 }
 
 /* =========================================================
-   MESSAGE TIME
+   TIME
    ========================================================= */
 
 .message-time {
-  margin-top: 5px;
+  margin-top: 4px;
+
+  color: #65748b;
 
   font-size: 9px;
-
-  color: #718099;
 
   text-align: right;
 }
@@ -763,13 +679,13 @@ header h2 {
 .message-actions {
   display: flex;
 
-  gap: 5px;
+  gap: 4px;
 
-  margin-top: 5px;
+  margin-top: 4px;
 
   opacity: 0;
 
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 
 .message:hover .message-actions {
@@ -777,30 +693,33 @@ header h2 {
 }
 
 .message-actions button {
-  width: 28px;
-  height: 28px;
+  width: 27px;
+  height: 27px;
 
-  border-radius: 9px;
+  display: flex;
 
-  color: #8794ad;
+  align-items: center;
+  justify-content: center;
 
-  background:
-    rgba(255, 255, 255, 0.035);
+  color: #7f8da3;
+
+  background: #0a111c;
 
   border:
     1px solid rgba(255, 255, 255, 0.06);
 
-  transition: 0.2s ease;
+  border-radius: 8px;
+
+  transition: 0.18s ease;
 }
 
 .message-actions button:hover {
   color: var(--blue);
 
-  border-color:
-    rgba(0, 217, 255, 0.3);
+  background: #0b1b2a;
 
-  background:
-    rgba(0, 217, 255, 0.08);
+  border-color:
+    rgba(0, 217, 255, 0.25);
 }
 
 /* =========================================================
@@ -814,113 +733,96 @@ header h2 {
 
   gap: 4px;
 
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 .reaction {
-  padding: 4px 8px;
+  padding: 3px 7px;
 
-  border-radius: 20px;
+  color: #dce7f5;
 
-  color: #dce8f7;
-
-  background:
-    rgba(255, 255, 255, 0.05);
+  background: #0b1421;
 
   border:
     1px solid rgba(255, 255, 255, 0.07);
 
-  font-size: 11px;
+  border-radius: 15px;
+
+  font-size: 10px;
 }
 
 /* =========================================================
-   REPLY BAR
+   REPLY
    ========================================================= */
 
 #replyBar {
   margin:
-    0 12px
-    8px;
+    0 10px
+    7px;
 
-  padding: 9px 12px;
+  padding: 8px 11px;
+
+  background: #081827;
 
   border-left:
     3px solid var(--blue);
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  background:
-    rgba(0, 217, 255, 0.055);
-
-  box-shadow:
-    0 0 20px rgba(0, 217, 255, 0.04);
+  min-height: 40px;
 }
 
 #replySender {
   color: var(--blue);
 
-  font-size: 11px;
+  font-size: 10px;
 
   font-weight: 800;
 }
 
 #replyPreview {
-  color: #9daac0;
-
-  font-size: 12px;
-
   margin-top: 2px;
+
+  color: #8493a9;
+
+  font-size: 11px;
+
+  white-space: nowrap;
 
   overflow: hidden;
 
   text-overflow: ellipsis;
-
-  white-space: nowrap;
 }
 
 #cancelReplyBtn {
-  color: #ff7c7c;
+  float: right;
+
+  color: #ff7474;
 
   background: transparent;
-
-  float: right;
 }
 
 /* =========================================================
-   TYPING INDICATOR
+   TYPING
    ========================================================= */
 
 #typingIndicator {
-  min-height: 22px;
+  min-height: 20px;
 
-  padding: 0 18px;
+  padding:
+    0 17px;
 
-  color: #718099;
+  color: #65748b;
 
-  font-size: 11px;
+  font-size: 10px;
 
   font-style: italic;
 }
 
 #typingIndicator::after {
-  content: "•••";
-
-  margin-left: 4px;
+  content: " •••";
 
   color: var(--blue);
-
-  animation: typingDots 1.2s infinite;
-}
-
-@keyframes typingDots {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-
-  50% {
-    opacity: 1;
-  }
 }
 
 /* =========================================================
@@ -936,21 +838,17 @@ header h2 {
 
   align-items: flex-end;
 
-  gap: 8px;
+  gap: 7px;
 
   padding:
-    9px
-    12px
-    calc(9px + env(safe-area-inset-bottom));
+    8px
+    10px
+    calc(8px + env(safe-area-inset-bottom));
 
-  background:
-    rgba(5, 9, 20, 0.88);
+  background: #060b13;
 
   border-top:
-    1px solid rgba(0, 217, 255, 0.12);
-
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+    1px solid rgba(0, 217, 255, 0.11);
 
   z-index: 50;
 }
@@ -962,63 +860,28 @@ header h2 {
 #messageInput {
   flex: 1;
 
-  min-height: 44px;
-  max-height: 130px;
-
-  resize: none;
+  min-height: 43px;
+  max-height: 125px;
 
   padding:
-    11px
-    13px;
-
-  border-radius: 15px;
+    10px
+    12px;
 
   color: white;
 
-  background:
-    rgba(3, 8, 18, 0.9);
+  background: #030811;
 
   border:
     1px solid rgba(0, 217, 255, 0.13);
+
+  border-radius: 13px;
+
+  resize: none;
 }
 
 #messageInput:focus {
   border-color:
-    rgba(0, 217, 255, 0.42);
-}
-
-/* =========================================================
-   SEND BUTTON
-   ========================================================= */
-
-#sendBtn {
-  width: 45px;
-  height: 45px;
-
-  flex: 0 0 45px;
-
-  border-radius: 14px;
-
-  color: #031019;
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--blue),
-      #71edff
-    );
-
-  box-shadow:
-    0 0 20px rgba(0, 217, 255, 0.18);
-
-  transition: 0.2s ease;
-}
-
-#sendBtn:hover {
-  transform: translateY(-2px);
-
-  box-shadow:
-    0 0 30px rgba(0, 217, 255, 0.4);
+    rgba(0, 217, 255, 0.4);
 }
 
 /* =========================================================
@@ -1026,32 +889,68 @@ header h2 {
    ========================================================= */
 
 #mediaBtn {
-  width: 45px;
-  height: 45px;
+  width: 43px;
+  height: 43px;
 
-  flex: 0 0 45px;
+  flex: 0 0 43px;
 
-  border-radius: 14px;
+  color: #9ba9bd;
 
-  color: #9eabc0;
-
-  background:
-    rgba(255, 255, 255, 0.035);
+  background: #0a121e;
 
   border:
-    1px solid rgba(255, 255, 255, 0.08);
+    1px solid rgba(255, 255, 255, 0.07);
 
-  transition: 0.2s ease;
+  border-radius: 12px;
+
+  transition: 0.18s ease;
 }
 
 #mediaBtn:hover {
   color: var(--amber);
 
+  background: #18150e;
+
   border-color:
-    rgba(255, 174, 43, 0.35);
+    rgba(255, 174, 43, 0.3);
+}
+
+/* =========================================================
+   SEND
+   ========================================================= */
+
+#sendBtn {
+  width: 43px;
+  height: 43px;
+
+  flex: 0 0 43px;
+
+  color: #021017;
 
   background:
-    rgba(255, 174, 43, 0.07);
+    linear-gradient(
+      135deg,
+      var(--blue),
+      #62eaff
+    );
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 0 16px rgba(0, 217, 255, 0.16);
+
+  transition: 0.18s ease;
+}
+
+#sendBtn:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 0 25px rgba(0, 217, 255, 0.35);
+}
+
+#sendBtn:active {
+  transform: scale(0.95);
 }
 
 /* =========================================================
@@ -1065,30 +964,23 @@ header h2 {
   right: 0;
   bottom: 0;
 
-  width: min(340px, 88vw);
+  width: min(330px, 88vw);
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(10, 17, 35, 0.98),
-      rgba(4, 8, 18, 0.99)
-    );
+    #070d17;
 
   border-left:
-    1px solid rgba(0, 217, 255, 0.16);
+    1px solid rgba(0, 217, 255, 0.18);
 
   box-shadow:
-    -20px 0 70px rgba(0, 0, 0, 0.45);
-
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+    -20px 0 55px rgba(0, 0, 0, 0.55);
 
   z-index: 5000;
 
   transform: translateX(100%);
 
   transition:
-    transform 0.3s cubic-bezier(.2,.8,.2,1);
+    transform 0.28s ease;
 }
 
 #membersSidebar.open {
@@ -1105,9 +997,7 @@ header h2 {
   inset: 0;
 
   background:
-    rgba(0, 0, 0, 0.58);
-
-  backdrop-filter: blur(3px);
+    rgba(0, 0, 0, 0.68);
 
   z-index: 4999;
 }
@@ -1117,7 +1007,7 @@ header h2 {
    ========================================================= */
 
 #membersList {
-  padding: 12px;
+  padding: 11px;
 }
 
 .member {
@@ -1125,60 +1015,48 @@ header h2 {
 
   align-items: center;
 
-  gap: 12px;
+  gap: 11px;
 
-  padding: 12px;
+  padding: 11px;
 
-  margin-bottom: 7px;
+  margin-bottom: 6px;
 
-  border-radius: 13px;
-
-  background:
-    rgba(255, 255, 255, 0.025);
+  background: #0b131f;
 
   border:
-    1px solid rgba(255, 255, 255, 0.045);
+    1px solid rgba(255, 255, 255, 0.05);
 
-  transition: 0.2s ease;
+  border-radius: 12px;
+
+  transition: 0.18s ease;
 }
 
 .member:hover {
-  transform: translateX(-3px);
-
-  background:
-    rgba(0, 217, 255, 0.055);
+  background: #0c1b2a;
 
   border-color:
-    rgba(0, 217, 255, 0.16);
+    rgba(0, 217, 255, 0.2);
 }
 
 .member-avatar {
-  width: 39px;
-  height: 39px;
+  width: 38px;
+  height: 38px;
 
   display: flex;
 
   align-items: center;
   justify-content: center;
 
-  flex: 0 0 39px;
-
-  border-radius: 50%;
+  flex: 0 0 38px;
 
   color: var(--blue);
 
-  background:
-    radial-gradient(
-      circle,
-      rgba(0, 217, 255, 0.16),
-      rgba(0, 217, 255, 0.04)
-    );
+  background: #071725;
 
   border:
-    1px solid rgba(0, 217, 255, 0.25);
+    1px solid rgba(0, 217, 255, 0.22);
 
-  box-shadow:
-    0 0 15px rgba(0, 217, 255, 0.08);
+  border-radius: 50%;
 }
 
 .member-name {
@@ -1190,11 +1068,11 @@ header h2 {
 }
 
 .member-status {
-  color: #6e7d95;
-
-  font-size: 10px;
-
   margin-top: 2px;
+
+  color: #68768d;
+
+  font-size: 9px;
 }
 
 /* =========================================================
@@ -1209,12 +1087,12 @@ header h2 {
 
   margin-right: 5px;
 
+  background: #51ff99;
+
   border-radius: 50%;
 
-  background: #54ff9c;
-
   box-shadow:
-    0 0 10px rgba(84, 255, 156, 0.7);
+    0 0 8px rgba(81, 255, 153, 0.6);
 }
 
 /* =========================================================
@@ -1223,19 +1101,18 @@ header h2 {
 
 #searchBar,
 .search-bar {
-  padding: 8px 12px;
+  padding: 7px 10px;
 
-  background:
-    rgba(5, 9, 20, 0.75);
+  background: #060c15;
 
   border-bottom:
     1px solid rgba(0, 217, 255, 0.08);
 }
 
 #messageSearchInput {
-  height: 39px;
+  height: 38px;
 
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 /* =========================================================
@@ -1245,111 +1122,103 @@ header h2 {
 #themePanel {
   position: fixed;
 
-  top: 65px;
-  right: 12px;
+  top: 62px;
+  right: 10px;
 
-  width: 220px;
+  width: 215px;
 
-  padding: 12px;
+  padding: 10px;
 
-  background:
-    rgba(7, 12, 25, 0.96);
+  background: #080f1a;
 
   border:
-    1px solid rgba(0, 217, 255, 0.18);
+    1px solid rgba(0, 217, 255, 0.2);
 
-  border-radius: 16px;
+  border-radius: 13px;
 
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 25px rgba(0, 217, 255, 0.08);
-
-  backdrop-filter: blur(20px);
+    0 18px 45px rgba(0, 0, 0, 0.6);
 
   z-index: 7000;
 
-  animation: panelIn 0.2s ease;
+  animation: themeIn 0.18s ease;
 }
 
-@keyframes panelIn {
+@keyframes themeIn {
   from {
     opacity: 0;
-    transform: translateY(-6px) scale(0.97);
+    transform: translateY(-5px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 #themePanel button {
   width: 100%;
 
-  padding: 11px;
+  padding: 10px;
 
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+
+  color: #c6d2e3;
 
   text-align: left;
 
-  color: #c6d1e3;
-
-  background:
-    rgba(255, 255, 255, 0.035);
+  background: #0b1420;
 
   border:
     1px solid rgba(255, 255, 255, 0.05);
 
-  border-radius: 10px;
+  border-radius: 9px;
 
-  transition: 0.2s ease;
+  transition: 0.18s ease;
 }
 
 #themePanel button:hover {
   color: var(--blue);
 
-  background:
-    rgba(0, 217, 255, 0.07);
+  background: #0c1b2a;
 
   border-color:
     rgba(0, 217, 255, 0.2);
 }
 
 /* =========================================================
-   DELETE / DANGER BUTTON
+   DELETE ACCOUNT
    ========================================================= */
 
 #deleteAccountBtn {
   color: #ff7777 !important;
 
+  background: #160d10 !important;
+
   border-color:
     rgba(255, 80, 80, 0.15) !important;
-
-  background:
-    rgba(255, 60, 60, 0.035) !important;
 }
 
 #deleteAccountBtn:hover {
-  background:
-    rgba(255, 60, 60, 0.08) !important;
+  background: #211013 !important;
 
   border-color:
     rgba(255, 80, 80, 0.3) !important;
 }
 
 /* =========================================================
-   FILE / MEDIA
+   MEDIA
    ========================================================= */
 
 .message-media {
   max-width: 100%;
 
-  border-radius: 13px;
+  overflow: hidden;
 
   border:
     1px solid rgba(0, 217, 255, 0.12);
 
-  overflow: hidden;
+  border-radius: 12px;
 }
 
 .message-media img,
@@ -1370,10 +1239,6 @@ audio {
   width: min(280px, 100%);
 
   height: 38px;
-
-  filter:
-    brightness(0.85)
-    saturate(1.1);
 }
 
 /* =========================================================
@@ -1388,11 +1253,11 @@ audio {
   align-items: center;
   justify-content: center;
 
-  text-align: center;
-
-  color: #6f7d95;
+  color: #65748b;
 
   font-size: 13px;
+
+  text-align: center;
 }
 
 /* =========================================================
@@ -1400,15 +1265,15 @@ audio {
    ========================================================= */
 
 footer {
-  color: #526078;
+  padding: 5px;
+
+  color: #4e5d74;
 
   font-size: 9px;
 
   text-align: center;
 
-  padding: 6px;
-
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 }
 
 footer strong {
@@ -1421,15 +1286,11 @@ footer strong {
 
 @media (max-width: 600px) {
 
-  body {
-    font-size: 14px;
-  }
-
   #messages {
     padding:
-      14px
-      10px
-      105px;
+      13px
+      9px
+      100px;
   }
 
   .message {
@@ -1437,9 +1298,9 @@ footer strong {
   }
 
   .bubble {
-    padding: 10px 12px;
+    padding: 9px 11px;
 
-    border-radius: 15px;
+    border-radius: 14px;
   }
 
   .message-text {
@@ -1448,36 +1309,43 @@ footer strong {
 
   .chat-header,
   header {
-    min-height: 60px;
+    min-height: 59px;
 
     padding:
-      8px 10px;
+      8px 9px;
+  }
+
+  .chat-header h1,
+  .chat-header h2,
+  header h1,
+  header h2 {
+    font-size: 15px;
   }
 
   #messageInputArea,
   .composer,
   .chat-composer {
-    gap: 6px;
+    gap: 5px;
 
     padding:
       7px
-      8px
+      7px
       calc(7px + env(safe-area-inset-bottom));
   }
 
-  #sendBtn,
-  #mediaBtn {
-    width: 42px;
-    height: 42px;
-
-    flex-basis: 42px;
-  }
-
   #messageInput {
-    min-height: 42px;
+    min-height: 41px;
 
     padding:
-      10px 12px;
+      9px 11px;
+  }
+
+  #mediaBtn,
+  #sendBtn {
+    width: 41px;
+    height: 41px;
+
+    flex-basis: 41px;
   }
 
   .message-actions {
@@ -1487,23 +1355,17 @@ footer strong {
   #membersSidebar {
     width: 88vw;
   }
-
-  .code-block {
-    max-width: 100%;
-
-    font-size: 11px;
-  }
 }
 
 /* =========================================================
-   SMALL PHONES
+   VERY SMALL PHONES
    ========================================================= */
 
 @media (max-width: 380px) {
 
   #messages {
-    padding-left: 7px;
-    padding-right: 7px;
+    padding-left: 6px;
+    padding-right: 6px;
   }
 
   .message {
@@ -1521,30 +1383,11 @@ footer strong {
     height: 36px;
   }
 
-  #sendBtn,
-  #mediaBtn {
-    width: 40px;
-    height: 40px;
+  #mediaBtn,
+  #sendBtn {
+    width: 39px;
+    height: 39px;
 
-    flex-basis: 40px;
-  }
-}
-
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-
-    animation-iteration-count: 1 !important;
-
-    scroll-behavior: auto !important;
-
-    transition-duration: 0.01ms !important;
+    flex-basis: 39px;
   }
 }
