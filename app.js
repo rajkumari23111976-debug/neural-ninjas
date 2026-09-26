@@ -3821,22 +3821,6 @@ function setupPresence() {
     );
 
 
-  presenceChannel.on(
-    "presence",
-    {
-      event: "sync"
-    },
-    () => {
-
-      presenceUsers =
-        presenceChannel.presenceState() ||
-        {};
-
-      renderMembers();
-
-    }
-  );
-
 
   presenceChannel.on(
   "presence",
