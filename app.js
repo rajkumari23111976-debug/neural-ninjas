@@ -1226,7 +1226,7 @@ function renderMessage(
       "button";
 
     deleteButton.textContent =
-      "🗑";
+      "🗑 Delete";
 
     deleteButton.title =
       "Delete";
@@ -3107,7 +3107,7 @@ function updateOnlineStatus() {
     ).length;
 
   onlineStatus.textContent =
-    `● Online${count ? " • " + count : ""}`;
+  `${count} Member${count === 1 ? "" : "s"} Online`;
 }
 
 
