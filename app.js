@@ -1,32 +1,8 @@
 /* =========================================================
-   NEURAL NINJAS - APP.JS
-   =========================================================
-   CSS-COMPATIBLE VERSION
-   =========================================================
-   Features:
-   • Username + 6-digit PIN authentication
-   • Private team chat
-   • Realtime messages
-   • Image / Video / Audio upload
-   • Voice-note recording support
-   • Typing indicator
-   • Online presence
-   • Last seen
-   • Reply to messages
-   • Message reactions
-   • Reaction users
-   • Message search
-   • Code-message detection
-   • Code copy button
-   • Delete own messages
-   • Chat themes
-   • Account deletion
-   • Realtime cleanup
-   ========================================================= */
-
-
-/* =========================================================
-   SUPABASE CONFIG
+   NEURAL NINJAS — APP.JS
+   Username + 6-Digit PIN
+   Realtime Chat + Media + Voice + Reply + Reactions
+   Search + Presence + Last Seen + Themes
    ========================================================= */
 
 const SUPABASE_URL =
@@ -35,15 +11,13 @@ const SUPABASE_URL =
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
-
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 
 /* =========================================================
-   GLOBAL STATE
+   STATE
    ========================================================= */
 
 let currentUser = null;
@@ -57,8 +31,6 @@ let presenceChannel = null;
 let typingTimeout = null;
 let lastSeenInterval = null;
 
-let isCurrentlyTyping = false;
-
 let replyingToMessage = null;
 
 const messageCache = new Map();
@@ -71,9 +43,8 @@ let recordedChunks = [];
 let recordingStream = null;
 let isRecordingVoice = false;
 
-
 /* =========================================================
-   DOM REFERENCES
+   DOM
    ========================================================= */
 
 let loginScreen;
@@ -105,7 +76,6 @@ let messageSearchInput;
 let clearSearchBtn;
 
 let messages;
-
 let typingIndicator;
 
 let replyBar;
@@ -118,13 +88,13 @@ let fileInput;
 let messageInput;
 let sendBtn;
 
-
 /* =========================================================
-   INITIALIZATION
+   INIT
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", init);
 
+function init() {
   loginScreen = document.getElementById("loginScreen");
   chatScreen = document.getElementById("chatScreen");
 
@@ -154,7 +124,6 @@ document.addEventListener("DOMContentLoaded", () => {
   clearSearchBtn = document.getElementById("clearSearchBtn");
 
   messages = document.getElementById("messages");
-
   typingIndicator = document.getElementById("typingIndicator");
 
   replyBar = document.getElementById("replyBar");
@@ -167,260 +136,122 @@ document.addEventListener("DOMContentLoaded", () => {
   messageInput = document.getElementById("messageInput");
   sendBtn = document.getElementById("sendBtn");
 
+  /* LOGIN */
+  joinBtn?.addEventListener("click", handleLogin);
 
-  /* =======================================================
-     LOGIN
-     ======================================================= */
-
-  if (joinBtn) {
-    joinBtn.addEventListener("click", handleLogin);
-  }
-
-  if (usernameInput) {
-    usernameInput.addEventListener("keydown", event => {
-
-      if (event.key === "Enter") {
-        handleLogin();
-      }
-
-    });
-  }
-
-if (pinInput) {
-
-  pinInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-        handleLogin();
-      }
-
-    }
-  );
-
-}
-
-
-  /* =======================================================
-     LOGOUT
-     ======================================================= */
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", exitChat);
-  }
-
-
-  /* =======================================================
-     SIDEBAR
-     ======================================================= */
-
-  if (menuBtn) {
-    menuBtn.addEventListener("click", openSidebar);
-  }
-
-  if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener("click", closeSidebar);
-  }
-
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener("click", closeSidebar);
-  }
-
-
-  /* =======================================================
-     DELETE ACCOUNT
-     ======================================================= */
-
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener("click", deleteAccount);
-  }
-
-
-  /* =======================================================
-     THEMES
-     ======================================================= */
-
-  if (themeBtn) {
-    themeBtn.addEventListener("click", openThemePanel);
-  }
-
-  if (closeThemeBtn) {
-    closeThemeBtn.addEventListener("click", closeThemePanel);
-  }
-
-  document.querySelectorAll(".theme-option").forEach(button => {
-
-    button.addEventListener("click", () => {
-
-      applyTheme(button.dataset.theme);
-
-    });
-
+  usernameInput?.addEventListener("keydown", e => {
+    if (e.key === "Enter") pinInput?.focus();
   });
 
+  pinInput?.addEventListener("keydown", e => {
+    if (e.key === "Enter") handleLogin();
+  });
 
-  /* =======================================================
-     SEARCH
-     ======================================================= */
+  /* LOGOUT */
+  logoutBtn?.addEventListener("click", exitChat);
 
-  if (messageSearchInput) {
-    messageSearchInput.addEventListener(
-      "input",
-      searchMessages
-    );
-  }
+  /* SIDEBAR */
+  menuBtn?.addEventListener("click", openSidebar);
+  closeSidebarBtn?.addEventListener("click", closeSidebar);
+  sidebarOverlay?.addEventListener("click", closeSidebar);
 
-  if (clearSearchBtn) {
-    clearSearchBtn.addEventListener(
-      "click",
-      clearSearch
-    );
-  }
+  deleteAccountBtn?.addEventListener("click", deleteAccount);
 
+  /* THEME */
+  themeBtn?.addEventListener("click", () => {
+    themePanel?.classList.toggle("hidden");
+  });
 
-  /* =======================================================
-     COMPOSER
-     ======================================================= */
+  closeThemeBtn?.addEventListener("click", () => {
+    themePanel?.classList.add("hidden");
+  });
 
-  if (sendBtn) {
-    sendBtn.addEventListener("click", sendMessage);
-  }
-
-  if (messageInput) {
-
-    messageInput.addEventListener("keydown", event => {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-
-        event.preventDefault();
-        sendMessage();
-
-      }
-
+  document.querySelectorAll(".theme-option").forEach(button => {
+    button.addEventListener("click", () => {
+      const theme = button.dataset.theme;
+      if (theme) applyTheme(theme);
+      themePanel?.classList.add("hidden");
     });
+  });
 
-    messageInput.addEventListener(
-      "input",
-      handleTyping
-    );
+  /* SEARCH */
+  messageSearchInput?.addEventListener("input", filterMessages);
 
-  }
+  clearSearchBtn?.addEventListener("click", () => {
+    if (messageSearchInput) messageSearchInput.value = "";
+    filterMessages();
+    messageSearchInput?.focus();
+  });
 
+  /* SEND */
+  sendBtn?.addEventListener("click", sendMessage);
 
-  /* =======================================================
-     REPLY
-     ======================================================= */
+  messageInput?.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 
-  if (cancelReplyBtn) {
-    cancelReplyBtn.addEventListener(
-      "click",
-      cancelReply
-    );
-  }
+  messageInput?.addEventListener("input", handleTyping);
 
+  /* REPLY */
+  cancelReplyBtn?.addEventListener("click", cancelReply);
 
-  /* =======================================================
-     MEDIA
-     ONLY ONE FILE LISTENER
-     ======================================================= */
+  /* MEDIA */
+  mediaBtn?.addEventListener("click", () => {
+    if (!currentUser) return;
+    fileInput?.click();
+  });
 
-  if (mediaBtn && fileInput) {
+  fileInput?.addEventListener("change", async e => {
+    const file = e.target.files?.[0];
 
-    mediaBtn.addEventListener("click", () => {
+    if (file) {
+      await handleFileUpload(file);
+    }
 
-      fileInput.value = "";
-      fileInput.click();
+    e.target.value = "";
+  });
 
-    });
+  /* ESCAPE */
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      closeSidebar();
+      themePanel?.classList.add("hidden");
+      closeReactionPopup();
+    }
+  });
 
-    fileInput.addEventListener(
-      "change",
-      async event => {
+  /* VISIBILITY */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      updateLastSeen();
+    } else {
+      updateLastSeen();
+      updateOnlineStatus();
+    }
+  });
 
-        const file =
-          event.target.files?.[0];
-
-        if (!file) return;
-
-        await handleFileUpload(file);
-
-      }
-    );
-
-  }
-
-
-  /* =======================================================
-     SAVED THEME
-     ======================================================= */
-
-  const savedTheme =
-    localStorage.getItem(
-      "neuralNinjasTheme"
-    );
+  /* THEME RESTORE */
+  const savedTheme = localStorage.getItem("neural-ninjas-theme");
 
   if (savedTheme) {
     applyTheme(savedTheme);
+  } else {
+    applyTheme("default");
   }
-
-
-  /* =======================================================
-     RESTORE SESSION
-     ======================================================= */
 
   restoreSession();
 
-
-  /* =======================================================
-     ESCAPE
-     ======================================================= */
-
-  document.addEventListener("keydown", event => {
-
-    if (event.key === "Escape") {
-
-      closeSidebar();
-      closeThemePanel();
-      removeReactionPicker();
-
-    }
-
-  });
-
-
-  /* =======================================================
-     VISIBILITY
-     ======================================================= */
-
-  document.addEventListener(
-    "visibilitychange",
-    async () => {
-
-      if (
-        document.visibilityState ===
-        "hidden"
-      ) {
-
-        await updateLastSeen();
-
-      }
-
-    }
-  );
-
-});
-
+  console.log("NEURAL NINJAS APP INITIALIZED");
+}
 
 /* =========================================================
-   AUTH HELPERS
+   AUTH
    ========================================================= */
 
 function makeAuthEmail(username) {
-
   return (
     username
       .trim()
@@ -429,330 +260,220 @@ function makeAuthEmail(username) {
       .slice(0, 40) +
     "@neuralninjas.local"
   );
-
 }
 
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-
-
-    async function handleLogin() {
-
-  const username =
-    usernameInput?.value?.trim();
-
-  const pin =
-    pinInput?.value?.trim();
-
-  if (!username) {
-    setLoginStatus("Enter your username.");
-    usernameInput?.focus();
-    return;
-  }
+async function handleLogin() {
+  const username = usernameInput?.value.trim() || "";
+  const pin = pinInput?.value.trim() || "";
 
   if (username.length < 2) {
-    setLoginStatus(
-      "Username must be at least 2 characters."
-    );
+    setLoginStatus("Username must contain at least 2 characters.");
     return;
   }
 
   if (!/^\d{6}$/.test(pin)) {
-    setLoginStatus(
-      "PIN must be exactly 6 digits."
-    );
-    pinInput?.focus();
+    setLoginStatus("PIN must be exactly 6 digits.");
     return;
   }
-
-  setLoginStatus("Connecting...");
 
   if (joinBtn) {
     joinBtn.disabled = true;
+    joinBtn.textContent = "Connecting...";
   }
 
+  setLoginStatus("");
+
   try {
+    const email = makeAuthEmail(username);
 
-    const email =
-      makeAuthEmail(username);
+    /* TRY LOGIN */
+    let result = await supabaseClient.auth.signInWithPassword({
+      email,
+      password: pin
+    });
 
-    let { data, error } =
-      await supabaseClient.auth.signInWithPassword({
+    /* IF LOGIN FAILS, TRY SIGNUP */
+    if (result.error) {
+      result = await supabaseClient.auth.signUp({
         email,
-        password: pin
-      });
-
-    /*
-      Existing account login failed.
-      Try creating account.
-    */
-
-    if (error) {
-
-      const signUpResult =
-        await supabaseClient.auth.signUp({
-          email,
-          password: pin,
-          options: {
-            data: {
-              username
-            }
+        password: pin,
+        options: {
+          data: {
+            username
           }
-        });
-
-      if (signUpResult.error) {
-
-        throw new Error(
-          "Username or PIN is incorrect, or account already exists."
-        );
-
-      }
-
-      data =
-        signUpResult.data;
-
-      if (!data.session) {
-
-        throw new Error(
-          "Account created but Supabase email confirmation is enabled. Disable email confirmation in Supabase."
-        );
-
-      }
-
+        }
+      });
     }
 
-    currentUser =
-      data.user;
+    if (result.error) {
+      throw result.error;
+    }
 
-    if (!currentUser) {
+    if (!result.data?.user) {
+      throw new Error("No user account was returned by Supabase.");
+    }
+
+    if (!result.data.session) {
       throw new Error(
-        "Login succeeded but user session was not returned."
+        "No active session. Disable email confirmation in Supabase Auth."
       );
     }
 
-    await loadCurrentProfile(username);
+    currentUser = result.data.user;
 
+    await loadCurrentProfile(username);
     await startChat();
 
-    /*
-      Clear PIN after successful login.
-    */
-
-    if (pinInput) {
-      pinInput.value = "";
-    }
+    if (pinInput) pinInput.value = "";
 
   } catch (error) {
-
-    console.error(
-      "LOGIN ERROR:",
-      error
-    );
-
-    setLoginStatus(
-      error.message ||
-      "Login failed."
-    );
-
+    console.error("LOGIN ERROR:", error);
+    setLoginStatus(error.message || "Login failed.");
   } finally {
-
     if (joinBtn) {
       joinBtn.disabled = false;
+      joinBtn.textContent = "Enter Neural Ninjas";
     }
-
   }
 }
 
-
-    
-
+function setLoginStatus(message) {
+  if (loginStatus) {
+    loginStatus.textContent = message || "";
+  }
+}
 
 /* =========================================================
-   LOAD PROFILE
+   PROFILE
    ========================================================= */
 
-async function loadCurrentProfile(
-  fallbackUsername = ""
-) {
+async function loadCurrentProfile(fallbackUsername = "") {
+  if (!currentUser) return;
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("profiles")
-      .select("*")
-      .eq("id", currentUser.id)
-      .maybeSingle();
-
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", currentUser.id)
+    .maybeSingle();
 
   if (error) {
+    console.error("PROFILE FETCH ERROR:", error);
     throw error;
   }
 
-
   if (data) {
-
     currentProfile = data;
     return;
-
   }
 
-
   const username =
-    fallbackUsername
-      .trim()
-      .toLowerCase();
+    fallbackUsername ||
+    currentUser.user_metadata?.username ||
+    "User";
 
-
-  const {
-    data: newProfile,
-    error: profileError
-  } =
+  const { data: created, error: createError } =
     await supabaseClient
       .from("profiles")
       .insert({
         id: currentUser.id,
         username,
-        last_seen_at:
-          new Date().toISOString()
+        last_seen_at: new Date().toISOString()
       })
-      .select()
+      .select("*")
       .single();
 
-
-  if (profileError) {
-    throw profileError;
+  if (createError) {
+    console.error("PROFILE CREATE ERROR:", createError);
+    throw createError;
   }
 
-
-  currentProfile =
-    newProfile;
-
+  currentProfile = created;
 }
-
 
 /* =========================================================
    RESTORE SESSION
    ========================================================= */
 
 async function restoreSession() {
-
   try {
-
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabaseClient.auth.getSession();
 
+    if (error) throw error;
 
-    if (error) {
+    const session = data?.session;
 
-      console.error(
-        "SESSION ERROR:",
-        error
-      );
+    if (!session?.user) return;
 
-      return;
+    currentUser = session.user;
 
+    const { data: profile, error: profileError } =
+      await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", currentUser.id)
+        .maybeSingle();
+
+    if (profileError) {
+      console.error("RESTORE PROFILE ERROR:", profileError);
+      throw profileError;
     }
 
+    currentProfile = profile;
 
-    if (data.session?.user) {
-
-      currentUser =
-        data.session.user;
-
-
-      const {
-        data: profile
-      } =
-        await supabaseClient
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .maybeSingle();
-
-
-      currentProfile =
-        profile;
-
-
-      if (currentProfile) {
-
-        await startChat();
-
-      }
-
+    if (currentProfile) {
+      await startChat();
     }
 
   } catch (error) {
-
-    console.error(
-      "RESTORE SESSION ERROR:",
-      error
-    );
-
+    console.error("RESTORE SESSION ERROR:", error);
   }
-
 }
-
 
 /* =========================================================
    START CHAT
    ========================================================= */
 
 async function startChat() {
-
   if (!currentUser) return;
 
-
   clearOldState();
-
 
   loginScreen?.classList.add("hidden");
   chatScreen?.classList.remove("hidden");
 
-
   if (onlineStatus) {
-    onlineStatus.textContent =
-      "● Connecting...";
+    onlineStatus.textContent = "● Connecting...";
   }
-
 
   setupRealtime();
   setupTyping();
   setupPresence();
 
+  try {
+    await loadMessages();
+    await loadReactions();
+    await loadMembers();
 
-  await Promise.all([
-    loadMessages(),
-    loadReactions(),
-    loadMembers()
-  ]);
+    await updateLastSeen();
 
-
-  await updateLastSeen();
-
-  startLastSeenTimer();
-
+    startLastSeenTimer();
 
     updateOnlineStatus();
 
-  messageInput?.focus();
+    messageInput?.focus();
 
+  } catch (error) {
+    console.error("START CHAT ERROR:", error);
+    showChatError(error.message || "Failed to load chat.");
+  }
 }
-
 
 /* =========================================================
    CLEAR STATE
    ========================================================= */
 
 function clearOldState() {
-
   messageCache.clear();
   reactionCache.clear();
 
@@ -764,2298 +485,1115 @@ function clearOldState() {
 
   cancelReply();
 
+  if (typingIndicator) {
+    typingIndicator.textContent = "";
+    typingIndicator.classList.remove("show");
+  }
 }
-
 
 /* =========================================================
    LOAD MESSAGES
    ========================================================= */
 
-
 async function loadMessages() {
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("messages")
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
+  const { data, error } = await supabaseClient
+    .from("messages")
+    .select("*")
+    .order("created_at", { ascending: true });
 
   if (error) {
-
-    console.error(
-      "LOAD MESSAGES ERROR:",
-      error
+    console.error("LOAD MESSAGES ERROR:", error);
+    throw new Error(
+      "Messages load failed: " + error.message
     );
-
-    showChatError(
-      "Failed to fetch messages."
-    );
-
-    return;
   }
 
-  const rawMessages =
-    data || [];
+  const rows = data || [];
 
-  /*
-    Get all sender IDs.
-  */
+  const senderIds = [
+    ...new Set(
+      rows
+        .map(row => row.sender_id)
+        .filter(Boolean)
+    )
+  ];
 
-  const senderIds =
-    [
-      ...new Set(
-        rawMessages
-          .map(message =>
-            message.sender_id
-          )
-          .filter(Boolean)
-          .map(String)
-      )
-    ];
+  let profiles = [];
 
-  let profilesMap =
-    new Map();
-
-  if (senderIds.length > 0) {
-
-    const {
-      data: profiles,
-      error: profilesError
-    } =
+  if (senderIds.length) {
+    const { data: profileData, error: profileError } =
       await supabaseClient
         .from("profiles")
-        .select(
-          "id, username, bio, last_seen_at"
-        )
-        .in(
-          "id",
-          senderIds
-        );
+        .select("id, username, bio, last_seen_at")
+        .in("id", senderIds);
 
-    if (profilesError) {
-
+    if (profileError) {
       console.warn(
         "MESSAGE PROFILE LOAD ERROR:",
-        profilesError
+        profileError
       );
-
     } else {
-
-      (profiles || []).forEach(profile => {
-
-        profilesMap.set(
-          String(profile.id),
-          profile
-        );
-
-      });
-
+      profiles = profileData || [];
     }
-
   }
 
-  /*
-    Attach username to every message.
-  */
-
-  const enrichedMessages =
-    rawMessages.map(message => {
-
-      const profile =
-        profilesMap.get(
-          String(message.sender_id)
-        );
-
-      return {
-        ...message,
-
-        username:
-          message.username ||
-          profile?.username ||
-          (
-            String(message.sender_id) ===
-            String(currentUser?.id)
-              ? currentProfile?.username
-              : "User"
-          ),
-
-        profiles:
-          profile || null
-
-      };
-
-    });
-
-  messageCache.clear();
+  const profileMap = new Map(
+    profiles.map(profile => [
+      profile.id,
+      profile
+    ])
+  );
 
   if (messages) {
     messages.innerHTML = "";
   }
 
-  enrichedMessages.forEach(message => {
+  rows.forEach(row => {
+    const profile = profileMap.get(row.sender_id);
 
-    messageCache.set(
-      String(message.id),
-      message
-    );
+    const enriched = {
+      ...row,
+      username:
+        profile?.username ||
+        (row.sender_id === currentUser?.id
+          ? currentProfile?.username
+          : "Unknown user"),
+      profile
+    };
 
-    renderMessage(
-      message,
-      false
-    );
+    messageCache.set(enriched.id, enriched);
 
+    renderMessage(enriched, false);
   });
 
-  scrollToBottom();
+  scrollMessagesToBottom();
 }
-
-
 
 /* =========================================================
    REALTIME
    ========================================================= */
 
 function setupRealtime() {
-
   cleanupRealtimeChannels();
 
+  messageChannel = supabaseClient
+    .channel("neural-ninjas-messages")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      async payload => {
+        try {
+          const row = payload.new;
 
-  /* =======================================================
-     MESSAGE CHANNEL
-     ======================================================= */
-
-  messageChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-messages"
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages"
-        },
-      async  payload => {
-
-          const message =
-            payload.new;
-
-          if (!message?.id) return;
-
-           let profile = null;
-
-if (message.sender_id) {
-
-  const {
-    data: senderProfile
-  } =
-    await supabaseClient
-      .from("profiles")
-      .select(
-        "id, username, bio, last_seen_at"
-      )
-      .eq(
-        "id",
-        message.sender_id
-      )
-      .maybeSingle();
-
-  profile =
-    senderProfile || null;
-}
-
-const enrichedMessage = {
-
-  ...message,
-
-  username:
-    profile?.username ||
-    (
-      String(message.sender_id) ===
-      String(currentUser?.id)
-        ? currentProfile?.username
-        : "User"
-    ),
-
-  profiles:
-    profile
-
-};
-
-
-          const id =
-            String(message.id);
-
-
-          messageCache.set(
-            id,
-            enrichedMessage
-          );
-
+          if (!row?.id) return;
 
           /*
-             Do NOT render here if this
-             is our own message.
-
-             sendMessage() already renders
-             the returned inserted row.
+             Own message is already rendered by sendMessage().
+             Avoid duplicate.
           */
+          if (messageCache.has(row.id)) return;
 
-          if (
-            String(message.sender_id) !==
-            String(currentUser?.id)
-          ) {
+          let username = "Unknown user";
+          let profile = null;
 
-            renderMessage(
-              enrichedMessage,
-              true
-            );
+          if (row.sender_id) {
+            const { data } =
+              await supabaseClient
+                .from("profiles")
+                .select(
+                  "id, username, bio, last_seen_at"
+                )
+                .eq("id", row.sender_id)
+                .maybeSingle();
 
+            profile = data || null;
+
+            username =
+              data?.username ||
+              "Unknown user";
           }
 
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "messages"
-        },
-        payload => {
+          const message = {
+            ...row,
+            username,
+            profile
+          };
 
-          const id =
-            String(
-              payload.old?.id
-            );
+          messageCache.set(message.id, message);
 
-          if (!id) return;
+          renderMessage(message, true);
 
-
-          messageCache.delete(id);
-
-          removeMessageFromDOM(id);
-
-        }
-      )
-      .subscribe(status => {
-
-        console.log(
-          "MESSAGE CHANNEL:",
-          status
-        );
-
-      });
-
-
-  /* =======================================================
-     REACTION CHANNEL
-     ======================================================= */
-
-  reactionChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-reactions"
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "message_reactions"
-        },
-        async payload => {
-
-          const messageId =
-            String(
-              payload.new?.message_id ??
-              payload.old?.message_id ??
-              ""
-            );
-
-
-          if (!messageId) return;
-
-
-          await loadReactionsForMessage(
-            messageId
+        } catch (error) {
+          console.error(
+            "REALTIME MESSAGE ERROR:",
+            error
           );
-
-
-          rerenderReactions(
-            messageId
-          );
-
         }
-      )
-      .subscribe(status => {
+      }
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        const id = payload.old?.id;
 
-        console.log(
-          "REACTION CHANNEL:",
-          status
-        );
+        if (!id) return;
 
-      });
+        messageCache.delete(id);
+        removeMessageElement(id);
+      }
+    )
+    .subscribe(status => {
+      console.log(
+        "MESSAGE CHANNEL:",
+        status
+      );
+    });
 
+  /* REACTIONS */
+
+  reactionChannel = supabaseClient
+    .channel("neural-ninjas-reactions")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "message_reactions"
+      },
+      async payload => {
+        const messageId =
+          payload.new?.message_id ||
+          payload.old?.message_id;
+
+        if (!messageId) return;
+
+        await loadReactionsForMessage(messageId);
+
+        const message = messageCache.get(messageId);
+
+        if (message) {
+          rerenderMessage(message);
+        }
+      }
+    )
+    .subscribe(status => {
+      console.log(
+        "REACTION CHANNEL:",
+        status
+      );
+    });
 }
-
 
 /* =========================================================
    CLEANUP REALTIME
    ========================================================= */
 
 function cleanupRealtimeChannels() {
-
   if (messageChannel) {
-
-    supabaseClient.removeChannel(
-      messageChannel
-    );
-
+    supabaseClient.removeChannel(messageChannel);
     messageChannel = null;
-
   }
-
 
   if (reactionChannel) {
-
-    supabaseClient.removeChannel(
-      reactionChannel
-    );
-
+    supabaseClient.removeChannel(reactionChannel);
     reactionChannel = null;
-
   }
-
 
   if (typingChannel) {
-
-    supabaseClient.removeChannel(
-      typingChannel
-    );
-
+    supabaseClient.removeChannel(typingChannel);
     typingChannel = null;
-
   }
-
 
   if (presenceChannel) {
-
-    supabaseClient.removeChannel(
-      presenceChannel
-    );
-
+    supabaseClient.removeChannel(presenceChannel);
     presenceChannel = null;
-
   }
-
 
   if (typingTimeout) {
-
     clearTimeout(typingTimeout);
     typingTimeout = null;
-
   }
-
-
-  isCurrentlyTyping = false;
-
 }
-
 
 /* =========================================================
    RENDER MESSAGE
-   =========================================================
-   IMPORTANT:
-   THESE CLASS NAMES MATCH YOUR CSS.
    ========================================================= */
 
-function renderMessage(
-  data,
-  shouldScroll = true
-) {
+function renderMessage(data, shouldScroll = true) {
+  if (!data || !messages || !data.id) return;
 
-  if (!data || !messages) return;
+  const existing = document.querySelector(
+    `.message[data-message-id="${escapeSelector(data.id)}"]`
+  );
 
+  if (existing) {
+    return;
+  }
 
-  const messageId =
-    String(data.id);
+  const wrapper = document.createElement("div");
 
+  wrapper.className = "message";
 
-  /* =======================================================
-     DUPLICATE CHECK
-     ======================================================= */
+  wrapper.dataset.messageId = data.id;
 
-  const existing =
-    messages.querySelector(
-      `.message[data-message-id="${CSS.escape(messageId)}"]`
-    );
+  if (data.sender_id === currentUser?.id) {
+    wrapper.classList.add("mine");
+  }
 
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
 
-  if (existing) return;
+  /* SENDER */
 
+  const sender = document.createElement("div");
 
-  const isMine =
-    String(data.sender_id) ===
-    String(currentUser?.id);
-
-
-  /* =======================================================
-     MESSAGE WRAPPER
-     ======================================================= */
-
-  const wrapper =
-    document.createElement("div");
-
-
-  wrapper.className =
-    `message ${isMine ? "mine" : ""}`;
-
-
-  wrapper.dataset.messageId =
-    messageId;
-
-
-  /* =======================================================
-     BUBBLE
-     ======================================================= */
-
-  const bubble =
-    document.createElement("div");
-
-
-  bubble.className =
-    "bubble";
-
-
-  /* =======================================================
-     SENDER
-     ======================================================= */
-
-  /*
-     Your latest CSS has .sender-name
-     while your original CSS has .sender.
-
-     We use BOTH classes so both sections
-     of your CSS remain compatible.
-  */
-
-  const sender =
-    document.createElement("div");
-
-
-  sender.className =
-    "sender sender-name";
-
+  sender.className = "sender sender-name";
 
   sender.textContent =
-    isMine
-      ? "You"
-      : (
-          data.username ||
-          data.profiles?.username ||
-          "User"
-        );
+    data.username ||
+    currentProfile?.username ||
+    "Unknown";
 
+  bubble.appendChild(sender);
 
-  if (!isMine) {
-
-    bubble.appendChild(sender);
-
-  } else {
-
-    /*
-       Keep sender on own messages too.
-       This preserves the existing layout.
-    */
-
-    bubble.appendChild(sender);
-
-  }
-
-
-  /* =======================================================
-     REPLY PREVIEW
-     ======================================================= */
+  /* REPLY PREVIEW */
 
   if (data.reply_to) {
+    const reply = createReplyPreview(data.reply_to);
 
-    bubble.appendChild(
-      createReplyPreview(
-        data.reply_to
-      )
-    );
-
+    if (reply) {
+      bubble.appendChild(reply);
+    }
   }
 
+  /* CONTENT */
 
-  /* =======================================================
-     MESSAGE TEXT / MEDIA / CODE
-     ======================================================= */
+  const type = String(
+    data.message_type || "text"
+  ).toLowerCase();
 
-  const content =
-    document.createElement("div");
-
-
-  /*
-     Use both .text and .message-text.
-     This makes the renderer compatible
-     with both your older and newer CSS.
-  */
-
-  content.className =
-    "text message-text";
-
-
-  const messageType =
-    data.message_type ||
-    "text";
-
-
-  if (messageType === "image") {
-
-    createImageContent(
-      content,
-      data
+  if (type === "image" && data.file_url) {
+    bubble.appendChild(
+      createImageContent(data.file_url, data.content)
     );
 
-  } else if (messageType === "video") {
-
-    createVideoContent(
-      content,
-      data
+  } else if (type === "video" && data.file_url) {
+    bubble.appendChild(
+      createVideoContent(data.file_url)
     );
 
   } else if (
-    messageType === "audio" ||
-    messageType === "voice"
+    (type === "audio" || type === "voice") &&
+    data.file_url
   ) {
-
-    createAudioContent(
-      content,
-      data
+    bubble.appendChild(
+      createAudioContent(data.file_url)
     );
 
   } else if (
-    messageType === "code" ||
-    looksLikeCode(data.content)
+    type === "code" ||
+    looksLikeCode(data.content || "")
   ) {
-
-    createCodeContent(
-      content,
-      data.content || ""
+    bubble.appendChild(
+      createCodeContent(data.content || "")
     );
 
   } else {
-
-    appendSafeTextWithLinks(
-      content,
-      data.content || ""
+    bubble.appendChild(
+      createTextContent(data.content || "")
     );
-
   }
 
+  /* TIME */
 
-  bubble.appendChild(content);
+  const time = document.createElement("span");
 
+  time.className = "time message-time";
 
-  /* =======================================================
-     TIME
-     ======================================================= */
-
-  const time =
-    document.createElement("span");
-
-
-  /*
-     Use both .time and .message-time.
-  */
-
-  time.className =
-    "time message-time";
-
-
-  time.textContent =
-    formatMessageTime(
-      data.created_at
-    );
-
+  time.textContent = formatMessageTime(
+    data.created_at
+  );
 
   bubble.appendChild(time);
 
-
-  /* =======================================================
-     REPLY BUTTON
-     ======================================================= */
+  /* REPLY BUTTON */
 
   const replyButton =
     document.createElement("button");
 
+  replyButton.type = "button";
+  replyButton.className = "reply-message";
+  replyButton.textContent = "↩ Reply";
 
-  replyButton.type =
-    "button";
+  replyButton.addEventListener("click", () => {
+    startReply(data);
+  });
 
+  bubble.appendChild(replyButton);
 
-  replyButton.className =
-    "reply-message";
+  /* DELETE */
 
-
-  replyButton.textContent =
-    "↩ Reply";
-
-
-  replyButton.title =
-    "Reply to this message";
-
-
-  replyButton.addEventListener(
-    "click",
-    event => {
-
-      event.stopPropagation();
-
-      startReply(data);
-
-    }
-  );
-
-
-  bubble.appendChild(
-    replyButton
-  );
-
-
-  /* =======================================================
-     DELETE BUTTON
-     ======================================================= */
-
-  if (isMine) {
-
+  if (data.sender_id === currentUser?.id) {
     const deleteButton =
       document.createElement("button");
 
+    deleteButton.type = "button";
+    deleteButton.className = "delete-message";
+    deleteButton.textContent = "Delete";
 
-    deleteButton.type =
-      "button";
+    deleteButton.addEventListener("click", () => {
+      deleteMessage(data.id);
+    });
 
-
-    /*
-       EXACT CSS CLASS
-       FROM YOUR CSS
-    */
-
-    deleteButton.className =
-      "delete-message";
-
-
-    deleteButton.textContent =
-      "Delete";
-
-
-    deleteButton.title =
-      "Delete message";
-
-
-    deleteButton.addEventListener(
-      "click",
-      event => {
-
-        event.stopPropagation();
-
-        deleteMessage(
-          data.id
-        );
-
-      }
-    );
-
-
-    bubble.appendChild(
-      deleteButton
-    );
-
+    bubble.appendChild(deleteButton);
   }
 
+  /* REACTIONS */
 
-  /* =======================================================
-     REACTIONS
-     ======================================================= */
-
-  const reactionContainer =
+  const reactionArea =
     document.createElement("div");
 
+  reactionArea.className = "reaction-area";
 
-  reactionContainer.className =
-    "reaction-area";
+  bubble.appendChild(reactionArea);
 
+  wrapper.appendChild(bubble);
 
-  reactionContainer.dataset.reactionMessageId =
-    messageId;
+  messages.appendChild(wrapper);
 
-
-  renderReactionArea(
-    reactionContainer,
-    messageId
+  renderReactionCounts(
+    reactionArea,
+    data.id
   );
-
-
-  bubble.appendChild(
-    reactionContainer
-  );
-
-
-  /* =======================================================
-     FINAL DOM
-     ======================================================= */
-
-  wrapper.appendChild(
-    bubble
-  );
-
 
   setupReactionPicker(
     wrapper,
-    messageId
+    data.id
   );
-
-
-  messages.appendChild(
-    wrapper
-  );
-
 
   if (shouldScroll) {
-    scrollToBottom();
+    scrollMessagesToBottom();
   }
-
 }
 
-
 /* =========================================================
-   SAFE TEXT + LINKS
+   TEXT
    ========================================================= */
+
+function createTextContent(text) {
+  const container =
+    document.createElement("div");
+
+  container.className = "text message-text";
+
+  appendSafeTextWithLinks(
+    container,
+    String(text)
+  );
+
+  return container;
+}
 
 function appendSafeTextWithLinks(
   container,
   text
 ) {
-
-  if (!text) return;
-
-
   const urlRegex =
     /(https?:\/\/[^\s]+)/g;
 
+  let lastIndex = 0;
 
-  const parts =
-    text.split(urlRegex);
-
-
-  parts.forEach(part => {
-
-    if (/^https?:\/\/[^\s]+$/i.test(part)) {
+  text.replace(
+    urlRegex,
+    (url, offset) => {
+      if (offset > lastIndex) {
+        container.appendChild(
+          document.createTextNode(
+            text.slice(lastIndex, offset)
+          )
+        );
+      }
 
       const link =
         document.createElement("a");
 
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
 
-      link.href =
-        part;
+      link.className = "message-link";
 
-      link.target =
-        "_blank";
+      link.textContent = url;
 
-      link.rel =
-        "noopener noreferrer";
+      container.appendChild(link);
 
+      lastIndex =
+        offset + url.length;
 
-      link.className =
-        "message-link";
-
-
-      link.textContent =
-        part;
-
-
-      container.appendChild(
-        link
-      );
-
-    } else {
-
-      container.appendChild(
-        document.createTextNode(
-          part
-        )
-      );
-
-    }
-
-  });
-
-}
-
-
-/* =========================================================
-   REPLY PREVIEW
-   ========================================================= */
-
-function createReplyPreview(
-  replyTo
-) {
-
-  const box =
-    document.createElement("div");
-
-
-  box.className =
-    "message-reply-preview";
-
-
-  const original =
-    messageCache.get(
-      String(replyTo)
-    );
-
-
-  const sender =
-    document.createElement("div");
-
-
-  sender.className =
-    "message-reply-sender";
-
-
-  const content =
-    document.createElement("div");
-
-
-  content.className =
-    "message-reply-content";
-
-
-  if (original) {
-
-    sender.textContent =
-      String(original.sender_id) ===
-      String(currentUser?.id)
-        ? "You"
-        : (
-            original.username ||
-            original.profiles?.username ||
-            "User"
-          );
-
-
-    content.textContent =
-      getPreviewText(original);
-
-  } else {
-
-    sender.textContent =
-      "Reply";
-
-    content.textContent =
-      "Original message unavailable.";
-
-  }
-
-
-  box.appendChild(sender);
-  box.appendChild(content);
-
-
-  /*
-     Clicking the reply preview
-     jumps to original message.
-  */
-
-  if (original) {
-
-    box.style.cursor =
-      "pointer";
-
-
-    box.addEventListener(
-      "click",
-      event => {
-
-        event.stopPropagation();
-
-        jumpToMessage(
-          original.id
-        );
-
-      }
-    );
-
-  }
-
-
-  return box;
-
-}
-
-
-/* =========================================================
-   JUMP TO MESSAGE
-   ========================================================= */
-
-function jumpToMessage(
-  messageId
-) {
-
-  const target =
-    messages?.querySelector(
-      `.message[data-message-id="${CSS.escape(String(messageId))}"]`
-    );
-
-
-  if (!target) return;
-
-
-  target.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
-
-
-  target.classList.remove(
-    "reply-target-highlight"
-  );
-
-
-  void target.offsetWidth;
-
-
-  target.classList.add(
-    "reply-target-highlight"
-  );
-
-
-  setTimeout(() => {
-
-    target.classList.remove(
-      "reply-target-highlight"
-    );
-
-  }, 2000);
-
-}
-
-
-/* =========================================================
-   MEDIA
-   ========================================================= */
-
-function createImageContent(
-  container,
-  data
-) {
-
-  if (!data.file_url) {
-
-    container.textContent =
-      data.content ||
-      "Image unavailable.";
-
-    return;
-
-  }
-
-
-  const img =
-    document.createElement("img");
-
-
-  img.src =
-    data.file_url;
-
-  img.alt =
-    data.content ||
-    "Image";
-
-  img.loading =
-    "lazy";
-
-
-  /*
-     EXACT CSS CLASS
-  */
-
-  img.className =
-    "chat-media";
-
-
-  img.addEventListener(
-    "click",
-    () => {
-
-      window.open(
-        data.file_url,
-        "_blank",
-        "noopener,noreferrer"
-      );
-
+      return url;
     }
   );
 
-
-  container.appendChild(img);
-
-}
-
-
-function createVideoContent(
-  container,
-  data
-) {
-
-  if (!data.file_url) {
-
-    container.textContent =
-      "Video unavailable.";
-
-    return;
-
+  if (lastIndex < text.length) {
+    container.appendChild(
+      document.createTextNode(
+        text.slice(lastIndex)
+      )
+    );
   }
-
-
-  const video =
-    document.createElement("video");
-
-
-  video.src =
-    data.file_url;
-
-  video.controls =
-    true;
-
-  video.playsInline =
-    true;
-
-
-  /*
-     EXACT CSS CLASS
-  */
-
-  video.className =
-    "chat-media";
-
-
-  container.appendChild(video);
-
 }
-
-
-function createAudioContent(
-  container,
-  data
-) {
-
-  if (!data.file_url) {
-
-    container.textContent =
-      "Audio unavailable.";
-
-    return;
-
-  }
-
-
-  const audio =
-    document.createElement("audio");
-
-
-  audio.src =
-    data.file_url;
-
-  audio.controls =
-    true;
-
-
-  /*
-     EXACT CSS CLASS
-  */
-
-  audio.className =
-    "chat-media";
-
-
-  container.appendChild(audio);
-
-}
-
 
 /* =========================================================
-   CODE DETECTION
+   CODE
    ========================================================= */
 
 function looksLikeCode(text) {
-
   if (!text) return false;
-
 
   return (
     text.includes("```") ||
-    text.includes("<html") ||
-    text.includes("</html>") ||
+    /<html[\s>]/i.test(text) ||
+    /<\/html>/i.test(text) ||
     text.includes("function ") ||
     text.includes("const ") ||
     text.includes("let ") ||
     text.includes("=>") ||
+    text.includes("console.log") ||
     text.includes("SELECT ") ||
-    text.includes("console.log")
+    text.includes("CREATE TABLE") ||
+    text.includes("INSERT INTO")
   );
-
 }
-
-
-/* =========================================================
-   CLEAN CODE
-   ========================================================= */
 
 function cleanCode(text) {
+  let code = String(text || "");
 
-  return text
-    .replace(
-      /^```[\w-]*\n?/i,
-      ""
-    )
-    .replace(
-      /\n?```$/i,
-      ""
-    )
-    .trim();
+  code = code.replace(
+    /^```[a-zA-Z0-9_-]*\s*/,
+    ""
+  );
 
+  code = code.replace(
+    /\s*```$/,
+    ""
+  );
+
+  return code;
 }
 
-
-/* =========================================================
-   CODE CONTENT
-   ========================================================= */
-
-function createCodeContent(
-  container,
-  text
-) {
-
-  const wrapper =
+function createCodeContent(text) {
+  const box =
     document.createElement("div");
 
+  box.className = "code-box";
 
-  /*
-     EXACT CSS CLASS
-  */
+  const copy =
+    document.createElement("button");
 
-  wrapper.className =
-    "code-box";
-
+  copy.type = "button";
+  copy.className = "copy-code";
+  copy.textContent = "Copy code";
 
   const pre =
     document.createElement("pre");
 
-
   const code =
     document.createElement("code");
 
-
-  const cleaned =
-    cleanCode(text);
-
-
   code.textContent =
-    cleaned;
-
+    cleanCode(text);
 
   pre.appendChild(code);
 
-
-  const copyButton =
-    document.createElement("button");
-
-
-  copyButton.type =
-    "button";
-
-
-  /*
-     EXACT CSS CLASS
-  */
-
-  copyButton.className =
-    "copy-code";
-
-
-  copyButton.textContent =
-    "Copy";
-
-
-  copyButton.addEventListener(
+  copy.addEventListener(
     "click",
-    async event => {
-
-      event.stopPropagation();
-
+    async () => {
+      const value =
+        cleanCode(text);
 
       try {
-
         if (
           navigator.clipboard &&
           navigator.clipboard.writeText
         ) {
-
           await navigator.clipboard.writeText(
-            cleaned
+            value
           );
-
         } else {
-
-          const textarea =
-            document.createElement("textarea");
-
-          textarea.value =
-            cleaned;
-
-          document.body.appendChild(
-            textarea
-          );
-
-          textarea.select();
-
-          document.execCommand(
-            "copy"
-          );
-
-          textarea.remove();
-
+          fallbackCopy(value);
         }
 
-
-        copyButton.textContent =
-          "Copied!";
-
+        copy.textContent = "Copied ✓";
 
         setTimeout(() => {
-
-          copyButton.textContent =
-            "Copy";
-
-        }, 1500);
-
+          copy.textContent = "Copy code";
+        }, 1200);
 
       } catch (error) {
-
         console.error(
           "COPY ERROR:",
           error
         );
 
-        copyButton.textContent =
-          "Copy failed";
+        fallbackCopy(value);
 
+        copy.textContent = "Copied ✓";
 
         setTimeout(() => {
-
-          copyButton.textContent =
-            "Copy";
-
-        }, 1500);
-
+          copy.textContent = "Copy code";
+        }, 1200);
       }
-
     }
   );
 
-
-  /*
-     CSS expects button first
-     and code area after it.
-  */
-
-  wrapper.appendChild(
-    copyButton
-  );
-
-  wrapper.appendChild(
-    pre
-  );
-
-
-  container.appendChild(
-    wrapper
-  );
-
-
-  /* =======================================================
-     HIGHLIGHT.JS
-     ======================================================= */
+  box.appendChild(copy);
+  box.appendChild(pre);
 
   if (
     window.hljs &&
     typeof window.hljs.highlightElement ===
       "function"
   ) {
-
     try {
-
-      window.hljs.highlightElement(
-        code
-      );
-
+      window.hljs.highlightElement(code);
     } catch (error) {
-
       console.warn(
-        "Highlight error:",
+        "HIGHLIGHT ERROR:",
         error
       );
-
     }
-
   }
 
+  return box;
 }
 
+function fallbackCopy(text) {
+  const textarea =
+    document.createElement("textarea");
 
-/* =========================================================
-   SEND MESSAGE
-   ========================================================= */
+  textarea.value = text;
 
-async function sendMessage() {
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
 
-  if (!currentUser) return;
+  document.body.appendChild(textarea);
 
-
-  const content =
-    messageInput?.value?.trim();
-
-
-  if (!content) return;
-
-
-  if (sendBtn) {
-    sendBtn.disabled = true;
-  }
-
+  textarea.select();
 
   try {
-
-    const replyTo =
-      replyingToMessage
-        ? replyingToMessage.id
-        : null;
-
-
-    const payload = {
-
-      sender_id:
-        currentUser.id,
-
-      content,
-
-      message_type:
-        looksLikeCode(content)
-          ? "code"
-          : "text",
-
-      reply_to:
-        replyTo
-
-    };
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert(payload)
-        .select()
-        .single();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (data) {
-
-  const enrichedMessage = {
-
-    ...data,
-
-    username:
-      currentProfile?.username ||
-      "You",
-
-    profiles:
-      currentProfile || null
-
-  };
-
-  messageCache.set(
-    String(data.id),
-    enrichedMessage
-  );
-
-  renderMessage(
-    enrichedMessage,
-    true
-  );
-
-}
-
-    messageInput.value = "";
-
-    cancelReply();
-
-    stopTypingBroadcast();
-
-
+    document.execCommand("copy");
   } catch (error) {
-
     console.error(
-      "SEND MESSAGE ERROR:",
+      "FALLBACK COPY ERROR:",
       error
     );
-
-    showChatError(
-      "Failed to send message."
-    );
-
-  } finally {
-
-    if (sendBtn) {
-      sendBtn.disabled = false;
-    }
-
-    messageInput?.focus();
-
   }
 
+  textarea.remove();
 }
-
 
 /* =========================================================
-   FILE UPLOAD
+   MEDIA
    ========================================================= */
 
-async function handleFileUpload(
-  file
-) {
+function createImageContent(url, filename) {
+  const container =
+    document.createElement("div");
 
+  const image =
+    document.createElement("img");
+
+  image.className = "chat-media";
+  image.src = url;
+  image.alt = filename || "Image";
+  image.loading = "lazy";
+
+  image.addEventListener("click", () => {
+    window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  });
+
+  container.appendChild(image);
+
+  const save =
+    document.createElement("a");
+
+  save.href = url;
+  save.target = "_blank";
+  save.rel = "noopener noreferrer";
+  save.download = filename || "media";
+
+  save.className = "save-media";
+  save.textContent = "Open / Save";
+
+  container.appendChild(save);
+
+  return container;
+}
+
+function createVideoContent(url) {
+  const video =
+    document.createElement("video");
+
+  video.className = "chat-media";
+
+  video.src = url;
+
+  video.controls = true;
+  video.playsInline = true;
+
+  return video;
+}
+
+function createAudioContent(url) {
+  const audio =
+    document.createElement("audio");
+
+  audio.className = "chat-media";
+
+  audio.src = url;
+
+  audio.controls = true;
+
+  return audio;
+}
+
+/* =========================================================
+   UPLOAD
+   ========================================================= */
+
+async function handleFileUpload(file) {
   if (!currentUser || !file) return;
 
-
-  const MAX_SIZE =
-    50 * 1024 * 1024;
-
-
-  if (file.size > MAX_SIZE) {
-
+  if (file.size > 50 * 1024 * 1024) {
     showChatError(
-      "File is too large. Maximum size is 50 MB."
+      "Maximum file size is 50 MB."
     );
-
     return;
-
   }
 
+  const allowed =
+    file.type.startsWith("image/") ||
+    file.type.startsWith("video/") ||
+    file.type.startsWith("audio/");
 
-  const type =
-    file.type || "";
-
-
-  let messageType = null;
-
-
-  if (type.startsWith("image/")) {
-
-    messageType =
-      "image";
-
-  } else if (type.startsWith("video/")) {
-
-    messageType =
-      "video";
-
-  } else if (type.startsWith("audio/")) {
-
-    messageType =
-      "audio";
-
-  }
-
-
-  if (!messageType) {
-
+  if (!allowed) {
     showChatError(
       "Only image, video and audio files are supported."
     );
-
     return;
-
   }
 
-
-  if (mediaBtn) {
-    mediaBtn.disabled = true;
-  }
-
-
-  const originalText =
-    mediaBtn?.textContent;
-
-
-  if (mediaBtn) {
-    mediaBtn.textContent =
-      "…";
-  }
-
+  showChatError(
+    "Uploading " + file.name + "..."
+  );
 
   try {
-
     const extension =
-      getFileExtension(
-        file.name
-      );
+      getFileExtension(file.name);
 
+    const path =
+      `${currentUser.id}/${Date.now()}-${randomId()}${extension}`;
 
-    const randomPart =
-      Math.random()
-        .toString(36)
-        .slice(2, 10);
-
-
-    const filePath =
-      `${currentUser.id}/${Date.now()}-${randomPart}${extension}`;
-
-
-    const {
-      error: uploadError
-    } =
-      await supabaseClient
-        .storage
+    const { error: uploadError } =
+      await supabaseClient.storage
         .from("neural-ninjas-media")
-        .upload(
-          filePath,
-          file,
-          {
-            cacheControl: "3600",
-            upsert: false,
-            contentType:
-              file.type || undefined
-          }
-        );
-
+        .upload(path, file, {
+          upsert: false,
+          contentType: file.type
+        });
 
     if (uploadError) {
-      throw uploadError;
+      throw new Error(
+        "Storage upload failed: " +
+        uploadError.message
+      );
     }
 
-
-    const {
-      data: signedData,
-      error: signedError
-    } =
-      await supabaseClient
-        .storage
+    const { data: signedData, error: signedError } =
+      await supabaseClient.storage
         .from("neural-ninjas-media")
         .createSignedUrl(
-          filePath,
+          path,
           60 * 60 * 24 * 30
         );
 
-
     if (signedError) {
-      throw signedError;
+      throw new Error(
+        "Signed URL failed: " +
+        signedError.message
+      );
     }
-
 
     const fileUrl =
       signedData?.signedUrl;
 
-
     if (!fileUrl) {
-
       throw new Error(
-        "Could not create file URL."
+        "Supabase did not return a file URL."
       );
-
     }
 
+    const messageType =
+      file.type.startsWith("image/")
+        ? "image"
+        : file.type.startsWith("video/")
+          ? "video"
+          : "audio";
 
-    const replyTo =
-      replyingToMessage
-        ? replyingToMessage.id
-        : null;
+    const payload = {
+      sender_id: currentUser.id,
+      content: file.name,
+      message_type: messageType,
+      file_url: fileUrl,
+      reply_to: replyingToMessage?.id || null
+    };
 
-
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabaseClient
         .from("messages")
-        .insert({
-          sender_id:
-            currentUser.id,
-
-          content:
-            file.name,
-
-          message_type:
-            messageType,
-
-          file_url:
-            fileUrl,
-
-          reply_to:
-            replyTo
-        })
-        .select()
+        .insert(payload)
+        .select("*")
         .single();
 
-
     if (error) {
-      throw error;
+      throw new Error(
+        "Message insert failed: " +
+        error.message
+      );
     }
 
+    const message = {
+      ...data,
+      username:
+        currentProfile?.username ||
+        currentUser.user_metadata?.username ||
+        "You",
+      profile: currentProfile
+    };
 
-    if (data) {
+    messageCache.set(
+      message.id,
+      message
+    );
 
-  const enrichedMessage = {
-
-    ...data,
-
-    username:
-      currentProfile?.username ||
-      "You",
-
-    profiles:
-      currentProfile || null
-
-  };
-
-  messageCache.set(
-    String(data.id),
-    enrichedMessage
-  );
-
-  renderMessage(
-    enrichedMessage,
-    true
-  );
-
-}
-
+    renderMessage(
+      message,
+      true
+    );
 
     cancelReply();
 
+    showChatError(
+      "Uploaded successfully ✓"
+    );
 
   } catch (error) {
-
     console.error(
       "FILE UPLOAD ERROR:",
       error
     );
 
     showChatError(
+      error.message ||
       "File upload failed."
     );
-
-  } finally {
-
-    if (mediaBtn) {
-
-      mediaBtn.disabled =
-        false;
-
-      mediaBtn.textContent =
-        originalText || "＋";
-
-    }
-
-
-    if (fileInput) {
-      fileInput.value = "";
-    }
-
   }
-
 }
 
-
 /* =========================================================
-   VOICE RECORDING
+   SEND MESSAGE
    ========================================================= */
 
-async function startVoiceRecording() {
-
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    showChatError(
-      "Voice recording is not supported on this device/browser."
-    );
-
+async function sendMessage() {
+  if (!currentUser) {
+    showChatError("Please login first.");
     return;
-
   }
 
+  const content =
+    messageInput?.value.trim() || "";
 
-  if (isRecordingVoice) return;
+  if (!content) return;
 
+  if (sendBtn) {
+    sendBtn.disabled = true;
+  }
+
+  const replyTo =
+    replyingToMessage?.id || null;
 
   try {
-
-    recordingStream =
-      await navigator.mediaDevices.getUserMedia({
-        audio: true
-      });
-
-
-    recordedChunks = [];
-
-
-    let mimeType =
-      "audio/webm";
-
-
-    if (
-      MediaRecorder.isTypeSupported(
-        "audio/webm;codecs=opus"
-      )
-    ) {
-
-      mimeType =
-        "audio/webm;codecs=opus";
-
-    } else if (
-      MediaRecorder.isTypeSupported(
-        "audio/mp4"
-      )
-    ) {
-
-      mimeType =
-        "audio/mp4";
-
-    }
-
-
-    mediaRecorder =
-      new MediaRecorder(
-        recordingStream,
-        { mimeType }
-      );
-
-
-    mediaRecorder.addEventListener(
-      "dataavailable",
-      event => {
-
-        if (
-          event.data &&
-          event.data.size > 0
-        ) {
-
-          recordedChunks.push(
-            event.data
-          );
-
-        }
-
-      }
-    );
-
-
-    mediaRecorder.addEventListener(
-      "stop",
-      async () => {
-
-        const blob =
-          new Blob(
-            recordedChunks,
-            {
-              type: mimeType
-            }
-          );
-
-
-        cleanupRecordingStream();
-
-
-        if (blob.size > 0) {
-
-          await uploadVoiceBlob(
-            blob
-          );
-
-        }
-
-      }
-    );
-
-
-    mediaRecorder.start();
-
-    isRecordingVoice = true;
-
-
-  } catch (error) {
-
-    console.error(
-      "VOICE RECORDING ERROR:",
-      error
-    );
-
-    cleanupRecordingStream();
-
-    showChatError(
-      "Microphone permission or recording failed."
-    );
-
-  }
-
-}
-
-
-function stopVoiceRecording() {
-
-  if (
-    mediaRecorder &&
-    isRecordingVoice
-  ) {
-
-    mediaRecorder.stop();
-
-    isRecordingVoice = false;
-
-  }
-
-}
-
-
-function cleanupRecordingStream() {
-
-  if (recordingStream) {
-
-    recordingStream
-      .getTracks()
-      .forEach(track => {
-        track.stop();
-      });
-
-    recordingStream = null;
-
-  }
-
-
-  mediaRecorder = null;
-
-}
-
-
-/* =========================================================
-   VOICE UPLOAD
-   ========================================================= */
-
-async function uploadVoiceBlob(
-  blob
-) {
-
-  if (!currentUser) return;
-
-
-  try {
-
-    const path =
-      `${currentUser.id}/voice-${Date.now()}.webm`;
-
-
-    const {
-      error: uploadError
-    } =
-      await supabaseClient
-        .storage
-        .from("neural-ninjas-media")
-        .upload(
-          path,
-          blob,
-          {
-            contentType:
-              "audio/webm",
-
-            cacheControl:
-              "3600",
-
-            upsert:
-              false
-
-          }
-        );
-
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .storage
-        .from("neural-ninjas-media")
-        .createSignedUrl(
-          path,
-          60 * 60 * 24 * 30
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    const {
-      data: message,
-      error: messageError
-    } =
+    const messageType =
+      looksLikeCode(content)
+        ? "code"
+        : "text";
+
+    const payload = {
+      sender_id: currentUser.id,
+      content,
+      message_type: messageType,
+      reply_to: replyTo
+    };
+
+    const { data, error } =
       await supabaseClient
         .from("messages")
-        .insert({
-          sender_id:
-            currentUser.id,
-
-          content:
-            "Voice note",
-
-          message_type:
-            "voice",
-
-          file_url:
-            data.signedUrl,
-
-          reply_to:
-            replyingToMessage
-              ? replyingToMessage.id
-              : null
-
-        })
-        .select()
+        .insert(payload)
+        .select("*")
         .single();
 
-
-    if (messageError) {
-      throw messageError;
+    if (error) {
+      throw new Error(
+        "Message send failed: " +
+        error.message
+      );
     }
 
+    const message = {
+      ...data,
+      username:
+        currentProfile?.username ||
+        currentUser.user_metadata?.username ||
+        "You",
+      profile: currentProfile
+    };
 
-    if (message) {
+    messageCache.set(
+      message.id,
+      message
+    );
 
-  const enrichedMessage = {
+    renderMessage(
+      message,
+      true
+    );
 
-    ...message,
-
-    username:
-      currentProfile?.username ||
-      "You",
-
-    profiles:
-      currentProfile || null
-
-  };
-
-  messageCache.set(
-    String(message.id),
-    enrichedMessage
-  );
-
-  renderMessage(
-    enrichedMessage,
-    true
-  );
-
-}
-
+    if (messageInput) {
+      messageInput.value = "";
+    }
 
     cancelReply();
 
+    stopTypingBroadcast();
 
   } catch (error) {
-
     console.error(
-      "VOICE UPLOAD ERROR:",
+      "SEND MESSAGE ERROR:",
       error
     );
 
     showChatError(
-      "Voice note upload failed."
+      error.message ||
+      "Failed to send message."
     );
 
-  }
+  } finally {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+    }
 
+    messageInput?.focus();
+  }
 }
-
-
-/* =========================================================
-   REPLY SYSTEM
-   ========================================================= */
-
-function startReply(
-  message
-) {
-
-  if (!message) return;
-
-
-  replyingToMessage =
-    message;
-
-
-  const sender =
-    String(message.sender_id) ===
-    String(currentUser?.id)
-      ? "You"
-      : (
-          message.username ||
-          message.profiles?.username ||
-          "User"
-        );
-
-
-  if (replySender) {
-    replySender.textContent =
-      sender;
-  }
-
-
-  if (replyPreview) {
-    replyPreview.textContent =
-      getPreviewText(message);
-  }
-
-
-  replyBar?.classList.remove(
-    "hidden"
-  );
-
-
-  messageInput?.focus();
-
-}
-
-
-function cancelReply() {
-
-  replyingToMessage =
-    null;
-
-
-  replyBar?.classList.add(
-    "hidden"
-  );
-
-
-  if (replySender) {
-    replySender.textContent =
-      "User";
-  }
-
-
-  if (replyPreview) {
-    replyPreview.textContent =
-      "";
-  }
-
-}
-
-
-function getPreviewText(
-  message
-) {
-
-  if (!message) return "";
-
-
-  if (
-    message.message_type ===
-    "image"
-  ) {
-    return "📷 Image";
-  }
-
-
-  if (
-    message.message_type ===
-    "video"
-  ) {
-    return "🎥 Video";
-  }
-
-
-  if (
-    message.message_type ===
-      "audio" ||
-    message.message_type ===
-      "voice"
-  ) {
-    return "🎵 Audio";
-  }
-
-
-  return (
-    message.content ||
-    "Message"
-  )
-    .replace(
-      /\s+/g,
-      " "
-    )
-    .slice(
-      0,
-      100
-    );
-
-}
-
 
 /* =========================================================
    DELETE MESSAGE
    ========================================================= */
 
-async function deleteMessage(
-  messageId
-) {
-
-  if (!currentUser) return;
-
+async function deleteMessage(id) {
+  if (!currentUser || !id) return;
 
   const message =
-    messageCache.get(
-      String(messageId)
-    );
-
-
-  if (!message) {
-
-    showChatError(
-      "Message not found."
-    );
-
-    return;
-
-  }
-
+    messageCache.get(id);
 
   if (
-    String(message.sender_id) !==
-    String(currentUser.id)
-  ) {
-
-    showChatError(
-      "You can only delete your own messages."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !window.confirm(
-      "Delete this message?"
-    )
+    !message ||
+    message.sender_id !== currentUser.id
   ) {
     return;
   }
 
+  if (!confirm("Delete this message?")) {
+    return;
+  }
 
   try {
-
-    const {
-      error
-    } =
+    const { error } =
       await supabaseClient
         .from("messages")
         .delete()
-        .eq("id", messageId)
+        .eq("id", id)
         .eq("sender_id", currentUser.id);
-
 
     if (error) {
       throw error;
     }
 
+    messageCache.delete(id);
 
-    messageCache.delete(
-      String(messageId)
-    );
-
-
-    removeMessageFromDOM(
-      String(messageId)
-    );
-
+    removeMessageElement(id);
 
   } catch (error) {
-
     console.error(
       "DELETE MESSAGE ERROR:",
       error
     );
 
     showChatError(
-      "Failed to delete message."
+      "Delete failed: " +
+      error.message
+    );
+  }
+}
+
+function removeMessageElement(id) {
+  const element =
+    document.querySelector(
+      `.message[data-message-id="${escapeSelector(id)}"]`
     );
 
+  element?.remove();
+}
+
+/* =========================================================
+   REPLY
+   ========================================================= */
+
+function startReply(message) {
+  if (!message) return;
+
+  replyingToMessage = message;
+
+  replyBar?.classList.remove("hidden");
+
+  if (replySender) {
+    replySender.textContent =
+      message.username ||
+      "Unknown";
   }
 
+  if (replyPreview) {
+    replyPreview.textContent =
+      getMessagePreview(message);
+  }
+
+  messageInput?.focus();
 }
 
+function cancelReply() {
+  replyingToMessage = null;
 
-function removeMessageFromDOM(
-  messageId
-) {
+  replyBar?.classList.add("hidden");
 
-  const all =
-    messages?.querySelectorAll(
-      ".message"
-    ) || [];
+  if (replySender) {
+    replySender.textContent = "";
+  }
 
+  if (replyPreview) {
+    replyPreview.textContent = "";
+  }
+}
 
-  all.forEach(element => {
+function createReplyPreview(messageId) {
+  const original =
+    messageCache.get(messageId);
 
-    if (
-      String(
-        element.dataset.messageId
-      ) ===
-      String(messageId)
-    ) {
+  const box =
+    document.createElement("div");
 
-      element.remove();
+  box.className =
+    "message-reply-preview";
 
-    }
+  const sender =
+    document.createElement("div");
 
+  sender.className =
+    "message-reply-sender";
+
+  sender.textContent =
+    original?.username ||
+    "Unknown";
+
+  const content =
+    document.createElement("div");
+
+  content.className =
+    "message-reply-content";
+
+  content.textContent =
+    original
+      ? getMessagePreview(original)
+      : "Original message unavailable";
+
+  box.appendChild(sender);
+  box.appendChild(content);
+
+  box.addEventListener("click", () => {
+    jumpToMessage(messageId);
   });
 
+  return box;
 }
 
+function getMessagePreview(message) {
+  if (!message) return "";
+
+  if (message.message_type === "image") {
+    return "📷 Image";
+  }
+
+  if (message.message_type === "video") {
+    return "🎥 Video";
+  }
+
+  if (
+    message.message_type === "audio" ||
+    message.message_type === "voice"
+  ) {
+    return "🎵 Audio";
+  }
+
+  return String(
+    message.content || ""
+  ).slice(0, 120);
+}
+
+function jumpToMessage(id) {
+  const element =
+    document.querySelector(
+      `.message[data-message-id="${escapeSelector(id)}"]`
+    );
+
+  if (!element) return;
+
+  element.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+
+  element.classList.remove(
+    "reply-target-highlight"
+  );
+
+  void element.offsetWidth;
+
+  element.classList.add(
+    "reply-target-highlight"
+  );
+}
 
 /* =========================================================
    REACTIONS
@@ -3070,740 +1608,607 @@ const REACTIONS = [
   "😢"
 ];
 
-
 async function loadReactions() {
+  reactionCache.clear();
 
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabaseClient
       .from("message_reactions")
       .select(
         "user_id, message_id, reaction, profiles(username)"
       );
 
-
   if (error) {
-
     console.warn(
-      "REACTIONS LOAD ERROR:",
+      "LOAD REACTIONS ERROR:",
       error
     );
-
     return;
-
   }
 
-
-  reactionCache.clear();
-
-
   (data || []).forEach(row => {
-
-    const key =
-      String(row.message_id);
-
-
-    if (!reactionCache.has(key)) {
-
-      reactionCache.set(
-        key,
-        []
-      );
-
-    }
-
-
-    reactionCache
-      .get(key)
-      .push(row);
-
+    addReactionToCache(row);
   });
 
-
-  rerenderAllReactions();
-
+  refreshAllReactionDisplays();
 }
 
-
-async function loadReactionsForMessage(
-  messageId
-) {
-
-  const {
-    data,
-    error
-  } =
+async function loadReactionsForMessage(messageId) {
+  const { data, error } =
     await supabaseClient
       .from("message_reactions")
       .select(
         "user_id, message_id, reaction, profiles(username)"
       )
-      .eq(
-        "message_id",
-        messageId
-      );
-
+      .eq("message_id", messageId);
 
   if (error) {
-
     console.warn(
-      "REACTION LOAD ERROR:",
+      "LOAD MESSAGE REACTIONS ERROR:",
       error
     );
-
     return;
-
   }
 
-
   reactionCache.set(
-    String(messageId),
+    messageId,
     data || []
   );
 
+  refreshReactionDisplay(messageId);
 }
 
+function addReactionToCache(row) {
+  if (!row?.message_id) return;
 
-function renderReactionArea(
-  container,
-  messageId
-) {
+  const list =
+    reactionCache.get(row.message_id) || [];
 
-  container.innerHTML = "";
+  list.push(row);
 
-
-  const rows =
-    reactionCache.get(
-      String(messageId)
-    ) || [];
-
-
-  const grouped =
-    new Map();
-
-
-  rows.forEach(row => {
-
-    const reaction =
-      row.reaction;
-
-
-    if (!grouped.has(reaction)) {
-
-      grouped.set(
-        reaction,
-        []
-      );
-
-    }
-
-
-    grouped
-      .get(reaction)
-      .push(row);
-
-  });
-
-
-  grouped.forEach(
-    (users, reaction) => {
-
-      const button =
-        document.createElement("button");
-
-
-      button.type =
-        "button";
-
-
-      /*
-         .reaction-count is styled
-         by your CSS.
-      */
-
-      button.className =
-        "reaction-count";
-
-
-      button.textContent =
-        `${reaction} ${users.length}`;
-
-
-      button.addEventListener(
-        "click",
-        event => {
-
-          event.stopPropagation();
-
-          showReactionUsers(
-            reaction,
-            users
-          );
-
-        }
-      );
-
-
-      container.appendChild(
-        button
-      );
-
-    }
+  reactionCache.set(
+    row.message_id,
+    list
   );
-
 }
-
-
-function rerenderReactions(
-  messageId
-) {
-
-  const areas =
-    messages?.querySelectorAll(
-      ".reaction-area"
-    ) || [];
-
-
-  areas.forEach(area => {
-
-    if (
-      String(
-        area.dataset.reactionMessageId
-      ) ===
-      String(messageId)
-    ) {
-
-      renderReactionArea(
-        area,
-        messageId
-      );
-
-    }
-
-  });
-
-}
-
-
-function rerenderAllReactions() {
-
-  const areas =
-    messages?.querySelectorAll(
-      ".reaction-area"
-    ) || [];
-
-
-  areas.forEach(area => {
-
-    renderReactionArea(
-      area,
-      area.dataset.reactionMessageId
-    );
-
-  });
-
-}
-
-
-/* =========================================================
-   REACTION PICKER
-   ========================================================= */
 
 function setupReactionPicker(
-  messageElement,
+  wrapper,
   messageId
 ) {
-
   let pressTimer = null;
 
-
-  const show = () => {
-
-    removeReactionPicker();
-
-
-    const picker =
-      document.createElement("div");
-
-
-    /*
-       No CSS was supplied for this class,
-       so it remains isolated and won't
-       affect the normal bubble.
-    */
-
-    picker.className =
-      "reaction-picker";
-
-
-    REACTIONS.forEach(reaction => {
-
-      const button =
-        document.createElement("button");
-
-
-      button.type =
-        "button";
-
-      button.textContent =
-        reaction;
-
-
-      button.addEventListener(
-        "click",
-        event => {
-
-          event.stopPropagation();
-
-          toggleReaction(
-            messageId,
-            reaction
-          );
-
-          removeReactionPicker();
-
-        }
-      );
-
-
-      picker.appendChild(
-        button
-      );
-
-    });
-
-
-    messageElement.appendChild(
-      picker
-    );
-
-  };
-
-
-  messageElement.addEventListener(
+  wrapper.addEventListener(
     "contextmenu",
     event => {
-
       event.preventDefault();
 
-      show();
-
+      showReactionPicker(
+        event.clientX,
+        event.clientY,
+        messageId
+      );
     }
   );
 
-
-  messageElement.addEventListener(
+  wrapper.addEventListener(
     "touchstart",
-    () => {
+    event => {
+      const touch =
+        event.touches?.[0];
 
-      pressTimer =
-        setTimeout(
-          show,
-          600
+      if (!touch) return;
+
+      pressTimer = setTimeout(() => {
+        showReactionPicker(
+          touch.clientX,
+          touch.clientY,
+          messageId
         );
-
+      }, 550);
     },
+    { passive: true }
+  );
+
+  const cancelPress = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+  };
+
+  wrapper.addEventListener(
+    "touchend",
+    cancelPress
+  );
+
+  wrapper.addEventListener(
+    "touchmove",
+    cancelPress
+  );
+
+  wrapper.addEventListener(
+    "touchcancel",
+    cancelPress
+  );
+}
+
+function showReactionPicker(
+  x,
+  y,
+  messageId
+) {
+  closeReactionPopup();
+
+  const popup =
+    document.createElement("div");
+
+  popup.className =
+    "reaction-picker-popup";
+
+  Object.assign(
+    popup.style,
     {
-      passive: true
+      position: "fixed",
+      left: Math.max(
+        8,
+        Math.min(
+          x,
+          window.innerWidth - 250
+        )
+      ) + "px",
+      top: Math.max(
+        8,
+        Math.min(
+          y,
+          window.innerHeight - 60
+        )
+      ) + "px",
+      zIndex: "99999",
+      display: "flex",
+      gap: "5px",
+      padding: "7px",
+      borderRadius: "12px",
+      background: "#111827",
+      border: "1px solid rgba(125,211,252,.3)",
+      boxShadow: "0 12px 35px rgba(0,0,0,.5)"
     }
   );
 
+  REACTIONS.forEach(reaction => {
+    const button =
+      document.createElement("button");
 
-  [
-    "touchend",
-    "touchmove",
-    "touchcancel"
-  ].forEach(eventName => {
+    button.type = "button";
 
-    messageElement.addEventListener(
-      eventName,
-      () => {
+    button.textContent = reaction;
 
-        if (pressTimer) {
-
-          clearTimeout(
-            pressTimer
-          );
-
-          pressTimer = null;
-
-        }
-
-      },
+    Object.assign(
+      button.style,
       {
-        passive: true
+        width: "34px",
+        height: "34px",
+        border: "none",
+        borderRadius: "8px",
+        background: "rgba(255,255,255,.07)",
+        fontSize: "18px",
+        cursor: "pointer"
       }
     );
 
+    button.addEventListener(
+      "click",
+      async () => {
+        await toggleReaction(
+          messageId,
+          reaction
+        );
+
+        closeReactionPopup();
+      }
+    );
+
+    popup.appendChild(button);
   });
 
+  document.body.appendChild(popup);
+
+  setTimeout(() => {
+    document.addEventListener(
+      "click",
+      closeReactionPopup,
+      {
+        once: true
+      }
+    );
+  }, 0);
 }
 
+function closeReactionPopup() {
+  document
+    .querySelectorAll(
+      ".reaction-picker-popup"
+    )
+    .forEach(el => el.remove());
+}
 
 async function toggleReaction(
   messageId,
   reaction
 ) {
-
   if (!currentUser) return;
 
-
   try {
-
-    const {
-      data: existing,
-      error: selectError
-    } =
+    const { data: existing, error: findError } =
       await supabaseClient
         .from("message_reactions")
-        .select(
-          "user_id, message_id, reaction"
-        )
-        .eq(
-          "message_id",
-          messageId
-        )
-        .eq(
-          "user_id",
-          currentUser.id
-        )
-        .eq(
-          "reaction",
-          reaction
-        )
+        .select("user_id")
+        .eq("message_id", messageId)
+        .eq("user_id", currentUser.id)
+        .eq("reaction", reaction)
         .maybeSingle();
 
-
-    if (selectError) {
-      throw selectError;
+    if (findError) {
+      throw findError;
     }
 
-
     if (existing) {
-
-      const {
-        error
-      } =
+      const { error } =
         await supabaseClient
           .from("message_reactions")
           .delete()
-          .eq(
-            "message_id",
-            messageId
-          )
-          .eq(
-            "user_id",
-            currentUser.id
-          )
-          .eq(
-            "reaction",
-            reaction
-          );
+          .eq("message_id", messageId)
+          .eq("user_id", currentUser.id)
+          .eq("reaction", reaction);
 
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
     } else {
-
-      const {
-        error
-      } =
+      const { error } =
         await supabaseClient
           .from("message_reactions")
           .insert({
-            message_id:
-              messageId,
-
-            user_id:
-              currentUser.id,
-
+            message_id: messageId,
+            user_id: currentUser.id,
             reaction
           });
 
-
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
     }
-
 
     await loadReactionsForMessage(
       messageId
     );
 
-
-    rerenderReactions(
-      messageId
-    );
-
-
   } catch (error) {
-
     console.error(
       "REACTION ERROR:",
       error
     );
 
+    showChatError(
+      "Reaction failed: " +
+      error.message
+    );
   }
-
 }
 
-
-function showReactionUsers(
-  reaction,
-  users
+function renderReactionCounts(
+  area,
+  messageId
 ) {
+  if (!area) return;
 
-  const names =
-    users.map(user => {
+  area.innerHTML = "";
 
-      return (
-        user.profiles?.username ||
-        user.username ||
-        "User"
+  const list =
+    reactionCache.get(messageId) || [];
+
+  if (!list.length) return;
+
+  const grouped = new Map();
+
+  list.forEach(row => {
+    const emoji =
+      row.reaction || "";
+
+    grouped.set(
+      emoji,
+      (grouped.get(emoji) || 0) + 1
+    );
+  });
+
+  const bar =
+    document.createElement("div");
+
+  bar.className =
+    "reaction-counts";
+
+  grouped.forEach(
+    (count, emoji) => {
+      const button =
+        document.createElement("button");
+
+      button.type = "button";
+
+      button.className =
+        "reaction-count";
+
+      button.textContent =
+        `${emoji} ${count}`;
+
+      button.addEventListener(
+        "click",
+        () => {
+          showReactionUsers(
+            messageId,
+            emoji
+          );
+        }
       );
 
-    });
-
-
-  window.alert(
-    `${reaction}\n\n${names.join("\n")}`
+      bar.appendChild(button);
+    }
   );
 
+  area.appendChild(bar);
 }
 
-
-function removeReactionPicker() {
-
-  document
-    .querySelectorAll(
-      ".reaction-picker"
-    )
-    .forEach(
-      picker => picker.remove()
+function refreshReactionDisplay(
+  messageId
+) {
+  const wrapper =
+    document.querySelector(
+      `.message[data-message-id="${escapeSelector(messageId)}"]`
     );
 
+  if (!wrapper) return;
+
+  const area =
+    wrapper.querySelector(
+      ".reaction-area"
+    );
+
+  if (area) {
+    renderReactionCounts(
+      area,
+      messageId
+    );
+  }
 }
 
-
-document.addEventListener(
-  "click",
-  event => {
-
-    if (
-      !event.target.closest(
-        ".reaction-picker"
-      )
-    ) {
-
-      removeReactionPicker();
-
+function refreshAllReactionDisplays() {
+  messageCache.forEach(
+    (_, messageId) => {
+      refreshReactionDisplay(
+        messageId
+      );
     }
+  );
+}
 
+function showReactionUsers(
+  messageId,
+  reaction
+) {
+  const list =
+    reactionCache.get(messageId) || [];
+
+  const users =
+    list.filter(
+      row => row.reaction === reaction
+    );
+
+  const overlay =
+    document.createElement("div");
+
+  overlay.className =
+    "reaction-users-overlay";
+
+  const popup =
+    document.createElement("div");
+
+  popup.className =
+    "reaction-users-popup";
+
+  const header =
+    document.createElement("div");
+
+  header.className =
+    "reaction-users-header";
+
+  header.textContent =
+    `${reaction} Reactions`;
+
+  popup.appendChild(header);
+
+  if (!users.length) {
+    const empty =
+      document.createElement("div");
+
+    empty.className =
+      "reaction-users-empty";
+
+    empty.textContent =
+      "No reactions yet.";
+
+    popup.appendChild(empty);
+
+  } else {
+    users.forEach(row => {
+      const item =
+        document.createElement("div");
+
+      item.className =
+        "reaction-user-row";
+
+      const name =
+        document.createElement("span");
+
+      name.className =
+        "reaction-user-name";
+
+      name.textContent =
+        row.profiles?.username ||
+        "Unknown user";
+
+      const emoji =
+        document.createElement("span");
+
+      emoji.className =
+        "reaction-user-emoji";
+
+      emoji.textContent =
+        reaction;
+
+      item.appendChild(name);
+      item.appendChild(emoji);
+
+      popup.appendChild(item);
+    });
   }
-);
 
+  const close =
+    document.createElement("button");
+
+  close.type = "button";
+
+  close.className =
+    "reaction-users-close";
+
+  close.textContent = "Close";
+
+  close.addEventListener(
+    "click",
+    () => overlay.remove()
+  );
+
+  popup.appendChild(close);
+
+  overlay.appendChild(popup);
+
+  overlay.addEventListener(
+    "click",
+    e => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    }
+  );
+
+  document.body.appendChild(overlay);
+}
 
 /* =========================================================
    TYPING
    ========================================================= */
 
 function setupTyping() {
-
-  if (!currentUser) return;
-
-
   if (typingChannel) {
-
     supabaseClient.removeChannel(
       typingChannel
     );
-
   }
-
 
   typingChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-typing"
-      )
-      .on(
-        "broadcast",
-        {
-          event: "typing"
-        },
-        payload => {
+    supabaseClient.channel(
+      "neural-ninjas-typing"
+    );
 
-          const username =
-            payload.payload?.username;
+  typingChannel
+    .on(
+      "broadcast",
+      {
+        event: "typing"
+      },
+      payload => {
+        const username =
+          payload.payload?.username;
 
-          const userId =
-            payload.payload?.userId;
+        const userId =
+          payload.payload?.userId;
 
-
-          if (
-            !username ||
-            String(userId) ===
-            String(currentUser.id)
-          ) {
-            return;
-          }
-
-
-          showTyping(username);
-
+        if (
+          !username ||
+          userId === currentUser?.id
+        ) {
+          return;
         }
-      )
-      .subscribe();
 
+        showTypingUser(username);
+      }
+    )
+    .subscribe();
 }
-
 
 function handleTyping() {
-
-  if (!typingChannel) return;
-
-
-  if (!messageInput?.value.trim()) {
-
-    stopTypingBroadcast();
+  if (!currentUser || !typingChannel) {
     return;
-
   }
 
+  clearTimeout(typingTimeout);
 
-  if (!isCurrentlyTyping) {
+  typingChannel.send({
+    type: "broadcast",
+    event: "typing",
+    payload: {
+      username:
+        currentProfile?.username ||
+        "Someone",
+      userId: currentUser.id
+    }
+  });
 
-    isCurrentlyTyping =
-      true;
-
-
-    typingChannel.send({
-      type: "broadcast",
-
-      event: "typing",
-
-      payload: {
-        username:
-          currentProfile?.username ||
-          "Someone",
-
-        userId:
-          currentUser.id
-      }
-    });
-
-  }
-
-
-  if (typingTimeout) {
-
-    clearTimeout(
-      typingTimeout
-    );
-
-  }
-
-
-  typingTimeout =
-    setTimeout(
-      stopTypingBroadcast,
-      1500
-    );
-
+  typingTimeout = setTimeout(() => {
+    hideTypingIndicator();
+  }, 1800);
 }
-
 
 function stopTypingBroadcast() {
-
-  isCurrentlyTyping =
-    false;
-
-
-  if (typingTimeout) {
-
-    clearTimeout(
-      typingTimeout
-    );
-
-    typingTimeout = null;
-
-  }
-
+  clearTimeout(typingTimeout);
+  hideTypingIndicator();
 }
 
-
-function showTyping(
-  username
-) {
-
+function showTypingUser(username) {
   if (!typingIndicator) return;
-
 
   typingIndicator.textContent =
     `${username} is typing...`;
 
+  typingIndicator.classList.add("show");
 
-  typingIndicator.classList.add(
+  clearTimeout(
+    typingIndicator._hideTimer
+  );
+
+  typingIndicator._hideTimer =
+    setTimeout(() => {
+      hideTypingIndicator();
+    }, 1800);
+}
+
+function hideTypingIndicator() {
+  typingIndicator?.classList.remove(
     "show"
   );
 
-
-  clearTimeout(
-    typingIndicator._timer
-  );
-
-
-  typingIndicator._timer =
-    setTimeout(() => {
-
-      typingIndicator.classList.remove(
-        "show"
-      );
-
-      typingIndicator.textContent =
-        "";
-
-    }, 1800);
-
+  if (typingIndicator) {
+    typingIndicator.textContent = "";
+  }
 }
 
-
-function refreshPresenceState() {
-
-  if (!presenceChannel) return;
-
-  presenceUsers =
-    presenceChannel.presenceState() || {};
-
-  renderMembers();
-
-  updateOnlineStatus();
-
-}
-   
 /* =========================================================
    PRESENCE
    ========================================================= */
 
 function setupPresence() {
-
   if (!currentUser) return;
 
-
   if (presenceChannel) {
-
     supabaseClient.removeChannel(
       presenceChannel
     );
-
   }
-
 
   presenceChannel =
     supabaseClient.channel(
@@ -3811,212 +2216,189 @@ function setupPresence() {
       {
         config: {
           presence: {
-            key:
-              String(
-                currentUser.id
-              )
+            key: currentUser.id
           }
         }
       }
     );
 
+  presenceChannel
+    .on(
+      "presence",
+      {
+        event: "sync"
+      },
+      refreshPresenceState
+    )
+    .on(
+      "presence",
+      {
+        event: "join"
+      },
+      refreshPresenceState
+    )
+    .on(
+      "presence",
+      {
+        event: "leave"
+      },
+      refreshPresenceState
+    )
+    .subscribe(
+      async status => {
+        console.log(
+          "PRESENCE CHANNEL:",
+          status
+        );
 
-
-  presenceChannel.on(
-  "presence",
-  {
-    event: "sync"
-  },
-  () => {
-    refreshPresenceState();
-  }
-);
-
-
-  presenceChannel.on(
-    "presence",
-    {
-      event: "leave"
-    },
-    () => {
-
-      refreshPresenceState();
-
-    }
-  );
-
-
-  presenceChannel.subscribe(
-    async status => {
-
-      if (
-        status ===
-        "SUBSCRIBED"
-      ) {
-
-        await presenceChannel.track({
-
-          userId:
-            currentUser.id,
-
-          username:
-            currentProfile?.username ||
-            "User",
-
-          online:
-            true,
-
-          joinedAt:
-            Date.now()
-
-        });
-
+        if (status === "SUBSCRIBED") {
+          try {
+            await presenceChannel.track({
+              userId:
+                currentUser.id,
+              username:
+                currentProfile?.username ||
+                "User",
+              online: true,
+              joinedAt: Date.now()
+            });
+          } catch (error) {
+            console.error(
+              "PRESENCE TRACK ERROR:",
+              error
+            );
+          }
+        }
       }
-
-    }
-  );
-
+    );
 }
 
+function refreshPresenceState() {
+  if (!presenceChannel) return;
+
+  presenceUsers =
+    presenceChannel.presenceState() || {};
+
+  renderMembers();
+  updateOnlineStatus();
+}
+
+function isUserOnline(userId) {
+  if (!userId) return false;
+
+  const entries =
+    presenceUsers[userId];
+
+  return Array.isArray(entries) &&
+    entries.length > 0;
+}
+
+function updateOnlineStatus() {
+  if (!onlineStatus) return;
+
+  const count =
+    Object.keys(presenceUsers || {})
+      .length;
+
+  onlineStatus.textContent =
+    `● ${count} ${
+      count === 1
+        ? "member"
+        : "members"
+    } online`;
+}
 
 /* =========================================================
    MEMBERS
    ========================================================= */
 
 async function loadMembers() {
-
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabaseClient
       .from("profiles")
       .select(
         "id, username, bio, last_seen_at"
       )
-      .order(
-        "username",
-        {
-          ascending: true
-        }
-      );
-
+      .order("username", {
+        ascending: true
+      });
 
   if (error) {
-
     console.error(
-      "MEMBERS LOAD ERROR:",
+      "LOAD MEMBERS ERROR:",
       error
     );
 
+    if (membersList) {
+      membersList.innerHTML = "";
+
+      const errorBox =
+        document.createElement("div");
+
+      errorBox.style.padding = "15px";
+      errorBox.style.color = "#ff8a8a";
+      errorBox.style.fontSize = "12px";
+
+      errorBox.textContent =
+        "Could not load members: " +
+        error.message;
+
+      membersList.appendChild(errorBox);
+    }
+
     return;
-
   }
-
 
   window.neuralNinjasMembers =
     data || [];
 
-
   renderMembers();
-
 }
 
-
-function isUserOnline(
-  userId
-) {
-
-  return Object.values(
-    presenceUsers || {}
-  ).some(entries =>
-    entries.some(entry =>
-      String(entry.userId) ===
-      String(userId)
-    )
-  );
-
-}
-
-
-   function updateOnlineStatus() {
+function renderMembers() {
+  if (!membersList) return;
 
   const members =
     window.neuralNinjasMembers || [];
 
-  const onlineMembers =
-    members.filter(member =>
-      isUserOnline(member.id)
-    );
-
-  const count =
-    onlineMembers.length;
-
-  if (onlineStatus) {
-
-    onlineStatus.textContent =
-      `● ${count} member${count === 1 ? "" : "s"} online`;
-
-  }
-
-}
-
-/* =========================================================
-   RENDER MEMBERS
-   IMPORTANT:
-   MATCHES YOUR CSS EXACTLY
-   ========================================================= */
-
-function renderMembers() {
-
-  if (!membersList) return;
-
-
-  const members =
-    window.neuralNinjasMembers ||
-    [];
-
+  membersList.innerHTML = "";
 
   if (memberCount) {
-
     memberCount.textContent =
       `${members.length} ${
         members.length === 1
           ? "member"
           : "members"
       }`;
-
   }
 
-
-  membersList.innerHTML = "";
-
-
-  members.forEach(member => {
-
-    const item =
+  if (!members.length) {
+    const empty =
       document.createElement("div");
 
+    empty.style.padding = "15px";
+    empty.style.opacity = "0.65";
+    empty.style.fontSize = "12px";
 
-    /*
-       EXACT CSS CLASS
-    */
+    empty.textContent =
+      "No members found.";
 
-    item.className =
-      "member";
+    membersList.appendChild(empty);
 
+    return;
+  }
 
-    /* =====================================================
-       AVATAR
-       ===================================================== */
+  members.forEach(member => {
+    const row =
+      document.createElement("div");
+
+    row.className = "member";
 
     const avatar =
       document.createElement("div");
 
-
     avatar.className =
       "member-avatar";
-
 
     avatar.textContent =
       (
@@ -4026,415 +2408,202 @@ function renderMembers() {
         .charAt(0)
         .toUpperCase();
 
-
-    /* =====================================================
-       INFO
-       ===================================================== */
-
     const info =
       document.createElement("div");
-
 
     info.className =
       "member-info";
 
-
-    /* =====================================================
-       NAME
-       ===================================================== */
-
     const name =
       document.createElement("div");
-
 
     name.className =
       "member-name";
 
-
     name.textContent =
       member.username ||
-      "User";
-
-
-    /* =====================================================
-       STATUS
-       ===================================================== */
+      "Unknown";
 
     const status =
       document.createElement("div");
 
-
     status.className =
       "member-status";
-
 
     const dot =
       document.createElement("span");
 
+    dot.className = "status-dot";
 
-    dot.className =
-      "status-dot";
+    const online =
+      isUserOnline(member.id);
 
+    if (online) {
+      dot.classList.add("online");
+    }
 
     const statusText =
       document.createElement("span");
 
-
-    const online =
-      isUserOnline(
-        member.id
-      );
-
-
-    if (online) {
-
-      dot.classList.add(
-        "online"
-      );
-
-
-      statusText.textContent =
-        "Online";
-
-    } else {
-
-      statusText.textContent =
-        formatLastSeen(
-          member.last_seen_at
-        );
-
-    }
-
+    statusText.textContent =
+      online
+        ? "Online"
+        : formatLastSeen(
+            member.last_seen_at
+          );
 
     status.appendChild(dot);
-
-    status.appendChild(
-      statusText
-    );
-
+    status.appendChild(statusText);
 
     info.appendChild(name);
-
     info.appendChild(status);
 
+    row.appendChild(avatar);
+    row.appendChild(info);
 
-    item.appendChild(avatar);
-
-    item.appendChild(info);
-
-
-    membersList.appendChild(item);
-
+    membersList.appendChild(row);
   });
-
 }
-
 
 /* =========================================================
    LAST SEEN
    ========================================================= */
 
 async function updateLastSeen() {
-
   if (!currentUser) return;
 
+  const now =
+    new Date().toISOString();
 
-  try {
+  const { error } =
+    await supabaseClient
+      .from("profiles")
+      .update({
+        last_seen_at: now
+      })
+      .eq("id", currentUser.id);
 
-    const now =
-      new Date().toISOString();
-
-
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("profiles")
-        .update({
-          last_seen_at: now
-        })
-        .eq(
-          "id",
-          currentUser.id
-        );
-
-
-    if (error) {
-
-      console.warn(
-        "LAST SEEN ERROR:",
-        error
-      );
-
-      return;
-
-    }
-
-
-    if (currentProfile) {
-
-      currentProfile.last_seen_at =
-        now;
-
-    }
-
-  } catch (error) {
-
+  if (error) {
     console.warn(
       "LAST SEEN ERROR:",
       error
     );
-
+    return;
   }
 
+  if (currentProfile) {
+    currentProfile.last_seen_at =
+      now;
+  }
+
+  const members =
+    window.neuralNinjasMembers;
+
+  if (Array.isArray(members)) {
+    const me =
+      members.find(
+        member =>
+          member.id === currentUser.id
+      );
+
+    if (me) {
+      me.last_seen_at = now;
+    }
+  }
+
+  renderMembers();
 }
 
-
 function startLastSeenTimer() {
-
   if (lastSeenInterval) {
-
     clearInterval(
       lastSeenInterval
     );
-
   }
 
-
   lastSeenInterval =
-    setInterval(
-      async () => {
-
-        if (
-          document.visibilityState ===
-          "visible"
-        ) {
-
-          await updateLastSeen();
-
-          renderMembers();
-
-        }
-
-      },
-      30000
-    );
-
+    setInterval(() => {
+      if (!document.hidden) {
+        updateLastSeen();
+      }
+    }, 30000);
 }
 
-
-function formatLastSeen(
-  timestamp
-) {
-
-  if (!timestamp) {
+function formatLastSeen(value) {
+  if (!value) {
     return "Last seen unknown";
   }
 
+  const time =
+    new Date(value).getTime();
 
-  const date =
-    new Date(timestamp);
-
+  if (Number.isNaN(time)) {
+    return "Last seen unknown";
+  }
 
   const diff =
-    Date.now() -
-    date.getTime();
+    Date.now() - time;
 
+  const seconds =
+    Math.floor(diff / 1000);
 
-  if (diff < 60000) {
-    return "Last seen just now";
+  if (seconds < 30) {
+    return "Just now";
   }
-
 
   const minutes =
-    Math.floor(
-      diff / 60000
-    );
-
+    Math.floor(seconds / 60);
 
   if (minutes < 60) {
-
-    return `Last seen ${minutes}m ago`;
-
+    return `${minutes}m ago`;
   }
-
 
   const hours =
-    Math.floor(
-      minutes / 60
-    );
-
+    Math.floor(minutes / 60);
 
   if (hours < 24) {
-
-    return `Last seen ${hours}h ago`;
-
+    return `${hours}h ago`;
   }
 
-
   const days =
-    Math.floor(
-      hours / 24
-    );
+    Math.floor(hours / 24);
 
-
-  return `Last seen ${days}d ago`;
-
+  return `${days}d ago`;
 }
-
 
 /* =========================================================
    SEARCH
    ========================================================= */
 
-function searchMessages() {
-
+function filterMessages() {
   const query =
-    messageSearchInput?.value
-      ?.trim()
-      .toLowerCase() ||
-    "";
-
-
-  const messageElements =
-    messages?.querySelectorAll(
-      ".message"
-    ) || [];
-
-
-  messageElements.forEach(element => {
-
-    if (!query) {
-
-      element.style.display =
-        "";
-
-      element.classList.remove(
-        "search-match"
-      );
-
-      return;
-
-    }
-
-
-    const text =
-      element.textContent
-        .toLowerCase();
-
-
-    const match =
-      text.includes(query);
-
-
-    element.style.display =
-      match
-        ? ""
-        : "none";
-
-
-    element.classList.toggle(
-      "search-match",
-      match
-    );
-
-  });
-
-}
-
-
-function clearSearch() {
-
-  if (messageSearchInput) {
-
-    messageSearchInput.value =
-      "";
-
-  }
-
-
-  searchMessages();
-
-}
-
-
-/* =========================================================
-   THEME
-   ========================================================= */
-
-function openThemePanel() {
-
-  themePanel?.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-function closeThemePanel() {
-
-  themePanel?.classList.add(
-    "hidden"
-  );
-
-}
-
-
-function applyTheme(
-  theme
-) {
-
-  const validThemes = [
-    "default",
-    "cyber",
-    "space",
-    "amber"
-  ];
-
-
-  if (
-    !validThemes.includes(theme)
-  ) {
-
-    theme =
-      "default";
-
-  }
-
-
-  document.body.dataset.theme =
-    theme;
-
-
-  localStorage.setItem(
-    "neuralNinjasTheme",
-    theme
-  );
-
+    (
+      messageSearchInput?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
   document
-    .querySelectorAll(
-      ".theme-option"
-    )
-    .forEach(option => {
+    .querySelectorAll(".message")
+    .forEach(message => {
+      const text =
+        message.textContent
+          .toLowerCase();
 
-      option.classList.toggle(
-        "active",
-        option.dataset.theme ===
-          theme
-      );
-
+      message.style.display =
+        !query ||
+        text.includes(query)
+          ? ""
+          : "none";
     });
-
 }
-
 
 /* =========================================================
    SIDEBAR
    ========================================================= */
 
 function openSidebar() {
-
   membersSidebar?.classList.add(
     "open"
   );
@@ -4442,12 +2611,9 @@ function openSidebar() {
   sidebarOverlay?.classList.add(
     "show"
   );
-
 }
 
-
 function closeSidebar() {
-
   membersSidebar?.classList.remove(
     "open"
   );
@@ -4455,247 +2621,192 @@ function closeSidebar() {
   sidebarOverlay?.classList.remove(
     "show"
   );
-
 }
 
+/* =========================================================
+   THEMES
+   ========================================================= */
+
+function applyTheme(theme) {
+  const validThemes = [
+    "default",
+    "cyber",
+    "space",
+    "amber"
+  ];
+
+  if (!validThemes.includes(theme)) {
+    theme = "default";
+  }
+
+  document.body.dataset.theme =
+    theme;
+
+  localStorage.setItem(
+    "neural-ninjas-theme",
+    theme
+  );
+
+  document
+    .querySelectorAll(".theme-option")
+    .forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.theme === theme
+      );
+    });
+}
 
 /* =========================================================
-   ACCOUNT DELETION
+   ACCOUNT DELETE
    ========================================================= */
 
 async function deleteAccount() {
-
   if (!currentUser) return;
 
-
-  const firstConfirm =
-    window.confirm(
-      "Delete your Neural Ninjas account?"
+  const first =
+    confirm(
+      "Delete your Neural Ninjas account permanently?"
     );
 
+  if (!first) return;
 
-  if (!firstConfirm) return;
-
-
-  const secondConfirm =
-    window.confirm(
-      "This action cannot be easily undone. Delete account permanently?"
+  const second =
+    confirm(
+      "This cannot be undone. Continue?"
     );
 
-
-  if (!secondConfirm) return;
-
+  if (!second) return;
 
   if (deleteAccountBtn) {
-
-    deleteAccountBtn.disabled =
-      true;
-
+    deleteAccountBtn.disabled = true;
     deleteAccountBtn.textContent =
       "Deleting...";
-
   }
 
-
   try {
-
     const {
       data: sessionData,
       error: sessionError
     } =
       await supabaseClient.auth.getSession();
 
-
     if (sessionError) {
       throw sessionError;
     }
 
+    const token =
+      sessionData?.session?.access_token;
 
-    const accessToken =
-      sessionData.session?.access_token;
-
-
-    if (!accessToken) {
-
+    if (!token) {
       throw new Error(
-        "Your session has expired. Please login again."
+        "No active access token."
       );
-
     }
-
 
     const response =
       await fetch(
         `${SUPABASE_URL}/functions/v1/super-responder`,
         {
           method: "POST",
-
           headers: {
-            "Content-Type":
-              "application/json",
-
             Authorization:
-              `Bearer ${accessToken}`,
-
+              `Bearer ${token}`,
             apikey:
-              SUPABASE_PUBLISHABLE_KEY
+              SUPABASE_PUBLISHABLE_KEY,
+            "Content-Type":
+              "application/json"
           },
-
           body: JSON.stringify({
-            action:
-              "delete_account"
+            action: "delete_account"
           })
-
         }
       );
 
+    const result =
+      await response.json()
+        .catch(() => ({}));
 
-    let result = null;
-
-
-    try {
-
-      result =
-        await response.json();
-
-    } catch {
-
-      result = null;
-
-    }
-
-
-    if (
-      !response.ok ||
-      result?.success === false
-    ) {
-
+    if (!response.ok) {
       throw new Error(
         result?.error ||
         result?.message ||
-        `Account deletion failed (${response.status}).`
+        `HTTP ${response.status}`
       );
-
     }
 
+    await supabaseClient.auth.signOut();
 
-    try {
-
-      await supabaseClient.auth.signOut();
-
-    } catch (signOutError) {
-
-      console.warn(
-        "SIGNOUT AFTER DELETE:",
-        signOutError
-      );
-
-    }
-
-
-    cleanupApplication();
-
+    cleanupAfterLogout();
 
     alert(
       "Your account has been deleted."
     );
 
-
   } catch (error) {
-
     console.error(
-      "ACCOUNT DELETE ERROR:",
+      "DELETE ACCOUNT ERROR:",
       error
     );
 
-
     alert(
-      error.message ||
-      "Failed to delete account."
+      "Account deletion failed:\n" +
+      error.message
     );
 
   } finally {
-
     if (deleteAccountBtn) {
-
-      deleteAccountBtn.disabled =
-        false;
-
+      deleteAccountBtn.disabled = false;
       deleteAccountBtn.textContent =
         "Delete Account";
-
     }
-
   }
-
 }
-
 
 /* =========================================================
    LOGOUT
    ========================================================= */
 
 async function exitChat() {
+  if (!currentUser) return;
 
-  const confirmed =
-    window.confirm(
-      "Exit Neural Ninjas?"
-    );
-
-
-  if (!confirmed) return;
-
-
-  try {
-
-    await updateLastSeen();
-
-  } catch {
-    /* Ignore */
+  if (!confirm("Logout from Neural Ninjas?")) {
+    return;
   }
 
-
   try {
+    await updateLastSeen();
 
-    await supabaseClient.auth.signOut();
+    const { error } =
+      await supabaseClient.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
 
   } catch (error) {
-
-    console.warn(
-      "SIGNOUT ERROR:",
+    console.error(
+      "LOGOUT ERROR:",
       error
     );
 
+  } finally {
+    cleanupAfterLogout();
   }
-
-
-  cleanupApplication();
-
 }
 
-
-/* =========================================================
-   APPLICATION CLEANUP
-   ========================================================= */
-
-function cleanupApplication() {
-
+function cleanupAfterLogout() {
   cleanupRealtimeChannels();
 
-
   if (lastSeenInterval) {
-
     clearInterval(
       lastSeenInterval
     );
 
     lastSeenInterval = null;
-
   }
 
-
-  cleanupRecordingStream();
-
+  stopVoiceRecording();
 
   currentUser = null;
   currentProfile = null;
@@ -4705,27 +2816,28 @@ function cleanupApplication() {
 
   presenceUsers = {};
 
-  replyingToMessage = null;
-
-  isCurrentlyTyping = false;
-
+  window.neuralNinjasMembers =
+    [];
 
   if (messages) {
     messages.innerHTML = "";
   }
 
-
   if (messageInput) {
     messageInput.value = "";
   }
 
+  if (pinInput) {
+    pinInput.value = "";
+  }
 
-  clearSearch();
   cancelReply();
 
   closeSidebar();
-  closeThemePanel();
 
+  themePanel?.classList.add(
+    "hidden"
+  );
 
   chatScreen?.classList.add(
     "hidden"
@@ -4735,142 +2847,273 @@ function cleanupApplication() {
     "hidden"
   );
 
+  if (loginStatus) {
+    loginStatus.textContent = "";
+  }
 
   if (onlineStatus) {
-
     onlineStatus.textContent =
-      "Connecting...";
-
+      "● Offline";
   }
 
-
-  setLoginStatus("");
-
+  usernameInput?.focus();
 }
 
-
 /* =========================================================
-   BEFORE UNLOAD
+   VOICE RECORDING
    ========================================================= */
 
-window.addEventListener(
-  "beforeunload",
-  () => {
-
-    if (currentUser) {
-      updateLastSeen();
-    }
-
+async function startVoiceRecording() {
+  if (
+    isRecordingVoice ||
+    !currentUser
+  ) {
+    return;
   }
-);
-
-
-/* =========================================================
-   UI HELPERS
-   ========================================================= */
-
-function setLoginStatus(
-  message
-) {
-
-  if (!loginStatus) return;
-
-  loginStatus.textContent =
-    message;
-
-}
-
-
-function showChatError(
-  message
-) {
-
-  console.error(
-    message
-  );
-
 
   if (
-    chatScreen?.classList.contains(
-      "hidden"
-    )
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
   ) {
+    showChatError(
+      "Microphone is not supported on this browser."
+    );
+    return;
+  }
 
-    setLoginStatus(
+  try {
+    recordingStream =
+      await navigator.mediaDevices
+        .getUserMedia({
+          audio: true
+        });
+
+    recordedChunks = [];
+
+    let options = {};
+
+    if (
+      window.MediaRecorder &&
+      MediaRecorder.isTypeSupported(
+        "audio/webm;codecs=opus"
+      )
+    ) {
+      options.mimeType =
+        "audio/webm;codecs=opus";
+    }
+
+    mediaRecorder =
+      new MediaRecorder(
+        recordingStream,
+        options
+      );
+
+    mediaRecorder.ondataavailable =
+      event => {
+        if (
+          event.data &&
+          event.data.size > 0
+        ) {
+          recordedChunks.push(
+            event.data
+          );
+        }
+      };
+
+    mediaRecorder.onstop =
+      async () => {
+        const type =
+          mediaRecorder.mimeType ||
+          "audio/webm";
+
+        const blob =
+          new Blob(
+            recordedChunks,
+            { type }
+          );
+
+        await uploadVoiceBlob(blob);
+
+        stopRecordingStream();
+      };
+
+    mediaRecorder.start();
+
+    isRecordingVoice = true;
+
+    showChatError(
+      "🎙️ Recording voice..."
+    );
+
+  } catch (error) {
+    console.error(
+      "VOICE START ERROR:",
+      error
+    );
+
+    stopRecordingStream();
+
+    showChatError(
+      "Microphone error: " +
+      error.message
+    );
+  }
+}
+
+function stopVoiceRecording() {
+  if (mediaRecorder) {
+    try {
+      if (
+        mediaRecorder.state !==
+        "inactive"
+      ) {
+        mediaRecorder.stop();
+      }
+    } catch (error) {
+      console.error(
+        "VOICE STOP ERROR:",
+        error
+      );
+    }
+  }
+
+  isRecordingVoice = false;
+
+  stopRecordingStream();
+}
+
+function stopRecordingStream() {
+  if (recordingStream) {
+    recordingStream
+      .getTracks()
+      .forEach(track => {
+        try {
+          track.stop();
+        } catch {}
+      });
+  }
+
+  recordingStream = null;
+}
+
+async function uploadVoiceBlob(blob) {
+  if (!currentUser || !blob) return;
+
+  try {
+    const extension =
+      blob.type.includes("mp4")
+        ? ".mp4"
+        : ".webm";
+
+    const path =
+      `${currentUser.id}/voice-${Date.now()}${extension}`;
+
+    const { error: uploadError } =
+      await supabaseClient.storage
+        .from("neural-ninjas-media")
+        .upload(
+          path,
+          blob,
+          {
+            upsert: false,
+            contentType:
+              blob.type
+          }
+        );
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const {
+      data: signedData,
+      error: signedError
+    } =
+      await supabaseClient.storage
+        .from("neural-ninjas-media")
+        .createSignedUrl(
+          path,
+          60 * 60 * 24 * 30
+        );
+
+    if (signedError) {
+      throw signedError;
+    }
+
+    const fileUrl =
+      signedData?.signedUrl;
+
+    if (!fileUrl) {
+      throw new Error(
+        "No voice URL returned."
+      );
+    }
+
+    const { data, error } =
+      await supabaseClient
+        .from("messages")
+        .insert({
+          sender_id: currentUser.id,
+          content: "Voice message",
+          message_type: "voice",
+          file_url: fileUrl,
+          reply_to:
+            replyingToMessage?.id ||
+            null
+        })
+        .select("*")
+        .single();
+
+    if (error) {
+      throw error;
+    }
+
+    const message = {
+      ...data,
+      username:
+        currentProfile?.username ||
+        "You",
+      profile: currentProfile
+    };
+
+    messageCache.set(
+      message.id,
       message
     );
 
-    return;
-
-  }
-
-
-  if (typingIndicator) {
-
-    typingIndicator.textContent =
-      message;
-
-    typingIndicator.classList.add(
-      "show"
+    renderMessage(
+      message,
+      true
     );
 
+    cancelReply();
 
-    clearTimeout(
-      typingIndicator._errorTimer
+  } catch (error) {
+    console.error(
+      "VOICE UPLOAD ERROR:",
+      error
     );
 
-
-    typingIndicator._errorTimer =
-      setTimeout(() => {
-
-        typingIndicator.classList.remove(
-          "show"
-        );
-
-        typingIndicator.textContent =
-          "";
-
-      }, 2500);
-
+    showChatError(
+      "Voice upload failed: " +
+      error.message
+    );
   }
-
 }
 
+/* =========================================================
+   UTILITIES
+   ========================================================= */
 
-function scrollToBottom() {
-
-  if (!messages) return;
-
-
-  requestAnimationFrame(() => {
-
-    messages.scrollTop =
-      messages.scrollHeight;
-
-  });
-
-}
-
-
-function formatMessageTime(
-  timestamp
-) {
-
-  if (!timestamp) return "";
-
+function formatMessageTime(value) {
+  if (!value) return "";
 
   const date =
-    new Date(timestamp);
+    new Date(value);
 
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return "";
   }
-
 
   return date.toLocaleTimeString(
     [],
@@ -4879,95 +3122,170 @@ function formatMessageTime(
       minute: "2-digit"
     }
   );
-
 }
 
-
-function getFileExtension(
-  filename
-) {
-
+function getFileExtension(filename) {
   const index =
-    filename.lastIndexOf(".");
+    String(filename)
+      .lastIndexOf(".");
 
+  if (index === -1) return "";
 
-  if (index === -1) {
-    return "";
-  }
-
-
-  return filename
+  return String(filename)
     .slice(index)
     .toLowerCase()
-    .replace(
-      /[^a-z0-9.]/g,
-      ""
-    );
-
+    .replace(/[^a-z0-9.]/g, "");
 }
 
+function randomId() {
+  return Math.random()
+    .toString(36)
+    .slice(2, 10);
+}
 
-/* =========================================================
-   GLOBAL ERRORS
-   ========================================================= */
+function escapeSelector(value) {
+  const string =
+    String(value);
 
-window.addEventListener(
-  "unhandledrejection",
-  event => {
+  if (
+    window.CSS &&
+    typeof window.CSS.escape ===
+      "function"
+  ) {
+    return window.CSS.escape(
+      string
+    );
+  }
 
-    console.error(
-      "UNHANDLED PROMISE:",
-      event.reason
+  return string.replace(
+    /([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g,
+    "\\$1"
+  );
+}
+
+function scrollMessagesToBottom() {
+  if (!messages) return;
+
+  requestAnimationFrame(() => {
+    messages.scrollTop =
+      messages.scrollHeight;
+  });
+}
+
+function rerenderMessage(message) {
+  if (!message) return;
+
+  const old =
+    document.querySelector(
+      `.message[data-message-id="${escapeSelector(message.id)}"]`
     );
 
+  if (!old) {
+    renderMessage(
+      message,
+      false
+    );
+    return;
   }
-);
 
+  const wasMine =
+    message.sender_id ===
+    currentUser?.id;
+
+  old.remove();
+
+  renderMessage(
+    message,
+    false
+  );
+
+  if (wasMine) {
+    scrollMessagesToBottom();
+  }
+}
+
+function showChatError(message) {
+  console.warn(
+    "CHAT:",
+    message
+  );
+
+  if (!chatScreen ||
+      chatScreen.classList.contains("hidden")) {
+    return;
+  }
+
+  if (!typingIndicator) return;
+
+  typingIndicator.textContent =
+    String(message);
+
+  typingIndicator.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    typingIndicator._hideTimer
+  );
+
+  typingIndicator._hideTimer =
+    setTimeout(() => {
+      hideTypingIndicator();
+    }, 3500);
+}
+
+/* =========================================================
+   GLOBAL ERROR LOGGING
+   ========================================================= */
 
 window.addEventListener(
   "error",
   event => {
-
     console.error(
       "GLOBAL ERROR:",
       event.error ||
       event.message
     );
-
   }
 );
 
+window.addEventListener(
+  "unhandledrejection",
+  event => {
+    console.error(
+      "UNHANDLED PROMISE:",
+      event.reason
+    );
+  }
+);
 
 /* =========================================================
-   DEBUG / PUBLIC API
+   PUBLIC API
    ========================================================= */
 
 window.NeuralNinjas = {
-
-  getCurrentUser() {
+  get currentUser() {
     return currentUser;
   },
 
-  getCurrentProfile() {
+  get currentProfile() {
     return currentProfile;
   },
 
   startVoiceRecording,
-
   stopVoiceRecording,
-
   sendMessage,
+  clearSearch: () => {
+    if (messageSearchInput) {
+      messageSearchInput.value = "";
+    }
 
-  clearSearch,
-
+    filterMessages();
+  },
   applyTheme,
-
-  logout:
-    exitChat
-
+  logout: exitChat
 };
 
-
 console.log(
-  "🥷 Neural Ninjas loaded successfully."
+  "⚡ Neural Ninjas ready."
 );
