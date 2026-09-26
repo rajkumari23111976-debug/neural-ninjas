@@ -744,9 +744,6 @@ async function startChat() {
 
   messageInput?.focus();
 
-
-  messageInput?.focus();
-
 }
 
 
@@ -947,7 +944,7 @@ function setupRealtime() {
           schema: "public",
           table: "messages"
         },
-        payload => {
+      async  payload => {
 
           const message =
             payload.new;
@@ -1001,7 +998,7 @@ const enrichedMessage = {
 
           messageCache.set(
             id,
-            enrichedmessage
+            enrichedMessage
           );
 
 
@@ -1019,7 +1016,7 @@ const enrichedMessage = {
           ) {
 
             renderMessage(
-              enrichedmessage,
+              enrichedMessage,
               true
             );
 
@@ -2194,19 +2191,30 @@ async function sendMessage() {
 
     if (data) {
 
-      messageCache.set(
-        String(data.id),
-        data
-      );
+  const enrichedMessage = {
 
+    ...data,
 
-      renderMessage(
-        data,
-        true
-      );
+    username:
+      currentProfile?.username ||
+      "You",
 
-    }
+    profiles:
+      currentProfile || null
 
+  };
+
+  messageCache.set(
+    String(data.id),
+    enrichedMessage
+  );
+
+  renderMessage(
+    enrichedMessage,
+    true
+  );
+
+}
 
     messageInput.value = "";
 
@@ -2427,18 +2435,30 @@ async function handleFileUpload(
 
     if (data) {
 
-      messageCache.set(
-        String(data.id),
-        data
-      );
+  const enrichedMessage = {
 
+    ...data,
 
-      renderMessage(
-        data,
-        true
-      );
+    username:
+      currentProfile?.username ||
+      "You",
 
-    }
+    profiles:
+      currentProfile || null
+
+  };
+
+  messageCache.set(
+    String(data.id),
+    enrichedMessage
+  );
+
+  renderMessage(
+    enrichedMessage,
+    true
+  );
+
+}
 
 
     cancelReply();
@@ -2748,18 +2768,30 @@ async function uploadVoiceBlob(
 
     if (message) {
 
-      messageCache.set(
-        String(message.id),
-        message
-      );
+  const enrichedMessage = {
 
+    ...message,
 
-      renderMessage(
-        message,
-        true
-      );
+    username:
+      currentProfile?.username ||
+      "You",
 
-    }
+    profiles:
+      currentProfile || null
+
+  };
+
+  messageCache.set(
+    String(message.id),
+    enrichedMessage
+  );
+
+  renderMessage(
+    enrichedMessage,
+    true
+  );
+
+}
 
 
     cancelReply();
