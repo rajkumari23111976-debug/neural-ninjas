@@ -1157,7 +1157,7 @@ function renderMessage(
     "button";
 
   replyButton.textContent =
-    "↩";
+    "↩ Reply";
 
   replyButton.title =
     "Reply";
@@ -1226,7 +1226,7 @@ function renderMessage(
       "button";
 
     deleteButton.textContent =
-      "🗑 Delete";
+      "🗑Delete";
 
     deleteButton.title =
       "Delete";
@@ -2043,12 +2043,12 @@ function createCodeContent(
         );
 
         copyButton.textContent =
-          "Copied!";
+          "Code Copied!";
 
         setTimeout(
           function () {
             copyButton.textContent =
-              "Copy";
+              "Copy Code";
           },
           1500
         );
@@ -3107,7 +3107,7 @@ function updateOnlineStatus() {
     ).length;
 
   onlineStatus.textContent =
-  `${count} Member${count === 1 ? "" : "s"} Online`;
+    `${count ? " • " + count : ""} Member Online`;
 }
 
 
@@ -3639,7 +3639,7 @@ function formatLastSeen(
     );
 
   if (minutes < 60) {
-    return `${minutes}m ago`;
+    return `Last seen ${minutes}m ago`;
   }
 
   const hours =
@@ -3648,7 +3648,7 @@ function formatLastSeen(
     );
 
   if (hours < 24) {
-    return `${hours}h ago`;
+    return `Last seen ${hours}h ago`;
   }
 
   const days =
@@ -3656,7 +3656,7 @@ function formatLastSeen(
       hours / 24
     );
 
-  return `${days}d ago`;
+  return `Last seen ${days}d ago`;
 
 }
 
