@@ -1968,7 +1968,8 @@ function looksLikeCode(text) {
     text.includes("let ") ||
     text.includes("=>") ||
     text.includes("SELECT ") ||
-    text.includes("console.log")
+    text.includes("console.log") ||
+    text.includes("{")
   );
 
 }
