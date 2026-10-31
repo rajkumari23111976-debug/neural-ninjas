@@ -271,4 +271,16 @@ hidden
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"    
   ></script>    <!-- HIGHLIGHT.JS -->    <script    
     src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"    
-  ></script>    <!-- APP -->    <script src="app.js?v=8"></script>     </body>  </html>
+  ></script>    <!-- APP -->    <script src="app.js?v=8"></script>   <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then((registration) => {
+        console.log("Neural Ninjas PWA registered:", registration.scope);
+      })
+      .catch((error) => {
+        console.error("PWA registration failed:", error);
+      });
+  });
+}
+</script>  </body>  </html>
