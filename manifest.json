@@ -1,21 +1,24 @@
+
 {
+  "id": "/neural-ninjas/",
   "name": "Neural Ninjas",
   "short_name": "Neural Ninjas",
-  "start_url": "./",
+  "start_url": "/neural-ninjas/",
+  "scope": "/neural-ninjas/",
   "display": "standalone",
   "background_color": "#050816",
   "theme_color": "#050816",
   "icons": [
     {
-      "src": "8ec04c0dfc72799f08805e1ee47de33bb8a01bf0fefdb9c0f918211af43d88ae.0.jpeg",
+      "src": "/neural-ninjas/8ec04c0dfc72799f08805e1ee47de33bb8a01bf0fefdb9c0f918211af43d88ae.0.jpeg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     },
     {
-      "src": "8ec04c0dfc72799f08805e1ee47de33bb8a01bf0fefdb9c0f918211af43d88ae.0.jpeg",
+      "src": "/neural-ninjas/8ec04c0dfc72799f08805e1ee47de33bb8a01bf0fefdb9c0f918211af43d88ae.0.jpeg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any"
     }
   ]
