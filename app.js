@@ -1,16 +1,13 @@
 /* =========================================================
-   NEURAL NINJAS - APP.JS
-   Username + 6-Digit PIN Authentication
-   Realtime Chat + Presence + Last Seen
+   NEURAL NINJAS - OPTIMIZED APP.JS
+   Auth + Realtime Chat + Presence + Last Seen
    Reply + Reactions + Search + Themes
    Images + Videos + Audio + Voice Notes
-   Code Detection + Highlight.js + Copy
+   Code Highlighting + Copy
+   Egress Optimization + Message Pagination
    ========================================================= */
 
-
-/* =========================================================
-   SUPABASE CONFIG
-   ========================================================= */
+/* ================= SUPABASE CONFIG ================= */
 
 const SUPABASE_URL =
   "https://uzletbnjofnxwmlgvnxp.supabase.co";
@@ -18,16 +15,19 @@ const SUPABASE_URL =
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_ZevxyTcnHnMhI6QlgWRk9w_K3Ve3syl";
 
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 
+/* ================= CONFIGURATION ================= */
 
-/* =========================================================
-   GLOBAL STATE
-   ========================================================= */
+const MESSAGE_PAGE_SIZE = 50;
+const STORAGE_CACHE_SECONDS = "86400";
+const SIGNED_URL_SECONDS = 60 * 60 * 24 * 30;
+const LAST_SEEN_INTERVAL = 60000;
+
+/* ================= GLOBAL STATE ================= */
 
 let currentUser = null;
 let currentProfile = null;
@@ -41,80 +41,51 @@ let typingTimeout = null;
 let lastSeenInterval = null;
 
 let isCurrentlyTyping = false;
-
 let replyingToMessage = null;
 
 const messageCache = new Map();
 const reactionCache = new Map();
 
 let presenceUsers = {};
+let loadedMembers = [];
+
+let oldestMessageTime = null;
+let hasMoreMessages = true;
+let isLoadingOlderMessages = false;
 
 let mediaRecorder = null;
 let recordedChunks = [];
 let recordingStream = null;
 let isRecordingVoice = false;
 
+/* ================= DOM ELEMENTS ================= */
 
-/* =========================================================
-   DOM ELEMENTS
-   ========================================================= */
+const loginScreen = document.getElementById("loginScreen");
+const chatScreen = document.getElementById("chatScreen");
 
-const loginScreen =
-  document.getElementById("loginScreen");
+const usernameInput = document.getElementById("usernameInput");
+const pinInput = document.getElementById("pinInput");
+const joinBtn = document.getElementById("joinBtn");
+const loginStatus = document.getElementById("loginStatus");
 
-const chatScreen =
-  document.getElementById("chatScreen");
+const onlineStatus = document.getElementById("onlineStatus");
 
-const usernameInput =
-  document.getElementById("usernameInput");
+const menuBtn = document.getElementById("menuBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 
-const pinInput =
-  document.getElementById("pinInput");
+const membersSidebar = document.getElementById("membersSidebar");
+const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-const joinBtn =
-  document.getElementById("joinBtn");
-
-const loginStatus =
-  document.getElementById("loginStatus");
-
-const onlineStatus =
-  document.getElementById("onlineStatus");
-
-const menuBtn =
-  document.getElementById("menuBtn");
-
-const logoutBtn =
-  document.getElementById("logoutBtn");
-
-const membersSidebar =
-  document.getElementById("membersSidebar");
-
-const closeSidebarBtn =
-  document.getElementById("closeSidebarBtn");
-
-const sidebarOverlay =
-  document.getElementById("sidebarOverlay");
-
-const membersList =
-  document.getElementById("membersList");
-
-const memberCount =
-  document.getElementById("memberCount");
+const membersList = document.getElementById("membersList");
+const memberCount = document.getElementById("memberCount");
 
 const deleteAccountBtn =
   document.getElementById("deleteAccountBtn");
 
-const themeBtn =
-  document.getElementById("themeBtn");
-
-const themePanel =
-  document.getElementById("themePanel");
-
-const closeThemeBtn =
-  document.getElementById("closeThemeBtn");
-
-const searchBar =
-  document.getElementById("searchBar");
+const themeBtn = document.getElementById("themeBtn");
+const themePanel = document.getElementById("themePanel");
+const closeThemeBtn = document.getElementById("closeThemeBtn");
 
 const messageSearchInput =
   document.getElementById("messageSearchInput");
@@ -122,205 +93,97 @@ const messageSearchInput =
 const clearSearchBtn =
   document.getElementById("clearSearchBtn");
 
-const messages =
-  document.getElementById("messages");
-
+const messages = document.getElementById("messages");
 const typingIndicator =
   document.getElementById("typingIndicator");
 
-const replyBar =
-  document.getElementById("replyBar");
-
-const replySender =
-  document.getElementById("replySender");
-
-const replyPreview =
-  document.getElementById("replyPreview");
-
+const replyBar = document.getElementById("replyBar");
+const replySender = document.getElementById("replySender");
+const replyPreview = document.getElementById("replyPreview");
 const cancelReplyBtn =
   document.getElementById("cancelReplyBtn");
 
-const mediaBtn =
-  document.getElementById("mediaBtn");
+const mediaBtn = document.getElementById("mediaBtn");
+const fileInput = document.getElementById("fileInput");
 
-const fileInput =
-  document.getElementById("fileInput");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
 
-const messageInput =
-  document.getElementById("messageInput");
-
-const sendBtn =
-  document.getElementById("sendBtn");
-
-
-/* =========================================================
-   INITIALIZATION
-   ========================================================= */
+/* ================= INITIALIZATION ================= */
 
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
+  joinBtn?.addEventListener("click", handleLogin);
 
-  if (joinBtn) {
-    joinBtn.addEventListener("click", handleLogin);
-  }
+  usernameInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter") pinInput?.focus();
+  });
 
-  if (usernameInput) {
-    usernameInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        pinInput?.focus();
-      }
-    });
-  }
+  pinInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter") handleLogin();
+  });
 
-  if (pinInput) {
-    pinInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        handleLogin();
-      }
-    });
-  }
+  logoutBtn?.addEventListener("click", exitChat);
+  menuBtn?.addEventListener("click", openSidebar);
+  closeSidebarBtn?.addEventListener("click", closeSidebar);
+  sidebarOverlay?.addEventListener("click", closeSidebar);
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", exitChat);
-  }
+  deleteAccountBtn?.addEventListener("click", deleteAccount);
 
-  if (menuBtn) {
-    menuBtn.addEventListener("click", openSidebar);
-  }
+  themeBtn?.addEventListener("click", openThemePanel);
+  closeThemeBtn?.addEventListener("click", closeThemePanel);
 
-  if (closeSidebarBtn) {
-    closeSidebarBtn.addEventListener("click", closeSidebar);
-  }
+  messageSearchInput?.addEventListener(
+    "input",
+    performMessageSearch
+  );
 
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener("click", closeSidebar);
-  }
+  clearSearchBtn?.addEventListener(
+    "click",
+    clearMessageSearch
+  );
 
-  if (deleteAccountBtn) {
-    deleteAccountBtn.addEventListener(
-      "click",
-      deleteAccount
-    );
-  }
+  sendBtn?.addEventListener("click", sendMessage);
 
-  if (themeBtn) {
-    themeBtn.addEventListener("click", openThemePanel);
-  }
+  messageInput?.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
 
-  if (closeThemeBtn) {
-    closeThemeBtn.addEventListener(
-      "click",
-      closeThemePanel
-    );
-  }
+  messageInput?.addEventListener("input", handleTyping);
 
-  if (messageSearchInput) {
-    messageSearchInput.addEventListener(
-      "input",
-      performMessageSearch
-    );
-  }
+  cancelReplyBtn?.addEventListener("click", cancelReply);
 
-  if (clearSearchBtn) {
-    clearSearchBtn.addEventListener(
-      "click",
-      clearMessageSearch
-    );
-  }
+  mediaBtn?.addEventListener("click", () => fileInput?.click());
 
-  if (sendBtn) {
-    sendBtn.addEventListener(
-      "click",
-      sendMessage
-    );
-  }
-
-  if (messageInput) {
-
-    messageInput.addEventListener(
-      "keydown",
-      function (e) {
-
-        if (
-          e.key === "Enter" &&
-          !e.shiftKey
-        ) {
-          e.preventDefault();
-          sendMessage();
-        }
-
-      }
-    );
-
-    messageInput.addEventListener(
-      "input",
-      handleTyping
-    );
-  }
-
-  if (cancelReplyBtn) {
-    cancelReplyBtn.addEventListener(
-      "click",
-      cancelReply
-    );
-  }
-
-  if (mediaBtn) {
-    mediaBtn.addEventListener(
-      "click",
-      function () {
-        fileInput?.click();
-      }
-    );
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener(
-      "change",
-      handleFileUpload
-    );
-  }
+  fileInput?.addEventListener("change", handleFileUpload);
 
   restoreTheme();
   setupThemeButtons();
 
-  document.addEventListener(
-    "keydown",
-    function (e) {
-
-      if (e.key === "Escape") {
-        closeSidebar();
-        closeThemePanel();
-        closeAllReactionPickers();
-      }
-
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      closeSidebar();
+      closeThemePanel();
+      closeAllReactionPickers();
     }
-  );
+  });
 
-  document.addEventListener(
-    "visibilitychange",
-    function () {
-
-      if (
-        document.visibilityState === "hidden"
-      ) {
-        updateLastSeen();
-      }
-
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      updateLastSeen();
     }
-  );
+  });
 
   await restoreSession();
 }
 
-
-/* =========================================================
-   AUTH HELPERS
-   ========================================================= */
+/* ================= AUTH HELPERS ================= */
 
 function makeAuthEmail(username) {
-
   return (
     username
       .trim()
@@ -329,21 +192,13 @@ function makeAuthEmail(username) {
       .slice(0, 40) +
     "@neuralninjas.local"
   );
-
 }
 
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
+/* ================= LOGIN ================= */
 
 async function handleLogin() {
-
-  const username =
-    usernameInput?.value.trim();
-
-  const pin =
-    pinInput?.value.trim();
+  const username = usernameInput?.value.trim();
+  const pin = pinInput?.value.trim();
 
   if (!username || username.length < 2) {
     showLoginStatus(
@@ -353,11 +208,8 @@ async function handleLogin() {
     return;
   }
 
-  if (!/^\d{6}$/.test(pin)) {
-    showLoginStatus(
-      "PIN must be exactly 6 digits.",
-      true
-    );
+  if (!/^\d{6}$/.test(pin || "")) {
+    showLoginStatus("PIN must be exactly 6 digits.", true);
     return;
   }
 
@@ -366,14 +218,10 @@ async function handleLogin() {
     joinBtn.textContent = "Joining...";
   }
 
-  showLoginStatus(
-    "Connecting..."
-  );
+  showLoginStatus("Connecting...");
 
   try {
-
-    const email =
-      makeAuthEmail(username);
+    const email = makeAuthEmail(username);
 
     let authResult =
       await supabaseClient.auth.signInWithPassword({
@@ -382,15 +230,12 @@ async function handleLogin() {
       });
 
     if (authResult.error) {
-
       const signUpResult =
         await supabaseClient.auth.signUp({
           email,
           password: pin,
           options: {
-            data: {
-              username: username
-            }
+            data: { username }
           }
         });
 
@@ -399,90 +244,51 @@ async function handleLogin() {
       }
 
       if (!signUpResult.data.session) {
-
         throw new Error(
-          "Account created, but Supabase email confirmation is enabled. Disable email confirmation in Supabase Authentication settings."
+          "Account created, but email confirmation is enabled. " +
+          "Disable email confirmation in Supabase Authentication settings."
         );
-
       }
 
       authResult = signUpResult;
     }
 
-    currentUser =
-      authResult.data.user;
+    currentUser = authResult.data.user;
 
     if (!currentUser) {
-      throw new Error(
-        "User session was not created."
-      );
+      throw new Error("User session was not created.");
     }
 
     await loadCurrentProfile(username);
-
     await startChat();
 
   } catch (error) {
-
-    console.error(
-      "LOGIN ERROR:",
-      error
-    );
-
-    showLoginStatus(
-      error.message ||
-      "Login failed.",
-      true
-    );
+    console.error("LOGIN ERROR:", error);
+    showLoginStatus(error.message || "Login failed.", true);
 
   } finally {
-
     if (joinBtn) {
       joinBtn.disabled = false;
       joinBtn.textContent = "Join";
     }
-
   }
-
 }
 
+/* ================= CURRENT PROFILE ================= */
 
-/* =========================================================
-   LOAD CURRENT PROFILE
-   ========================================================= */
+async function loadCurrentProfile(fallbackUsername = "") {
+  if (!currentUser) return null;
 
-async function loadCurrentProfile(
-  fallbackUsername = ""
-) {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, username, created_at, last_seen_at")
+    .eq("id", currentUser.id)
+    .maybeSingle();
 
-  if (!currentUser) {
-    return null;
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("profiles")
-      .select(
-        "id, username, created_at, last_seen_at"
-      )
-      .eq("id", currentUser.id)
-      .maybeSingle();
-
-  if (error) {
-    console.error(
-      "PROFILE LOAD ERROR:",
-      error
-    );
-    throw error;
-  }
+  if (error) throw error;
 
   if (data) {
-
     currentProfile = data;
-
     return data;
   }
 
@@ -491,59 +297,34 @@ async function loadCurrentProfile(
     currentUser.user_metadata?.username ||
     "Unknown user";
 
-  const {
-    data: insertedProfile,
-    error: insertError
-  } =
+  const { data: insertedProfile, error: insertError } =
     await supabaseClient
       .from("profiles")
       .insert({
         id: currentUser.id,
-        username: username,
+        username,
         last_seen_at: new Date().toISOString()
       })
       .select()
       .single();
 
-  if (insertError) {
-    console.error(
-      "PROFILE INSERT ERROR:",
-      insertError
-    );
-    throw insertError;
-  }
+  if (insertError) throw insertError;
 
-  currentProfile =
-    insertedProfile;
-
+  currentProfile = insertedProfile;
   return insertedProfile;
 }
 
-
-/* =========================================================
-   RESTORE SESSION
-   ========================================================= */
+/* ================= RESTORE SESSION ================= */
 
 async function restoreSession() {
-
   try {
-
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabaseClient.auth.getSession();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
+    if (!data.session) return;
 
-    if (!data.session) {
-      return;
-    }
-
-    currentUser =
-      data.session.user;
+    currentUser = data.session.user;
 
     await loadCurrentProfile();
 
@@ -555,26 +336,14 @@ async function restoreSession() {
     await startChat();
 
   } catch (error) {
-
-    console.error(
-      "RESTORE SESSION ERROR:",
-      error
-    );
-
+    console.error("RESTORE SESSION ERROR:", error);
   }
-
 }
 
-
-/* =========================================================
-   START CHAT
-   ========================================================= */
+/* ================= START CHAT ================= */
 
 async function startChat() {
-
-  if (!currentUser) {
-    return;
-  }
+  if (!currentUser) return;
 
   clearOldState();
 
@@ -582,8 +351,7 @@ async function startChat() {
   chatScreen?.classList.remove("hidden");
 
   if (onlineStatus) {
-    onlineStatus.textContent =
-      "● Connecting...";
+    onlineStatus.textContent = "● Connecting...";
   }
 
   setupRealtime();
@@ -592,774 +360,526 @@ async function startChat() {
 
   await Promise.all([
     loadMessages(),
-    loadReactions(),
     loadMembers()
   ]);
 
+  await loadReactions();
   await updateLastSeen();
 
   startLastSeenTimer();
-
   updateOnlineStatus();
 
-  if (messageInput) {
-    messageInput.focus();
-  }
-
+  messageInput?.focus();
 }
 
-
-/* =========================================================
-   CLEAR OLD STATE
-   ========================================================= */
+/* ================= CLEAR STATE ================= */
 
 function clearOldState() {
-
   messageCache.clear();
   reactionCache.clear();
 
   presenceUsers = {};
+  loadedMembers = [];
 
-  if (messages) {
-    messages.innerHTML = "";
-  }
+  oldestMessageTime = null;
+  hasMoreMessages = true;
 
+  if (messages) messages.innerHTML = "";
 }
 
+/* ================= MESSAGE PAGINATION ================= */
 
-/* =========================================================
-   LOAD MESSAGES
-   ========================================================= */
+function createLoadOlderButton() {
+  const button = document.createElement("button");
+
+  button.type = "button";
+  button.className = "load-older-messages";
+  button.textContent = "Load older messages";
+
+  button.addEventListener("click", loadOlderMessages);
+
+  return button;
+}
 
 async function loadMessages() {
+  if (!messages) return;
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("messages")
-      .select("*")
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
+  messages.innerHTML = "";
+
+  const { data, error } = await supabaseClient
+    .from("messages")
+    .select(
+      "id, sender_id, sender_name, message, message_type, file_url, reply_to_id, created_at"
+    )
+    .order("created_at", { ascending: false })
+    .limit(MESSAGE_PAGE_SIZE);
 
   if (error) {
-
-    console.error(
-      "LOAD MESSAGES ERROR:",
-      error
-    );
-
-    showChatError(
-      "Failed to fetch messages."
-    );
-
+    console.error("LOAD MESSAGES ERROR:", error);
+    showChatError("Failed to fetch messages.");
     return;
   }
 
-  const messageRows =
-    data || [];
+  const rows = data || [];
 
-  const senderIds =
-    [
-      ...new Set(
-        messageRows
-          .map(m => m.sender_id)
-          .filter(Boolean)
-      )
-    ];
+  hasMoreMessages = rows.length === MESSAGE_PAGE_SIZE;
+
+  if (rows.length) {
+    oldestMessageTime = rows[rows.length - 1].created_at;
+  }
+
+  const orderedRows = rows.reverse();
+
+  const senderIds = [
+    ...new Set(orderedRows.map(row => row.sender_id).filter(Boolean))
+  ];
 
   let profiles = [];
 
   if (senderIds.length) {
-
-    const {
-      data: profileData,
-      error: profileError
-    } =
+    const { data: profileData, error: profileError } =
       await supabaseClient
         .from("profiles")
-        .select(
-          "id, username, last_seen_at"
-        )
-        .in(
-          "id",
-          senderIds
-        );
+        .select("id, username")
+        .in("id", senderIds);
 
     if (profileError) {
-
-      console.error(
-        "MESSAGE PROFILE ERROR:",
-        profileError
-      );
-
+      console.error("MESSAGE PROFILE ERROR:", profileError);
     } else {
-
-      profiles =
-        profileData || [];
+      profiles = profileData || [];
     }
   }
 
-  const profileMap =
-    new Map(
-      profiles.map(profile => [
-        profile.id,
-        profile
-      ])
-    );
+  const profileMap = new Map(
+    profiles.map(profile => [profile.id, profile])
+  );
 
-  if (messages) {
-    messages.innerHTML = "";
-  }
+  for (const message of orderedRows) {
+    const profile = profileMap.get(message.sender_id);
 
-  messageCache.clear();
-
-  messageRows.forEach(message => {
-
-    const profile =
-      profileMap.get(
-        message.sender_id
-      );
-
-    const enrichedMessage = {
+    const enriched = {
       ...message,
-
       username:
         profile?.username ||
         message.sender_name ||
         "Unknown user",
-
       profile
     };
 
-    messageCache.set(
-      String(message.id),
-      enrichedMessage
-    );
+    messageCache.set(String(message.id), enriched);
+    renderMessage(enriched, false);
+  }
 
-    renderMessage(
-      enrichedMessage,
-      false
-    );
-
-  });
+  if (hasMoreMessages) {
+    messages.prepend(createLoadOlderButton());
+  }
 
   scrollMessagesToBottom();
-
 }
 
+/* ================= LOAD OLDER MESSAGES ================= */
 
-/* =========================================================
-   LOAD MEMBERS
-   ========================================================= */
+async function loadOlderMessages() {
+  if (
+    isLoadingOlderMessages ||
+    !hasMoreMessages ||
+    !oldestMessageTime
+  ) {
+    return;
+  }
 
-async function loadMembers() {
+  isLoadingOlderMessages = true;
 
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("profiles")
+  const button =
+    messages?.querySelector(".load-older-messages");
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Loading...";
+  }
+
+  const previousHeight = messages.scrollHeight;
+  const previousTop = messages.scrollTop;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("messages")
       .select(
-        "id, username, created_at, last_seen_at"
+        "id, sender_id, sender_name, message, message_type, file_url, reply_to_id, created_at"
       )
-      .order(
-        "username",
-        {
-          ascending: true
-        }
-      );
+      .lt("created_at", oldestMessageTime)
+      .order("created_at", { ascending: false })
+      .limit(MESSAGE_PAGE_SIZE);
 
-  if (error) {
+    if (error) throw error;
 
-    console.error(
-      "LOAD MEMBERS ERROR:",
-      error
+    const rows = data || [];
+
+    hasMoreMessages = rows.length === MESSAGE_PAGE_SIZE;
+
+    if (rows.length) {
+      oldestMessageTime = rows[rows.length - 1].created_at;
+    }
+
+    const orderedRows = rows.reverse();
+
+    const senderIds = [
+      ...new Set(orderedRows.map(row => row.sender_id).filter(Boolean))
+    ];
+
+    let profiles = [];
+
+    if (senderIds.length) {
+      const { data: profileData } = await supabaseClient
+        .from("profiles")
+        .select("id, username")
+        .in("id", senderIds);
+
+      profiles = profileData || [];
+    }
+
+    const profileMap = new Map(
+      profiles.map(profile => [profile.id, profile])
     );
 
+    const fragment = document.createDocumentFragment();
+
+    for (const message of orderedRows) {
+      const enriched = {
+        ...message,
+        username:
+          profileMap.get(message.sender_id)?.username ||
+          message.sender_name ||
+          "Unknown user"
+      };
+
+      messageCache.set(String(message.id), enriched);
+
+      const oldMessages = messages;
+      const temporaryContainer = document.createElement("div");
+
+      // Render into a temporary container, then move the new message.
+      const originalMessages = messages;
+      const originalAppend = originalMessages.appendChild;
+
+      renderMessageIntoContainer(
+        enriched,
+        temporaryContainer
+      );
+
+      if (temporaryContainer.firstChild) {
+        fragment.appendChild(temporaryContainer.firstChild);
+      }
+    }
+
+    if (button) button.remove();
+
+    messages.prepend(fragment);
+
+    if (hasMoreMessages) {
+      messages.prepend(createLoadOlderButton());
+    }
+
+    messages.scrollTop =
+      messages.scrollHeight - previousHeight + previousTop;
+
+    await loadReactions();
+
+  } catch (error) {
+    console.error("LOAD OLDER ERROR:", error);
+
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Retry loading older messages";
+    }
+
+  } finally {
+    isLoadingOlderMessages = false;
+  }
+}
+
+/* ================= LOAD MEMBERS ================= */
+
+async function loadMembers() {
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, username, created_at, last_seen_at")
+    .order("username", { ascending: true });
+
+  if (error) {
+    console.error("LOAD MEMBERS ERROR:", error);
+
     if (membersList) {
-      membersList.innerHTML =
-        `<div class="empty-members">
-          Unable to load members.
-        </div>`;
+      membersList.textContent = "Unable to load members.";
     }
 
     return;
   }
 
-  const members =
-    data || [];
-
-  renderMembers(
-    members
-  );
-
+  loadedMembers = data || [];
+  renderMembers(loadedMembers);
 }
 
+/* ================= RENDER MEMBERS ================= */
 
-/* =========================================================
-   RENDER MEMBERS
-   ========================================================= */
-
-function renderMembers(
-  members = []
-) {
-
-  if (!membersList) {
-    return;
-  }
+function renderMembers(memberList = []) {
+  if (!membersList) return;
 
   membersList.innerHTML = "";
 
   if (memberCount) {
-    memberCount.textContent =
-      members.length;
+    memberCount.textContent = memberList.length;
   }
 
-  if (!members.length) {
-
-    membersList.innerHTML =
-      `<div class="empty-members">
-        No members found.
-      </div>`;
-
+  if (!memberList.length) {
+    membersList.textContent = "No members found.";
     return;
   }
 
-  members.forEach(member => {
+  memberList.forEach(member => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "member";
 
-    const wrapper =
-      document.createElement("div");
+    const avatar = document.createElement("div");
+    avatar.className = "member-avatar";
+    avatar.textContent = getInitials(member.username);
 
-    wrapper.className =
-      "member";
+    const info = document.createElement("div");
+    info.className = "member-info";
 
-    const avatar =
-      document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "member-name";
+    name.textContent = member.username || "Unknown user";
 
-    avatar.className =
-      "member-avatar";
+    const status = document.createElement("div");
+    status.className = "member-status";
 
-    avatar.textContent =
-      getInitials(
-        member.username
-      );
+    const dot = document.createElement("span");
+    dot.className = "status-dot";
 
-    const info =
-      document.createElement("div");
+    const isOnline = isMemberOnline(member.id);
 
-    info.className =
-      "member-info";
+    if (isOnline) dot.classList.add("online");
 
-    const name =
-      document.createElement("div");
+    const statusText = document.createElement("span");
+    statusText.textContent = isOnline
+      ? "Online"
+      : formatLastSeen(member.last_seen_at);
 
-    name.className =
-      "member-name";
+    status.append(dot, statusText);
+    info.append(name, status);
+    wrapper.append(avatar, info);
 
-    name.textContent =
-      member.username ||
-      "Unknown user";
-
-    const status =
-      document.createElement("div");
-
-    status.className =
-      "member-status";
-
-    const dot =
-      document.createElement("span");
-
-    dot.className =
-      "status-dot";
-
-    const isOnline =
-      isMemberOnline(
-        member.id
-      );
-
-    if (isOnline) {
-      dot.classList.add("online");
-    }
-
-    status.appendChild(dot);
-
-    const statusText =
-      document.createElement("span");
-
-    statusText.textContent =
-      isOnline
-        ? "Online"
-        : formatLastSeen(
-            member.last_seen_at
-          );
-
-    status.appendChild(
-      statusText
-    );
-
-    info.appendChild(name);
-    info.appendChild(status);
-
-    wrapper.appendChild(avatar);
-    wrapper.appendChild(info);
-
-    membersList.appendChild(
-      wrapper
-    );
-
+    membersList.appendChild(wrapper);
   });
-
 }
 
+/* ================= RENDER MESSAGE ================= */
 
-/* =========================================================
-   RENDER MESSAGE
-   ========================================================= */
+function renderMessage(data, shouldScroll = true) {
+  if (!messages || !data) return;
 
-function renderMessage(
+  renderMessageIntoContainer(data, messages, shouldScroll);
+}
+
+function renderMessageIntoContainer(
   data,
-  shouldScroll = true
+  container,
+  shouldScroll = false
 ) {
+  const wrapper = document.createElement("div");
 
-  if (!messages || !data) {
-    return;
-  }
+  wrapper.className = "message";
+  wrapper.dataset.messageId = data.id;
 
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    "message";
-
-  wrapper.dataset.messageId =
-    data.id;
-
-  if (
-    currentUser &&
-    data.sender_id === currentUser.id
-  ) {
+  if (currentUser && data.sender_id === currentUser.id) {
     wrapper.classList.add("mine");
   }
 
-  const bubble =
-    document.createElement("div");
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
 
-  bubble.className =
-    "bubble";
-
-  /* ---------- SENDER ---------- */
-
-  const sender =
-    document.createElement("div");
-
-  sender.className =
-    "sender sender-name";
-
+  const sender = document.createElement("div");
+  sender.className = "sender sender-name";
   sender.textContent =
-    data.username ||
-    data.sender_name ||
-    "Unknown user";
+    data.username || data.sender_name || "Unknown user";
 
   bubble.appendChild(sender);
 
-
-  /* ---------- REPLY ---------- */
+  /* REPLY PREVIEW */
 
   if (data.reply_to_id) {
-
     const replyMessage =
-      messageCache.get(
-        String(data.reply_to_id)
-      );
+      messageCache.get(String(data.reply_to_id));
 
-    const replyBox =
-      document.createElement("div");
-
-    replyBox.className =
-      "message-reply";
+    const replyBox = document.createElement("div");
+    replyBox.className = "message-reply";
 
     if (replyMessage) {
-
-      const replyUser =
-        document.createElement("div");
-
-      replyUser.className =
-        "reply-user";
-
+      const replyUser = document.createElement("div");
+      replyUser.className = "reply-user";
       replyUser.textContent =
-        replyMessage.username ||
-        replyMessage.sender_name ||
-        "Unknown user";
+        replyMessage.username || replyMessage.sender_name || "Unknown user";
 
-      const replyText =
-        document.createElement("div");
-
-      replyText.className =
-        "reply-text";
-
+      const replyText = document.createElement("div");
+      replyText.className = "reply-text";
       replyText.textContent =
-        replyMessage.message ||
-        replyMessage.content ||
-        "Media message";
+        replyMessage.message || "Media message";
 
-      replyBox.appendChild(
-        replyUser
-      );
-
-      replyBox.appendChild(
-        replyText
-      );
-
+      replyBox.append(replyUser, replyText);
     } else {
-
-      replyBox.textContent =
-        "Reply to a previous message";
+      replyBox.textContent = "Reply to a previous message";
     }
 
-    bubble.appendChild(
-      replyBox
-    );
+    bubble.appendChild(replyBox);
   }
 
+  /* MESSAGE CONTENT */
 
-  /* ---------- CONTENT ---------- */
+  const content = document.createElement("div");
+  content.className = "text message-text";
 
-  const content =
-    document.createElement("div");
+  const messageText = data.message || "";
+  const messageType = data.message_type || "text";
 
-  content.className =
-    "text message-text";
-
-  const messageText =
-    data.message || "";
-
-  const messageType =
-    data.message_type ||
-    "text";
-
-  if (
-    messageType === "image" &&
-    data.file_url
-  ) {
-
+  if (messageType === "image" && data.file_url) {
     content.appendChild(
-      createImageContent(
-        data.file_url,
-        data.message
-      )
+      createImageContent(data.file_url, messageText)
     );
 
+  } else if (messageType === "video" && data.file_url) {
+    content.appendChild(createVideoContent(data.file_url));
+
   } else if (
-    messageType === "video" &&
+    (messageType === "audio" || messageType === "voice") &&
     data.file_url
   ) {
-
-    content.appendChild(
-      createVideoContent(
-        data.file_url
-      )
-    );
-
-  } else if (
-    messageType === "audio" ||
-    messageType === "voice"
-  ) {
-
-    if (data.file_url) {
-
-      content.appendChild(
-        createAudioContent(
-          data.file_url
-        )
-      );
-
-    } else {
-
-      appendSafeTextWithLinks(
-        content,
-        messageText
-      );
-    }
+    content.appendChild(createAudioContent(data.file_url));
 
   } else if (
     messageType === "code" ||
     looksLikeCode(messageText)
   ) {
-
-    content.appendChild(
-      createCodeContent(
-        messageText
-      )
-    );
+    content.appendChild(createCodeContent(messageText));
 
   } else {
-
-    appendSafeTextWithLinks(
-      content,
-      messageText
-    );
+    appendSafeTextWithLinks(content, messageText);
   }
 
   bubble.appendChild(content);
 
+  /* TIME */
 
-  /* ---------- TIME ---------- */
+  const footer = document.createElement("div");
+  footer.className = "message-footer";
 
-  const footer =
-    document.createElement("div");
-
-  footer.className =
-    "message-footer";
-
-  const time =
-    document.createElement("span");
-
-  time.className =
-    "time message-time";
-
-  time.textContent =
-    formatMessageTime(
-      data.created_at
-    );
+  const time = document.createElement("span");
+  time.className = "time message-time";
+  time.textContent = formatMessageTime(data.created_at);
 
   footer.appendChild(time);
+  bubble.appendChild(footer);
 
-  bubble.appendChild(
-    footer
-  );
+  /* ACTIONS */
 
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
 
-  /* ---------- ACTIONS ---------- */
+  const replyButton = document.createElement("button");
+  replyButton.className = "message-action";
+  replyButton.type = "button";
+  replyButton.textContent = "↩ Reply";
+  replyButton.title = "Reply";
+  replyButton.addEventListener("click", () => startReply(data));
 
-  const actions =
-    document.createElement("div");
+  actions.appendChild(replyButton);
 
-  actions.className =
-    "message-actions";
+  const reactionButton = document.createElement("button");
+  reactionButton.className = "message-action";
+  reactionButton.type = "button";
+  reactionButton.textContent = "😊";
+  reactionButton.title = "React";
 
+  reactionButton.addEventListener("click", event => {
+    event.stopPropagation();
+    toggleReactionPicker(wrapper, data.id);
+  });
 
-  /* Reply button */
+  actions.appendChild(reactionButton);
 
-  const replyButton =
-    document.createElement("button");
-
-  replyButton.className =
-    "message-action";
-
-  replyButton.type =
-    "button";
-
-  replyButton.textContent =
-    "↩ Reply";
-
-  replyButton.title =
-    "Reply";
-
-  replyButton.addEventListener(
-    "click",
-    function () {
-      startReply(data);
-    }
-  );
-
-  actions.appendChild(
-    replyButton
-  );
-
-
-  /* Reaction button */
-
-  const reactionButton =
-    document.createElement("button");
-
-  reactionButton.className =
-    "message-action";
-
-  reactionButton.type =
-    "button";
-
-  reactionButton.textContent =
-    "😊";
-
-  reactionButton.title =
-    "React";
-
-  reactionButton.addEventListener(
-    "click",
-    function (event) {
-
-      event.stopPropagation();
-
-      toggleReactionPicker(
-        wrapper,
-        data.id
-      );
-    }
-  );
-
-  actions.appendChild(
-    reactionButton
-  );
-
-
-  /* Delete own message */
-
-  if (
-    currentUser &&
-    data.sender_id === currentUser.id
-  ) {
-
-    const deleteButton =
-      document.createElement("button");
+  if (currentUser && data.sender_id === currentUser.id) {
+    const deleteButton = document.createElement("button");
 
     deleteButton.className =
       "message-action delete-message";
 
-    deleteButton.type =
-      "button";
+    deleteButton.type = "button";
+    deleteButton.textContent = "🗑 Delete";
+    deleteButton.title = "Delete";
 
-    deleteButton.textContent =
-      "🗑Delete";
+    deleteButton.addEventListener("click", () => {
+      deleteMessage(data);
+    });
 
-    deleteButton.title =
-      "Delete";
-
-    deleteButton.addEventListener(
-      "click",
-      function () {
-        deleteMessage(data);
-      }
-    );
-
-    actions.appendChild(
-      deleteButton
-    );
+    actions.appendChild(deleteButton);
   }
 
-  bubble.appendChild(
-    actions
-  );
+  bubble.appendChild(actions);
+  wrapper.appendChild(bubble);
 
-  wrapper.appendChild(
-    bubble
-  );
+  container.appendChild(wrapper);
 
-  messages.appendChild(
-    wrapper
-  );
+  renderMessageReactions(wrapper, data.id);
 
-  renderMessageReactions(
-    wrapper,
-    data.id
-  );
-
-  if (shouldScroll) {
-    scrollMessagesToBottom();
-  }
-
+  if (shouldScroll) scrollMessagesToBottom();
 }
 
-
-/* =========================================================
-   SEND MESSAGE
-   ========================================================= */
+/* ================= SEND MESSAGE ================= */
 
 async function sendMessage() {
+  if (!currentUser) return;
 
-  if (!currentUser) {
-    return;
-  }
+  const content = messageInput?.value.trim();
+  if (!content) return;
 
-  const content =
-    messageInput?.value.trim();
+  const replyTo = replyingToMessage
+    ? Number(replyingToMessage.id)
+    : null;
 
-  if (!content) {
-    return;
-  }
-
-  const replyTo =
-    replyingToMessage
-      ? Number(replyingToMessage.id)
-      : null;
-
-  if (sendBtn) {
-    sendBtn.disabled = true;
-  }
+  if (sendBtn) sendBtn.disabled = true;
 
   try {
-
-    /*
-      IMPORTANT:
-      Database column is `message`,
-      NOT `content`.
-
-      Database column is `reply_to_id`,
-      NOT `reply_to`.
-    */
-
     const payload = {
-      sender_id:
-        currentUser.id,
+      sender_id: currentUser.id,
 
       sender_name:
         currentProfile?.username ||
         currentUser.user_metadata?.username ||
-        usernameInput?.value.trim() ||
         "Unknown user",
 
-      message:
-        content,
+      message: content,
 
-      message_type:
-        looksLikeCode(content)
-          ? "code"
-          : "text",
+      message_type: looksLikeCode(content)
+        ? "code"
+        : "text",
 
-      reply_to_id:
-        replyTo
+      reply_to_id: replyTo
     };
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert(payload)
-        .select("*")
-        .single();
+    const { data, error } = await supabaseClient
+      .from("messages")
+      .insert(payload)
+      .select("*")
+      .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    if (messageInput) {
-      messageInput.value = "";
-    }
+    if (messageInput) messageInput.value = "";
 
     cancelReply();
-
     stopTyping();
 
-    /*
-      Realtime normally renders the message.
-      If realtime is slow/not enabled, render it locally.
-    */
-
-    if (
-      data &&
-      !messageCache.has(
-        String(data.id)
-      )
-    ) {
-
+    if (data && !messageCache.has(String(data.id))) {
       const enriched = {
         ...data,
         username:
@@ -1368,68 +888,34 @@ async function sendMessage() {
           "Unknown user"
       };
 
-      messageCache.set(
-        String(data.id),
-        enriched
-      );
-
-      renderMessage(
-        enriched
-      );
+      messageCache.set(String(data.id), enriched);
+      renderMessage(enriched);
     }
 
   } catch (error) {
-
-    console.error(
-      "SEND MESSAGE ERROR:",
-      error
-    );
+    console.error("SEND MESSAGE ERROR:", error);
 
     alert(
       "Message send failed: " +
-      (
-        error.message ||
-        "Unknown error"
-      )
+      (error.message || "Unknown error")
     );
 
   } finally {
-
-    if (sendBtn) {
-      sendBtn.disabled = false;
-    }
-
+    if (sendBtn) sendBtn.disabled = false;
   }
-
 }
 
-
-/* =========================================================
-   FILE UPLOAD
-   ========================================================= */
+/* ================= FILE UPLOAD ================= */
 
 async function handleFileUpload(event) {
+  const file = event.target.files?.[0];
 
-  const file =
-    event.target.files?.[0];
+  if (!file || !currentUser) return;
 
-  if (!file) {
-    return;
-  }
-
-  if (!currentUser) {
-    return;
-  }
-
-  const maxSize =
-    50 * 1024 * 1024;
+  const maxSize = 50 * 1024 * 1024;
 
   if (file.size > maxSize) {
-
-    alert(
-      "File is too large. Maximum size is 50 MB."
-    );
-
+    alert("File is too large. Maximum size is 50 MB.");
     fileInput.value = "";
     return;
   }
@@ -1438,133 +924,84 @@ async function handleFileUpload(event) {
 
   if (file.type.startsWith("image/")) {
     messageType = "image";
-  } else if (
-    file.type.startsWith("video/")
-  ) {
+  } else if (file.type.startsWith("video/")) {
     messageType = "video";
-  } else if (
-    file.type.startsWith("audio/")
-  ) {
+  } else if (file.type.startsWith("audio/")) {
     messageType = "audio";
   } else {
-
-    alert(
-      "Only images, videos and audio files are supported."
-    );
-
+    alert("Only images, videos and audio files are supported.");
     fileInput.value = "";
     return;
   }
 
   try {
+    if (mediaBtn) mediaBtn.disabled = true;
 
-    if (mediaBtn) {
-      mediaBtn.disabled = true;
-    }
+    const extension = getFileExtension(file.name);
 
-    const extension =
-      getFileExtension(file.name);
-
-    const randomPart =
-      Math.random()
-        .toString(36)
-        .slice(2, 10);
+    const randomPart = Math.random()
+      .toString(36)
+      .slice(2, 10);
 
     const filePath =
       `${currentUser.id}/${Date.now()}-${randomPart}${extension}`;
 
-    const {
-      error: uploadError
-    } =
+    const { error: uploadError } =
       await supabaseClient.storage
         .from("neural-ninjas-media")
-        .upload(
-          filePath,
-          file,
-          {
-            cacheControl: "3600",
-            upsert: false
-          }
-        );
+        .upload(filePath, file, {
+          cacheControl: STORAGE_CACHE_SECONDS,
+          contentType: file.type,
+          upsert: false
+        });
 
-    if (uploadError) {
-      throw uploadError;
-    }
+    if (uploadError) throw uploadError;
 
-    const {
-      data: signedData,
-      error: signedError
-    } =
+    const { data: signedData, error: signedError } =
       await supabaseClient.storage
         .from("neural-ninjas-media")
         .createSignedUrl(
           filePath,
-          60 * 60 * 24 * 30
+          SIGNED_URL_SECONDS
         );
 
-    if (signedError) {
-      throw signedError;
-    }
+    if (signedError) throw signedError;
 
-    const fileUrl =
-      signedData?.signedUrl;
+    const fileUrl = signedData?.signedUrl;
 
     if (!fileUrl) {
-      throw new Error(
-        "Could not create file URL."
-      );
+      throw new Error("Could not create file URL.");
     }
 
-    const replyTo =
-      replyingToMessage
-        ? Number(replyingToMessage.id)
-        : null;
+    const replyTo = replyingToMessage
+      ? Number(replyingToMessage.id)
+      : null;
 
     const payload = {
-      sender_id:
-        currentUser.id,
+      sender_id: currentUser.id,
 
       sender_name:
         currentProfile?.username ||
         currentUser.user_metadata?.username ||
         "Unknown user",
 
-      message:
-        file.name,
-
-      message_type:
-        messageType,
-
-      file_url:
-        fileUrl,
-
-      reply_to_id:
-        replyTo
+      message: file.name,
+      message_type: messageType,
+      file_url: fileUrl,
+      reply_to_id: replyTo
     };
 
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .insert(payload)
-        .select("*")
-        .single();
+    const { data, error } = await supabaseClient
+      .from("messages")
+      .insert(payload)
+      .select("*")
+      .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     cancelReply();
 
-    if (
-      data &&
-      !messageCache.has(
-        String(data.id)
-      )
-    ) {
-
+    if (data && !messageCache.has(String(data.id))) {
       const enriched = {
         ...data,
         username:
@@ -1573,58 +1010,39 @@ async function handleFileUpload(event) {
           "Unknown user"
       };
 
-      messageCache.set(
-        String(data.id),
-        enriched
-      );
-
-      renderMessage(
-        enriched
-      );
+      messageCache.set(String(data.id), enriched);
+      renderMessage(enriched);
     }
 
   } catch (error) {
-
-    console.error(
-      "FILE UPLOAD ERROR:",
-      error
-    );
+    console.error("FILE UPLOAD ERROR:", error);
 
     alert(
       "File upload failed: " +
-      (
-        error.message ||
-        "Unknown error"
-      )
+      (error.message || "Unknown error")
     );
 
   } finally {
-
-    if (fileInput) {
-      fileInput.value = "";
-    }
-
-    if (mediaBtn) {
-      mediaBtn.disabled = false;
-    }
-
+    if (fileInput) fileInput.value = "";
+    if (mediaBtn) mediaBtn.disabled = false;
   }
-
 }
 
-
-/* =========================================================
-   VOICE RECORDING
-   ========================================================= */
+/* ================= VOICE RECORDING ================= */
 
 async function startVoiceRecording() {
+  if (isRecordingVoice) return;
 
-  if (isRecordingVoice) {
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia ||
+    typeof MediaRecorder === "undefined"
+  ) {
+    alert("Voice recording is not supported in this browser.");
     return;
   }
 
   try {
-
     recordingStream =
       await navigator.mediaDevices.getUserMedia({
         audio: true
@@ -1632,188 +1050,116 @@ async function startVoiceRecording() {
 
     recordedChunks = [];
 
-    mediaRecorder =
-      new MediaRecorder(
-        recordingStream
-      );
+    mediaRecorder = new MediaRecorder(recordingStream);
 
-    mediaRecorder.ondataavailable =
-      function (event) {
+    mediaRecorder.ondataavailable = event => {
+      if (event.data && event.data.size > 0) {
+        recordedChunks.push(event.data);
+      }
+    };
 
-        if (
-          event.data &&
-          event.data.size > 0
-        ) {
-          recordedChunks.push(
-            event.data
-          );
+    mediaRecorder.onstop = async () => {
+      try {
+        const blob = new Blob(recordedChunks, {
+          type: mediaRecorder?.mimeType || "audio/webm"
+        });
+
+        if (blob.size > 0) {
+          await uploadVoiceBlob(blob);
         }
-
-      };
-
-    mediaRecorder.onstop =
-      async function () {
-
-        const blob =
-          new Blob(
-            recordedChunks,
-            {
-              type:
-                mediaRecorder.mimeType ||
-                "audio/webm"
-            }
-          );
-
-        await uploadVoiceBlob(
-          blob
-        );
-
+      } finally {
         recordingStream
           ?.getTracks()
-          .forEach(
-            track => track.stop()
-          );
+          .forEach(track => track.stop());
 
         recordingStream = null;
         mediaRecorder = null;
-      };
+        recordedChunks = [];
+      }
+    };
 
     mediaRecorder.start();
-
     isRecordingVoice = true;
 
     if (onlineStatus) {
-      onlineStatus.textContent =
-        "● Recording...";
+      onlineStatus.textContent = "● Recording...";
     }
 
   } catch (error) {
-
-    console.error(
-      "VOICE RECORD ERROR:",
-      error
-    );
-
-    alert(
-      "Microphone permission is required."
-    );
-
+    console.error("VOICE RECORD ERROR:", error);
+    alert("Microphone permission is required.");
   }
-
 }
 
-
 function stopVoiceRecording() {
-
-  if (
-    !isRecordingVoice ||
-    !mediaRecorder
-  ) {
-    return;
-  }
+  if (!isRecordingVoice || !mediaRecorder) return;
 
   isRecordingVoice = false;
 
-  mediaRecorder.stop();
-
+  if (mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
 }
 
-
-/* =========================================================
-   UPLOAD VOICE
-   ========================================================= */
+/* ================= UPLOAD VOICE ================= */
 
 async function uploadVoiceBlob(blob) {
-
-  if (!currentUser) {
-    return;
-  }
+  if (!currentUser) return;
 
   try {
-
     const filePath =
       `${currentUser.id}/voice-${Date.now()}.webm`;
 
-    const {
-      error: uploadError
-    } =
+    const { error: uploadError } =
       await supabaseClient.storage
         .from("neural-ninjas-media")
-        .upload(
-          filePath,
-          blob,
-          {
-            contentType:
-              "audio/webm",
-            upsert: false
-          }
-        );
+        .upload(filePath, blob, {
+          contentType: "audio/webm",
+          cacheControl: STORAGE_CACHE_SECONDS,
+          upsert: false
+        });
 
-    if (uploadError) {
-      throw uploadError;
-    }
+    if (uploadError) throw uploadError;
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabaseClient.storage
         .from("neural-ninjas-media")
         .createSignedUrl(
           filePath,
-          60 * 60 * 24 * 30
+          SIGNED_URL_SECONDS
         );
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    const fileUrl =
-      data?.signedUrl;
+    const fileUrl = data?.signedUrl;
 
     if (!fileUrl) {
-      throw new Error(
-        "Voice URL could not be created."
-      );
+      throw new Error("Voice URL could not be created.");
     }
 
-    const {
-      data: messageData,
-      error: messageError
-    } =
+    const { data: messageData, error: messageError } =
       await supabaseClient
         .from("messages")
         .insert({
-          sender_id:
-            currentUser.id,
+          sender_id: currentUser.id,
 
           sender_name:
             currentProfile?.username ||
             "Unknown user",
 
-          message:
-            "Voice message",
-
-          message_type:
-            "voice",
-
-          file_url:
-            fileUrl
+          message: "Voice message",
+          message_type: "voice",
+          file_url: fileUrl
         })
         .select("*")
         .single();
 
-    if (messageError) {
-      throw messageError;
-    }
+    if (messageError) throw messageError;
 
     if (
       messageData &&
-      !messageCache.has(
-        String(messageData.id)
-      )
+      !messageCache.has(String(messageData.id))
     ) {
-
       const enriched = {
         ...messageData,
         username:
@@ -1822,430 +1168,247 @@ async function uploadVoiceBlob(blob) {
           "Unknown user"
       };
 
-      messageCache.set(
-        String(messageData.id),
-        enriched
-      );
-
-      renderMessage(
-        enriched
-      );
+      messageCache.set(String(messageData.id), enriched);
+      renderMessage(enriched);
     }
 
   } catch (error) {
-
-    console.error(
-      "VOICE UPLOAD ERROR:",
-      error
-    );
+    console.error("VOICE UPLOAD ERROR:", error);
 
     alert(
       "Voice upload failed: " +
-      (
-        error.message ||
-        "Unknown error"
-      )
+      (error.message || "Unknown error")
     );
 
   } finally {
-
     updateOnlineStatus();
-
   }
-
 }
 
+/* ================= MEDIA ELEMENTS ================= */
 
-/* =========================================================
-   MEDIA ELEMENTS
-   ========================================================= */
+function createImageContent(url, filename) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "media-wrapper";
 
-function createImageContent(
-  url,
-  filename
-) {
+  const img = document.createElement("img");
 
-  const wrapper =
-    document.createElement("div");
+  img.className = "chat-image";
+  img.alt = filename || "Image";
 
-  wrapper.className =
-    "media-wrapper";
-
-  const img =
-    document.createElement("img");
-
-  img.className =
-    "chat-image";
+  // Reduce unnecessary image loading.
+  img.loading = "lazy";
+  img.decoding = "async";
+  img.fetchPriority = "low";
 
   img.src = url;
-  img.alt =
-    filename ||
-    "Image";
 
-  img.loading = "lazy";
-
-  img.addEventListener(
-    "click",
-    function () {
-      window.open(
-        url,
-        "_blank"
-      );
-    }
-  );
+  img.addEventListener("click", () => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
 
   wrapper.appendChild(img);
 
   return wrapper;
 }
 
+function createVideoContent(url) {
+  const video = document.createElement("video");
 
-function createVideoContent(
-  url
-) {
-
-  const video =
-    document.createElement("video");
-
-  video.className =
-    "chat-video";
-
+  video.className = "chat-video";
   video.src = url;
-
   video.controls = true;
-
-  video.preload = "metadata";
+  video.preload = "none";
+  video.playsInline = true;
 
   return video;
 }
 
+function createAudioContent(url) {
+  const audio = document.createElement("audio");
 
-function createAudioContent(
-  url
-) {
-
-  const audio =
-    document.createElement("audio");
-
-  audio.className =
-    "chat-audio";
-
+  audio.className = "chat-audio";
   audio.src = url;
-
   audio.controls = true;
-
-  preloadAudio(audio);
+  audio.preload = "none";
 
   return audio;
 }
 
-
-function preloadAudio(audio) {
-
-  try {
-    audio.preload = "metadata";
-  } catch (_) {}
-
-}
-
-
-/* =========================================================
-   CODE RENDERING
-   ========================================================= */
+/* ================= CODE DETECTION ================= */
 
 function looksLikeCode(text) {
+  if (!text) return false;
 
-  if (!text) {
-    return false;
-  }
+  const patterns = [
+    /```/,
+    /<html[\s>]/i,
+    /<script[\s>]/i,
+    /<div[\s>]/i,
+    /function\s+\w+\s*\(/,
+    /\b(const|let|var)\s+\w+\s*=/,
+    /=>/,
+    /\bSELECT\s+.+\bFROM\b/i,
+    /console\.log\s*\(/,
+    /<\/?[a-z][^>]*>/i
+  ];
 
-  return (
-    text.includes("```") ||
-    text.includes("<html") ||
-    text.includes("</html>") ||
-    text.includes("function ") ||
-    text.includes("const ") ||
-    text.includes("let ") ||
-    text.includes("=>") ||
-    text.includes("SELECT ") ||
-    text.includes("console.log") ||
-    text.includes("{")
-  );
-
+  return patterns.some(pattern => pattern.test(text));
 }
 
+/* ================= CODE RENDERING ================= */
 
-function createCodeContent(
-  text
-) {
+function createCodeContent(text) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "code-wrapper";
 
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    "code-wrapper";
-
-  let codeText =
-    text || "";
-
+  let codeText = text || "";
   let language = "";
 
-  const match =
-    codeText.match(
-      /^```(\w+)?\s*([\s\S]*?)```$/
-    );
+  const match = codeText.match(
+    /^```(\w+)?\s*\n([\s\S]*?)\n```$/
+  );
 
   if (match) {
-
-    language =
-      match[1] || "";
-
-    codeText =
-      match[2];
-
+    language = match[1] || "";
+    codeText = match[2];
   }
 
-  const pre =
-    document.createElement("pre");
-
-  const code =
-    document.createElement("code");
+  const pre = document.createElement("pre");
+  const code = document.createElement("code");
 
   if (language) {
-    code.className =
-      `language-${language}`;
+    code.className = `language-${language}`;
   }
 
-  code.textContent =
-    codeText;
+  code.textContent = codeText;
 
   pre.appendChild(code);
 
-  const copyButton =
-    document.createElement("button");
+  const copyButton = document.createElement("button");
 
-  copyButton.type =
-    "button";
+  copyButton.type = "button";
+  copyButton.className = "copy-code-btn";
+  copyButton.textContent = "Copy Code";
 
-  copyButton.className =
-    "copy-code-btn";
+  copyButton.addEventListener("click", async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(codeText);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = codeText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
 
-  copyButton.textContent =
-    "Copy";
+        document.body.appendChild(textarea);
+        textarea.select();
 
-  copyButton.addEventListener(
-    "click",
-    async function () {
+        const copied = document.execCommand("copy");
+        textarea.remove();
 
-      try {
-
-        await navigator.clipboard.writeText(
-          codeText
-        );
-
-        copyButton.textContent =
-          "Code Copied!";
-
-        setTimeout(
-          function () {
-            copyButton.textContent =
-              "Copy Code";
-          },
-          1500
-        );
-
-      } catch (error) {
-
-        console.error(
-          "COPY ERROR:",
-          error
-        );
-
+        if (!copied) {
+          throw new Error("Copy is not supported.");
+        }
       }
 
+      copyButton.textContent = "Code Copied!";
+
+      setTimeout(() => {
+        copyButton.textContent = "Copy Code";
+      }, 1500);
+
+    } catch (error) {
+      console.error("COPY ERROR:", error);
+      copyButton.textContent = "Copy Failed";
     }
-  );
+  });
 
-  wrapper.appendChild(
-    copyButton
-  );
-
-  wrapper.appendChild(
-    pre
-  );
+  wrapper.append(copyButton, pre);
 
   if (
     window.hljs &&
-    typeof window.hljs.highlightElement ===
-      "function"
+    typeof window.hljs.highlightElement === "function"
   ) {
-
     try {
-      window.hljs.highlightElement(
-        code
-      );
+      window.hljs.highlightElement(code);
     } catch (error) {
-      console.error(
-        "HIGHLIGHT ERROR:",
-        error
-      );
+      console.error("HIGHLIGHT ERROR:", error);
     }
-
   }
 
   return wrapper;
 }
 
+/* ================= SAFE TEXT + LINKS ================= */
 
-/* =========================================================
-   SAFE TEXT + LINKS
-   ========================================================= */
+function appendSafeTextWithLinks(element, text) {
+  if (!text) return;
 
-function appendSafeTextWithLinks(
-  element,
-  text
-) {
-
-  if (!text) {
-    return;
-  }
-
-  const parts =
-    text.split(
-      /(https?:\/\/[^\s]+)/g
-    );
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
 
   parts.forEach(part => {
-
-    if (
-      /^https?:\/\//i.test(part)
-    ) {
-
-      const link =
-        document.createElement("a");
+    if (/^https?:\/\//i.test(part)) {
+      const link = document.createElement("a");
 
       link.href = part;
+      link.textContent = part;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
 
-      link.textContent =
-        part;
-
-      link.target =
-        "_blank";
-
-      link.rel =
-        "noopener noreferrer";
-
-      element.appendChild(
-        link
-      );
+      element.appendChild(link);
 
     } else {
-
       element.appendChild(
-        document.createTextNode(
-          part
-        )
+        document.createTextNode(part)
       );
     }
-
   });
-
 }
 
+/* ================= DELETE MESSAGE ================= */
 
-/* =========================================================
-   DELETE MESSAGE
-   ========================================================= */
+async function deleteMessage(message) {
+  if (!currentUser) return;
 
-async function deleteMessage(
-  message
-) {
+  if (message.sender_id !== currentUser.id) return;
 
-  if (!currentUser) {
-    return;
-  }
-
-  if (
-    message.sender_id !==
-    currentUser.id
-  ) {
-    return;
-  }
-
-  const confirmed =
-    confirm(
-      "Delete this message?"
-    );
-
-  if (!confirmed) {
-    return;
-  }
+  if (!confirm("Delete this message?")) return;
 
   try {
+    const { error } = await supabaseClient
+      .from("messages")
+      .delete()
+      .eq("id", message.id)
+      .eq("sender_id", currentUser.id);
 
-    const {
-      error
-    } =
-      await supabaseClient
-        .from("messages")
-        .delete()
-        .eq(
-          "id",
-          message.id
-        )
-        .eq(
-          "sender_id",
-          currentUser.id
-        );
+    if (error) throw error;
 
-    if (error) {
-      throw error;
-    }
-
-    const element =
-      document.querySelector(
-        `[data-message-id="${message.id}"]`
-      );
+    const element = document.querySelector(
+      `[data-message-id="${CSS.escape(String(message.id))}"]`
+    );
 
     element?.remove();
 
-    messageCache.delete(
-      String(message.id)
-    );
+    messageCache.delete(String(message.id));
+    reactionCache.delete(String(message.id));
 
   } catch (error) {
-
-    console.error(
-      "DELETE MESSAGE ERROR:",
-      error
-    );
+    console.error("DELETE MESSAGE ERROR:", error);
 
     alert(
       "Failed to delete message: " +
-      error.message
+      (error.message || "Unknown error")
     );
-
   }
-
 }
 
+/* ================= REPLY ================= */
 
-/* =========================================================
-   REPLY
-   ========================================================= */
+function startReply(message) {
+  replyingToMessage = message;
 
-function startReply(
-  message
-) {
-
-  replyingToMessage =
-    message;
-
-  if (replyBar) {
-    replyBar.classList.remove(
-      "hidden"
-    );
-  }
+  replyBar?.classList.remove("hidden");
 
   if (replySender) {
     replySender.textContent =
@@ -2255,10 +1418,7 @@ function startReply(
   }
 
   if (replyPreview) {
-
-    const preview =
-      message.message ||
-      "Media message";
+    const preview = message.message || "Media message";
 
     replyPreview.textContent =
       preview.length > 100
@@ -2267,130 +1427,62 @@ function startReply(
   }
 
   messageInput?.focus();
-
 }
-
 
 function cancelReply() {
+  replyingToMessage = null;
 
-  replyingToMessage =
-    null;
+  replyBar?.classList.add("hidden");
 
-  replyBar?.classList.add(
-    "hidden"
-  );
-
-  if (replySender) {
-    replySender.textContent =
-      "";
-  }
-
-  if (replyPreview) {
-    replyPreview.textContent =
-      "";
-  }
-
+  if (replySender) replySender.textContent = "";
+  if (replyPreview) replyPreview.textContent = "";
 }
 
-
-/* =========================================================
-   REACTIONS
-   ========================================================= */
+/* ================= REACTIONS ================= */
 
 async function loadReactions() {
-
-  const {
-    data,
-    error
-  } =
-    await supabaseClient
-      .from("message_reactions")
-      .select(
-        "id, message_id, user_id, reaction, profiles(username)"
-      );
-
-  if (error) {
-
-    console.error(
-      "LOAD REACTIONS ERROR:",
-      error
-    );
-
-    return;
-  }
+  const messageIds = [...messageCache.keys()];
 
   reactionCache.clear();
 
-  (data || []).forEach(
-    reaction => {
+  // No messages loaded = no reaction query needed.
+  if (!messageIds.length) return;
 
-      const key =
-        String(
-          reaction.message_id
-        );
-
-      if (
-        !reactionCache.has(key)
-      ) {
-        reactionCache.set(
-          key,
-          []
-        );
-      }
-
-      reactionCache
-        .get(key)
-        .push(reaction);
-
-    }
-  );
-
-  document
-    .querySelectorAll(
-      ".message"
+  const { data, error } = await supabaseClient
+    .from("message_reactions")
+    .select(
+      "id, message_id, user_id, reaction, profiles(username)"
     )
-    .forEach(
-      element => {
+    .in("message_id", messageIds);
 
-        const id =
-          element.dataset.messageId;
+  if (error) {
+    console.error("LOAD REACTIONS ERROR:", error);
+    return;
+  }
 
-        renderMessageReactions(
-          element,
-          id
-        );
+  (data || []).forEach(reaction => {
+    const key = String(reaction.message_id);
 
-      }
+    if (!reactionCache.has(key)) {
+      reactionCache.set(key, []);
+    }
+
+    reactionCache.get(key).push(reaction);
+  });
+
+  document.querySelectorAll(".message").forEach(element => {
+    renderMessageReactions(
+      element,
+      element.dataset.messageId
     );
-
+  });
 }
 
-
-function setupReactionPicker(
-  wrapper,
-  messageId
-) {
-
-  /*
-    Kept as a separate function so
-    existing CSS can style reaction UI.
-  */
-
-}
-
-
-function toggleReactionPicker(
-  wrapper,
-  messageId
-) {
-
+function toggleReactionPicker(wrapper, messageId) {
   closeAllReactionPickers();
 
-  const picker =
-    document.createElement("div");
-
-  picker.className =
-    "reaction-picker";
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
 
   const reactions = [
     "👍",
@@ -2402,404 +1494,218 @@ function toggleReactionPicker(
     "👏"
   ];
 
-  reactions.forEach(
-    emoji => {
+  reactions.forEach(emoji => {
+    const button = document.createElement("button");
 
-      const button =
-        document.createElement("button");
+    button.type = "button";
+    button.textContent = emoji;
 
-      button.type =
-        "button";
+    button.addEventListener("click", async () => {
+      await toggleReaction(messageId, emoji);
+      picker.remove();
+    });
 
-      button.textContent =
-        emoji;
+    picker.appendChild(button);
+  });
 
-      button.addEventListener(
-        "click",
-        async function () {
-
-          await toggleReaction(
-            messageId,
-            emoji
-          );
-
-          picker.remove();
-
-        }
-      );
-
-      picker.appendChild(
-        button
-      );
-
-    }
-  );
-
-  wrapper.appendChild(
-    picker
-  );
-
+  wrapper.appendChild(picker);
 }
-
 
 function closeAllReactionPickers() {
-
   document
-    .querySelectorAll(
-      ".reaction-picker"
-    )
-    .forEach(
-      picker => picker.remove()
-    );
-
+    .querySelectorAll(".reaction-picker")
+    .forEach(picker => picker.remove());
 }
 
-
-async function toggleReaction(
-  messageId,
-  reaction
-) {
-
-  if (!currentUser) {
-    return;
-  }
+async function toggleReaction(messageId, reaction) {
+  if (!currentUser) return;
 
   try {
-
-    const {
-      data: existing,
-      error: findError
-    } =
+    const { data: existing, error: findError } =
       await supabaseClient
         .from("message_reactions")
-        .select(
-          "id"
-        )
-        .eq(
-          "message_id",
-          messageId
-        )
-        .eq(
-          "user_id",
-          currentUser.id
-        )
-        .eq(
-          "reaction",
-          reaction
-        )
+        .select("id")
+        .eq("message_id", messageId)
+        .eq("user_id", currentUser.id)
+        .eq("reaction", reaction)
         .maybeSingle();
 
-    if (findError) {
-      throw findError;
-    }
+    if (findError) throw findError;
 
     if (existing) {
+      const { error } = await supabaseClient
+        .from("message_reactions")
+        .delete()
+        .eq("id", existing.id);
 
-      const {
-        error
-      } =
-        await supabaseClient
-          .from("message_reactions")
-          .delete()
-          .eq(
-            "id",
-            existing.id
-          );
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
     } else {
+      const { error } = await supabaseClient
+        .from("message_reactions")
+        .insert({
+          message_id: messageId,
+          user_id: currentUser.id,
+          reaction
+        });
 
-      const {
-        error
-      } =
-        await supabaseClient
-          .from("message_reactions")
-          .insert({
-            message_id:
-              messageId,
-
-            user_id:
-              currentUser.id,
-
-            reaction:
-              reaction
-          });
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
     }
 
     await loadReactions();
 
   } catch (error) {
-
-    console.error(
-      "REACTION ERROR:",
-      error
-    );
-
+    console.error("REACTION ERROR:", error);
   }
-
 }
 
+function renderMessageReactions(wrapper, messageId) {
+  if (!wrapper) return;
 
-function renderMessageReactions(
-  wrapper,
-  messageId
-) {
-
-  if (!wrapper) {
-    return;
-  }
-
-  const old =
-    wrapper.querySelector(
-      ".reactions"
-    );
-
-  old?.remove();
+  wrapper.querySelector(".reactions")?.remove();
 
   const list =
-    reactionCache.get(
-      String(messageId)
-    ) || [];
+    reactionCache.get(String(messageId)) || [];
 
-  if (!list.length) {
-    return;
-  }
+  if (!list.length) return;
 
-  const container =
-    document.createElement("div");
+  const container = document.createElement("div");
+  container.className = "reactions";
 
-  container.className =
-    "reactions";
+  const counts = {};
 
-  const counts =
-    {};
+  list.forEach(item => {
+    counts[item.reaction] =
+      (counts[item.reaction] || 0) + 1;
+  });
 
-  list.forEach(
-    item => {
+  Object.entries(counts).forEach(([emoji, count]) => {
+    const button = document.createElement("button");
 
-      counts[item.reaction] =
-        (counts[item.reaction] || 0) + 1;
+    button.type = "button";
+    button.className = "reaction";
+    button.textContent = `${emoji} ${count}`;
 
-    }
-  );
+    button.title = list
+      .filter(item => item.reaction === emoji)
+      .map(item => item.profiles?.username || "Unknown user")
+      .join(", ");
 
-  Object.entries(counts)
-    .forEach(
-      ([emoji, count]) => {
+    button.addEventListener("click", () => {
+      toggleReaction(messageId, emoji);
+    });
 
-        const button =
-          document.createElement("button");
+    container.appendChild(button);
+  });
 
-        button.type =
-          "button";
-
-        button.className =
-          "reaction";
-
-        button.textContent =
-          `${emoji} ${count}`;
-
-        button.title =
-          list
-            .filter(
-              r =>
-                r.reaction === emoji
-            )
-            .map(
-              r =>
-                r.profiles?.username ||
-                "Unknown user"
-            )
-            .join(", ");
-
-        button.addEventListener(
-          "click",
-          function () {
-
-            toggleReaction(
-              messageId,
-              emoji
-            );
-
-          }
-        );
-
-        container.appendChild(
-          button
-        );
-
-      }
-    );
-
-  wrapper.appendChild(
-    container
-  );
-
+  wrapper.appendChild(container);
 }
 
-
-/* =========================================================
-   REALTIME
-   ========================================================= */
+/* ================= REALTIME ================= */
 
 function setupRealtime() {
-
-  if (!currentUser) {
-    return;
-  }
+  if (!currentUser) return;
 
   if (messageChannel) {
-    supabaseClient
-      .removeChannel(
-        messageChannel
-      );
+    supabaseClient.removeChannel(messageChannel);
   }
 
   if (reactionChannel) {
-    supabaseClient
-      .removeChannel(
-        reactionChannel
-      );
+    supabaseClient.removeChannel(reactionChannel);
   }
 
+  /* MESSAGE CHANNEL */
 
-  /* ---------- MESSAGES ---------- */
+  messageChannel = supabaseClient
+    .channel("neural-ninjas-messages")
 
-  messageChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-messages"
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages"
-        },
-        async payload => {
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        handleRealtimeMessage(payload.new);
+      }
+    )
 
-          await handleRealtimeMessage(
-            payload.new
-          );
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        const id = String(payload.old?.id);
 
+        messageCache.delete(id);
+        reactionCache.delete(id);
+
+        document
+          .querySelector(
+            `[data-message-id="${CSS.escape(id)}"]`
+          )
+          ?.remove();
+      }
+    )
+
+    .subscribe(status => {
+      if (status === "SUBSCRIBED") {
+        if (onlineStatus) {
+          onlineStatus.textContent = "● Online";
         }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "messages"
-        },
-        payload => {
+      }
+    });
 
-          const id =
-            String(
-              payload.old?.id
-            );
+  /* REACTION CHANNEL */
 
-          messageCache.delete(id);
+  reactionChannel = supabaseClient
+    .channel("neural-ninjas-reactions")
 
-          const element =
-            document.querySelector(
-              `[data-message-id="${id}"]`
-            );
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "message_reactions"
+      },
+      () => {
+        loadReactions();
+      }
+    )
 
-          element?.remove();
-
-        }
-      )
-      .subscribe(
-        status => {
-
-          if (
-            status === "SUBSCRIBED"
-          ) {
-
-            if (onlineStatus) {
-              onlineStatus.textContent =
-                "● Online";
-            }
-
-          }
-
-        }
-      );
-
-
-  /* ---------- REACTIONS ---------- */
-
-  reactionChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-reactions"
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "message_reactions"
-        },
-        async () => {
-
-          await loadReactions();
-
-        }
-      )
-      .subscribe();
-
+    .subscribe();
 }
 
+async function handleRealtimeMessage(row) {
+  if (!row) return;
 
-async function handleRealtimeMessage(
-  row
-) {
+  const id = String(row.id);
 
-  if (!row) {
-    return;
-  }
+  if (messageCache.has(id)) return;
 
-  const id =
-    String(row.id);
+  let username = row.sender_name || "Unknown user";
 
-  if (
-    messageCache.has(id)
-  ) {
-    return;
-  }
+  // Use already loaded member data before querying profiles.
+  const cachedMember = loadedMembers.find(
+    member => member.id === row.sender_id
+  );
 
-  let username =
-    row.sender_name ||
-    "Unknown user";
+  if (cachedMember?.username) {
+    username = cachedMember.username;
 
-  if (row.sender_id) {
+  } else if (row.sender_id) {
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("id, username")
+      .eq("id", row.sender_id)
+      .maybeSingle();
 
-    const {
-      data
-    } =
-      await supabaseClient
-        .from("profiles")
-        .select(
-          "id, username, last_seen_at"
-        )
-        .eq(
-          "id",
-          row.sender_id
-        )
-        .maybeSingle();
-
-    if (data?.username) {
-      username =
-        data.username;
+    if (!error && data?.username) {
+      username = data.username;
     }
   }
 
@@ -2808,67 +1714,37 @@ async function handleRealtimeMessage(
     username
   };
 
-  messageCache.set(
-    id,
-    enriched
-  );
-
-  renderMessage(
-    enriched
-  );
-
+  messageCache.set(id, enriched);
+  renderMessage(enriched);
 }
 
-
-/* =========================================================
-   TYPING INDICATOR
-   ========================================================= */
+/* ================= TYPING INDICATOR ================= */
 
 function setupTyping() {
-
   if (typingChannel) {
-
-    supabaseClient
-      .removeChannel(
-        typingChannel
-      );
+    supabaseClient.removeChannel(typingChannel);
   }
 
-  typingChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-typing"
-      )
-      .on(
-        "broadcast",
-        {
-          event: "typing"
-        },
-        payload => {
+  typingChannel = supabaseClient
+    .channel("neural-ninjas-typing")
 
-          if (
-            payload.payload?.userId ===
-            currentUser?.id
-          ) {
-            return;
-          }
-
-          showTypingUser(
-            payload.payload?.username
-          );
-
+    .on(
+      "broadcast",
+      { event: "typing" },
+      payload => {
+        if (payload.payload?.userId === currentUser?.id) {
+          return;
         }
-      )
-      .subscribe();
 
+        showTypingUser(payload.payload?.username);
+      }
+    )
+
+    .subscribe();
 }
 
-
 function handleTyping() {
-
-  if (!typingChannel) {
-    return;
-  }
+  if (!typingChannel || !currentUser) return;
 
   if (!isCurrentlyTyping) {
     isCurrentlyTyping = true;
@@ -2878,599 +1754,341 @@ function handleTyping() {
     type: "broadcast",
     event: "typing",
     payload: {
-      userId:
-        currentUser?.id,
-
-      username:
-        currentProfile?.username ||
-        "Someone"
+      userId: currentUser.id,
+      username: currentProfile?.username || "Someone"
     }
   });
 
-  clearTimeout(
-    typingTimeout
-  );
+  clearTimeout(typingTimeout);
 
-  typingTimeout =
-    setTimeout(
-      stopTyping,
-      1500
-    );
-
+  typingTimeout = setTimeout(stopTyping, 1500);
 }
 
-
 function stopTyping() {
+  isCurrentlyTyping = false;
 
-  isCurrentlyTyping =
-    false;
-
-  clearTimeout(
-    typingTimeout
-  );
-
+  clearTimeout(typingTimeout);
   typingTimeout = null;
 
   if (typingIndicator) {
-    typingIndicator.textContent =
-      "";
-    typingIndicator.classList.add(
-      "hidden"
-    );
+    typingIndicator.textContent = "";
+    typingIndicator.classList.add("hidden");
   }
-
 }
 
-
-function showTypingUser(
-  username
-) {
-
-  if (!typingIndicator) {
-    return;
-  }
+function showTypingUser(username) {
+  if (!typingIndicator) return;
 
   typingIndicator.textContent =
     `${username || "Someone"} is typing...`;
 
-  typingIndicator.classList.remove(
-    "hidden"
-  );
+  typingIndicator.classList.remove("hidden");
 
-  clearTimeout(
-    typingIndicator._hideTimer
-  );
+  clearTimeout(typingIndicator._hideTimer);
 
-  typingIndicator._hideTimer =
-    setTimeout(
-      function () {
-
-        typingIndicator.classList.add(
-          "hidden"
-        );
-
-      },
-      1800
-    );
-
+  typingIndicator._hideTimer = setTimeout(() => {
+    typingIndicator.classList.add("hidden");
+  }, 1800);
 }
 
-
-/* =========================================================
-   PRESENCE
-   ========================================================= */
+/* ================= PRESENCE ================= */
 
 function setupPresence() {
-
-  if (!currentUser) {
-    return;
-  }
+  if (!currentUser) return;
 
   if (presenceChannel) {
-
-    supabaseClient
-      .removeChannel(
-        presenceChannel
-      );
+    supabaseClient.removeChannel(presenceChannel);
   }
 
-  presenceChannel =
-    supabaseClient
-      .channel(
-        "neural-ninjas-presence",
-        {
-          config: {
-            presence: {
-              key:
-                currentUser.id
-            }
+  presenceChannel = supabaseClient
+    .channel(
+      "neural-ninjas-presence",
+      {
+        config: {
+          presence: {
+            key: currentUser.id
           }
         }
-      )
-      .on(
-        "presence",
-        {
-          event: "sync"
-        },
-        () => {
+      }
+    )
 
-          const state =
-            presenceChannel.presenceState();
+    .on(
+      "presence",
+      { event: "sync" },
+      () => {
+        updatePresenceUsers();
+      }
+    )
 
-          presenceUsers = {};
+    .on(
+      "presence",
+      { event: "join" },
+      () => {
+        updatePresenceUsers();
+      }
+    )
 
-          Object.keys(state)
-            .forEach(
-              key => {
+    .on(
+      "presence",
+      { event: "leave" },
+      () => {
+        updatePresenceUsers();
+      }
+    )
 
-                const entries =
-                  state[key];
+    .subscribe(async status => {
+      if (status === "SUBSCRIBED") {
+        await presenceChannel.track({
+          userId: currentUser.id,
+          username: currentProfile?.username || "Unknown user",
+          online: true,
+          joinedAt: Date.now()
+        });
 
-                if (
-                  entries &&
-                  entries.length
-                ) {
-
-                  presenceUsers[key] =
-                    entries[0];
-                }
-
-              }
-            );
-
-          updateOnlineStatus();
-          refreshMembersPresence();
-
-        }
-      )
-      .on(
-        "presence",
-        {
-          event: "join"
-        },
-        () => {
-
-          updateOnlineStatus();
-          refreshMembersPresence();
-
-        }
-      )
-      .on(
-        "presence",
-        {
-          event: "leave"
-        },
-        () => {
-
-          updateOnlineStatus();
-          refreshMembersPresence();
-
-        }
-      )
-      .subscribe(
-        async status => {
-
-          if (
-            status === "SUBSCRIBED"
-          ) {
-
-            await presenceChannel.track({
-              userId:
-                currentUser.id,
-
-              username:
-                currentProfile?.username ||
-                "Unknown user",
-
-              online:
-                true,
-
-              joinedAt:
-                Date.now()
-            });
-
-            updateOnlineStatus();
-          }
-
-        }
-      );
-
+        updatePresenceUsers();
+      }
+    });
 }
 
+function updatePresenceUsers() {
+  if (!presenceChannel) return;
 
-function isMemberOnline(
-  userId
-) {
+  const state = presenceChannel.presenceState();
 
-  return Boolean(
-    presenceUsers[userId]
-  );
+  presenceUsers = {};
 
+  Object.keys(state).forEach(key => {
+    const entries = state[key];
+
+    if (entries && entries.length) {
+      presenceUsers[key] = entries[0];
+    }
+  });
+
+  updateOnlineStatus();
+
+  // Important: use cached members instead of querying profiles
+  // after every presence event.
+  renderMembers(loadedMembers);
 }
 
-
-function refreshMembersPresence() {
-
-  loadMembers();
-
+function isMemberOnline(userId) {
+  return Boolean(presenceUsers[userId]);
 }
-
 
 function updateOnlineStatus() {
+  if (!onlineStatus) return;
 
-  if (!onlineStatus) {
-    return;
-  }
-
-  const count =
-    Object.keys(
-      presenceUsers
-    ).length;
+  const count = Object.keys(presenceUsers).length;
 
   onlineStatus.textContent =
     `${count ? " • " + count : ""} Member Online`;
 }
 
-
-/* =========================================================
-   LAST SEEN
-   ========================================================= */
+/* ================= LAST SEEN ================= */
 
 async function updateLastSeen() {
-
-  if (!currentUser) {
-    return;
-  }
+  if (!currentUser) return;
 
   try {
-
-    await supabaseClient
+    const { error } = await supabaseClient
       .from("profiles")
       .update({
-        last_seen_at:
-          new Date().toISOString()
+        last_seen_at: new Date().toISOString()
       })
-      .eq(
-        "id",
-        currentUser.id
-      );
+      .eq("id", currentUser.id);
+
+    if (error) throw error;
+
+    const member = loadedMembers.find(
+      item => item.id === currentUser.id
+    );
+
+    if (member) {
+      member.last_seen_at = new Date().toISOString();
+    }
 
   } catch (error) {
-
-    console.error(
-      "LAST SEEN ERROR:",
-      error
-    );
-
+    console.error("LAST SEEN ERROR:", error);
   }
-
 }
-
 
 function startLastSeenTimer() {
+  clearInterval(lastSeenInterval);
 
-  clearInterval(
-    lastSeenInterval
+  lastSeenInterval = setInterval(
+    updateLastSeen,
+    LAST_SEEN_INTERVAL
   );
-
-  lastSeenInterval =
-    setInterval(
-      updateLastSeen,
-      30000
-    );
-
 }
 
-
-/* =========================================================
-   SIDEBAR
-   ========================================================= */
+/* ================= SIDEBAR ================= */
 
 function openSidebar() {
-
-  membersSidebar?.classList.add(
-    "open"
-  );
-
-  sidebarOverlay?.classList.add(
-    "open"
-  );
-
+  membersSidebar?.classList.add("open");
+  sidebarOverlay?.classList.add("open");
 }
-
 
 function closeSidebar() {
-
-  membersSidebar?.classList.remove(
-    "open"
-  );
-
-  sidebarOverlay?.classList.remove(
-    "open"
-  );
-
+  membersSidebar?.classList.remove("open");
+  sidebarOverlay?.classList.remove("open");
 }
 
-
-/* =========================================================
-   THEMES
-   ========================================================= */
+/* ================= THEMES ================= */
 
 function openThemePanel() {
-
-  themePanel?.classList.remove(
-    "hidden"
-  );
-
+  themePanel?.classList.remove("hidden");
 }
-
 
 function closeThemePanel() {
-
-  themePanel?.classList.add(
-    "hidden"
-  );
-
+  themePanel?.classList.add("hidden");
 }
-
 
 function setupThemeButtons() {
+  document.querySelectorAll("[data-theme]").forEach(button => {
+    button.addEventListener("click", () => {
+      const theme = button.dataset.theme;
 
-  const buttons =
-    document.querySelectorAll(
-      "[data-theme]"
-    );
-
-  buttons.forEach(
-    button => {
-
-      button.addEventListener(
-        "click",
-        function () {
-
-          const theme =
-            button.dataset.theme;
-
-          if (!theme) {
-            return;
-          }
-
-          applyTheme(
-            theme
-          );
-
-        }
-      );
-
-    }
-  );
-
+      if (theme) {
+        applyTheme(theme);
+      }
+    });
+  });
 }
 
-
-function applyTheme(
-  theme
-) {
-
-  document.body.dataset.theme =
-    theme;
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
 
   localStorage.setItem(
     "neural-ninjas-theme",
     theme
   );
-
 }
 
-
 function restoreTheme() {
-
-  const theme =
-    localStorage.getItem(
-      "neural-ninjas-theme"
-    );
+  const theme = localStorage.getItem(
+    "neural-ninjas-theme"
+  );
 
   if (theme) {
     applyTheme(theme);
   }
-
 }
 
-
-/* =========================================================
-   MESSAGE SEARCH
-   ========================================================= */
+/* ================= MESSAGE SEARCH ================= */
 
 function performMessageSearch() {
+  const query = messageSearchInput?.value
+    .trim()
+    .toLowerCase();
 
-  const query =
-    messageSearchInput?.value
-      .trim()
+  document.querySelectorAll(".message").forEach(element => {
+    if (!query) {
+      element.style.display = "";
+      return;
+    }
+
+    const id = element.dataset.messageId;
+    const message = messageCache.get(String(id));
+
+    const text = [
+      message?.message,
+      message?.sender_name,
+      message?.username
+    ]
+      .filter(Boolean)
+      .join(" ")
       .toLowerCase();
 
-  const messageElements =
-    document.querySelectorAll(
-      ".message"
-    );
-
-  messageElements.forEach(
-    element => {
-
-      if (!query) {
-
-        element.style.display =
-          "";
-
-        return;
-      }
-
-      const id =
-        element.dataset.messageId;
-
-      const message =
-        messageCache.get(
-          String(id)
-        );
-
-      const text =
-        [
-          message?.message,
-          message?.sender_name,
-          message?.username
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-      element.style.display =
-        text.includes(query)
-          ? ""
-          : "none";
-
-    }
-  );
-
+    element.style.display =
+      text.includes(query) ? "" : "none";
+  });
 }
 
-
 function clearMessageSearch() {
-
   if (messageSearchInput) {
-    messageSearchInput.value =
-      "";
+    messageSearchInput.value = "";
   }
 
   performMessageSearch();
-
 }
 
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
+/* ================= LOGOUT ================= */
 
 async function exitChat() {
-
   try {
-
     if (presenceChannel) {
-
       try {
         await presenceChannel.untrack();
       } catch (_) {}
-
     }
 
-    if (messageChannel) {
-      await supabaseClient
-        .removeChannel(
-          messageChannel
-        );
-    }
+    const channels = [
+      messageChannel,
+      reactionChannel,
+      typingChannel,
+      presenceChannel
+    ];
 
-    if (reactionChannel) {
-      await supabaseClient
-        .removeChannel(
-          reactionChannel
-        );
-    }
-
-    if (typingChannel) {
-      await supabaseClient
-        .removeChannel(
-          typingChannel
-        );
-    }
-
-    if (presenceChannel) {
-      await supabaseClient
-        .removeChannel(
-          presenceChannel
-        );
+    for (const channel of channels) {
+      if (channel) {
+        await supabaseClient.removeChannel(channel);
+      }
     }
 
     await supabaseClient.auth.signOut();
 
   } catch (error) {
-
-    console.error(
-      "LOGOUT ERROR:",
-      error
-    );
-
+    console.error("LOGOUT ERROR:", error);
   }
 
-  clearInterval(
-    lastSeenInterval
-  );
+  clearInterval(lastSeenInterval);
+  clearTimeout(typingTimeout);
 
   currentUser = null;
   currentProfile = null;
+
+  messageChannel = null;
+  reactionChannel = null;
+  typingChannel = null;
+  presenceChannel = null;
 
   messageCache.clear();
   reactionCache.clear();
 
   presenceUsers = {};
+  loadedMembers = [];
 
-  chatScreen?.classList.add(
-    "hidden"
-  );
+  chatScreen?.classList.add("hidden");
+  loginScreen?.classList.remove("hidden");
 
-  loginScreen?.classList.remove(
-    "hidden"
-  );
+  if (usernameInput) usernameInput.value = "";
+  if (pinInput) pinInput.value = "";
+  if (messages) messages.innerHTML = "";
 
-  if (usernameInput) {
-    usernameInput.value =
-      "";
-  }
-
-  if (pinInput) {
-    pinInput.value =
-      "";
-  }
-
-  if (messages) {
-    messages.innerHTML =
-      "";
-  }
-
+  cancelReply();
   closeSidebar();
   closeThemePanel();
-
 }
 
-
-/* =========================================================
-   DELETE ACCOUNT
-   ========================================================= */
+/* ================= DELETE ACCOUNT ================= */
 
 async function deleteAccount() {
+  if (!currentUser) return;
 
-  if (!currentUser) {
-    return;
-  }
+  const confirmed = confirm(
+    "Are you sure you want to permanently delete your account?"
+  );
 
-  const confirmed =
-    confirm(
-      "Are you sure you want to permanently delete your account?"
-    );
+  if (!confirmed) return;
 
-  if (!confirmed) {
-    return;
-  }
+  const secondConfirm = confirm(
+    "This action cannot be easily undone. Continue?"
+  );
 
-  const secondConfirm =
-    confirm(
-      "This action cannot be easily undone. Continue?"
-    );
-
-  if (!secondConfirm) {
-    return;
-  }
+  if (!secondConfirm) return;
 
   try {
-
     const sessionResult =
       await supabaseClient.auth.getSession();
 
@@ -3478,483 +2096,157 @@ async function deleteAccount() {
       sessionResult.data.session?.access_token;
 
     if (!accessToken) {
-      throw new Error(
-        "No active session."
-      );
+      throw new Error("No active session.");
     }
 
-    const response =
-      await fetch(
-        `${SUPABASE_URL}/functions/v1/super-responder`,
-        {
-          method: "POST",
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/super-responder`,
+      {
+        method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": SUPABASE_PUBLISHABLE_KEY
+        },
 
-            "Authorization":
-              `Bearer ${accessToken}`,
+        body: JSON.stringify({
+          action: "delete_account"
+        })
+      }
+    );
 
-            "apikey":
-              SUPABASE_PUBLISHABLE_KEY
-          },
-
-          body: JSON.stringify({
-            action:
-              "delete_account"
-          })
-        }
-      );
-
-    const result =
-      await response.json()
-        .catch(
-          () => ({})
-        );
+    const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-
       throw new Error(
         result.error ||
         result.message ||
         "Account deletion failed."
       );
-
     }
 
-    alert(
-      "Account deleted successfully."
-    );
+    alert("Account deleted successfully.");
 
     await exitChat();
 
   } catch (error) {
-
-    console.error(
-      "DELETE ACCOUNT ERROR:",
-      error
-    );
+    console.error("DELETE ACCOUNT ERROR:", error);
 
     alert(
       "Account deletion failed: " +
       error.message
     );
-
   }
-
 }
 
+/* ================= HELPERS ================= */
 
-/* =========================================================
-   HELPERS
-   ========================================================= */
+function getInitials(username) {
+  if (!username) return "?";
 
-function getInitials(
-  username
-) {
-
-  if (!username) {
-    return "?";
-  }
-
-  const words =
-    username
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+  const words = username
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
   if (words.length === 1) {
-
-    return words[0]
-      .slice(0, 2)
-      .toUpperCase();
-
+    return words[0].slice(0, 2).toUpperCase();
   }
 
   return (
     words[0][0] +
     words[1][0]
   ).toUpperCase();
-
 }
 
+function formatMessageTime(timestamp) {
+  if (!timestamp) return "";
 
-function formatMessageTime(
-  timestamp
-) {
+  const date = new Date(timestamp);
 
-  if (!timestamp) {
-    return "";
-  }
+  if (Number.isNaN(date.getTime())) return "";
 
-  const date =
-    new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleTimeString(
-    [],
-    {
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  );
-
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
+function formatLastSeen(timestamp) {
+  if (!timestamp) return "Offline";
 
-function formatLastSeen(
-  timestamp
-) {
+  const date = new Date(timestamp);
 
-  if (!timestamp) {
-    return "Offline";
-  }
+  if (Number.isNaN(date.getTime())) return "Offline";
 
-  const date =
-    new Date(timestamp);
+  const diff = Date.now() - date.getTime();
 
-  if (Number.isNaN(date.getTime())) {
-    return "Offline";
-  }
+  const seconds = Math.floor(diff / 1000);
 
-  const diff =
-    Date.now() -
-    date.getTime();
+  if (seconds < 60) return "Just now";
 
-  const seconds =
-    Math.floor(
-      diff / 1000
-    );
-
-  if (seconds < 60) {
-    return "Just now";
-  }
-
-  const minutes =
-    Math.floor(
-      seconds / 60
-    );
+  const minutes = Math.floor(seconds / 60);
 
   if (minutes < 60) {
     return `Last seen ${minutes}m ago`;
   }
 
-  const hours =
-    Math.floor(
-      minutes / 60
-    );
+  const hours = Math.floor(minutes / 60);
 
   if (hours < 24) {
     return `Last seen ${hours}h ago`;
   }
 
-  const days =
-    Math.floor(
-      hours / 24
-    );
+  const days = Math.floor(hours / 24);
 
   return `Last seen ${days}d ago`;
-
 }
 
+function getFileExtension(filename) {
+  const index = filename.lastIndexOf(".");
 
-function getFileExtension(
-  filename
-) {
+  if (index === -1) return "";
 
-  const index =
-    filename.lastIndexOf(".");
-
-  if (index === -1) {
-    return "";
-  }
-
-  return filename
-    .slice(index)
-    .toLowerCase();
-
+  return filename.slice(index).toLowerCase();
 }
-
 
 function scrollMessagesToBottom() {
+  if (!messages) return;
 
-  if (!messages) {
-    return;
-  }
-
-  requestAnimationFrame(
-    function () {
-
-      messages.scrollTop =
-        messages.scrollHeight;
-
-    }
-  );
-
+  requestAnimationFrame(() => {
+    messages.scrollTop = messages.scrollHeight;
+  });
 }
 
+function showLoginStatus(text, isError = false) {
+  if (!loginStatus) return;
 
-function showLoginStatus(
-  text,
-  isError = false
-) {
-
-  if (!loginStatus) {
-    return;
-  }
-
-  loginStatus.textContent =
-    text;
-
-  loginStatus.classList.toggle(
-    "error",
-    isError
-  );
-
+  loginStatus.textContent = text;
+  loginStatus.classList.toggle("error", isError);
 }
 
+function showChatError(text) {
+  if (!messages) return;
 
-function showChatError(
-  text
-) {
+  const error = document.createElement("div");
 
-  if (!messages) {
-    return;
-  }
+  error.className = "chat-error";
+  error.textContent = text;
 
-  const error =
-    document.createElement("div");
-
-  error.className =
-    "chat-error";
-
-  error.textContent =
-    text;
-
-  messages.appendChild(
-    error
-  );
-
+  messages.appendChild(error);
 }
 
+/* ================= GLOBAL ERROR HANDLING ================= */
 
-/* =========================================================
-   GLOBAL ERROR HANDLING
-   ========================================================= */
+window.addEventListener("unhandledrejection", event => {
+  console.error("UNHANDLED PROMISE:", event.reason);
+});
 
-window.addEventListener(
-  "unhandledrejection",
-  function (event) {
-
-    console.error(
-      "UNHANDLED PROMISE:",
-      event.reason
-    );
-
-  }
-);
-
-window.addEventListener(
-  "error",
-  function (event) {
-
-    console.error(
-      "GLOBAL ERROR:",
-      event.error ||
-      event.message
-    );
-
-  }
-);
-
-
-/* =========================================================
-   PHONE ERROR PANEL - TEMPORARY DEBUGGER
-   ========================================================= */
-
-(function () {
-
-  const panel = document.createElement("div");
-
-  panel.id = "phoneErrorPanel";
-
-  panel.style.cssText = `
-    position: fixed;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    max-height: 45vh;
-    overflow-y: auto;
-    background: #111;
-    color: #ff4444;
-    border: 2px solid #ff3333;
-    border-radius: 12px;
-    padding: 12px;
-    z-index: 999999;
-    font-family: monospace;
-    font-size: 12px;
-    display: none;
-    white-space: pre-wrap;
-    word-break: break-word;
-  `;
-
-  panel.innerHTML =
-    "<b>🔴 NEURAL NINJAS ERROR LOG</b><br><br>";
-
-  document.body.appendChild(panel);
-
-
-  function showError(title, error) {
-
-    panel.style.display = "block";
-
-    const box =
-      document.createElement("div");
-
-    box.style.cssText = `
-      margin-top: 10px;
-      padding: 8px;
-      border-top: 1px solid #555;
-    `;
-
-    box.textContent =
-      title +
-      "\n" +
-      (
-        error?.message ||
-        error?.details ||
-        error?.hint ||
-        String(error)
-      );
-
-    panel.appendChild(box);
-  }
-
-
-  window.addEventListener(
-    "error",
-    function (event) {
-
-      showError(
-        "JAVASCRIPT ERROR:",
-        event.error ||
-        event.message
-      );
-
-    }
+window.addEventListener("error", event => {
+  console.error(
+    "GLOBAL ERROR:",
+    event.error || event.message
   );
-
-
-  window.addEventListener(
-    "unhandledrejection",
-    function (event) {
-
-      showError(
-        "PROMISE ERROR:",
-        event.reason
-      );
-
-    }
-  );
-
-
-  const originalAlert =
-    window.alert;
-
-  window.alert =
-    function (message) {
-
-      showError(
-        "APP ALERT:",
-        message
-      );
-
-      originalAlert(message);
-    };
-
-
-  console.log =
-    function (...args) {
-
-      const text =
-        args
-          .map(
-            item => {
-
-              if (
-                typeof item === "object"
-              ) {
-
-                try {
-                  return JSON.stringify(
-                    item,
-                    null,
-                    2
-                  );
-                } catch (_) {
-                  return String(item);
-                }
-
-              }
-
-              return String(item);
-
-            }
-          )
-          .join(" ");
-
-      showError(
-        "LOG:",
-        text
-      );
-
-    };
-
-
-  console.error =
-    function (...args) {
-
-      const text =
-        args
-          .map(
-            item => {
-
-              if (
-                typeof item === "object"
-              ) {
-
-                try {
-                  return JSON.stringify(
-                    item,
-                    null,
-                    2
-                  );
-                } catch (_) {
-                  return String(item);
-                }
-
-              }
-
-              return String(item);
-
-            }
-          )
-          .join(" ");
-
-      showError(
-        "❌ CONSOLE ERROR:",
-        text
-      );
-
-    };
-
-
-})();
-
-/* =========================================================
-   END OF APP.JS
-   ========================================================= */
+});
+/* ================= END OF APP.JS ================= */
